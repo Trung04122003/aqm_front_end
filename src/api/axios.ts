@@ -1,6 +1,5 @@
 // src/api/axios.ts
 import axios from "axios";
-import { navigate } from "react-router-dom"; // we'll not use directly; keep idea
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api",

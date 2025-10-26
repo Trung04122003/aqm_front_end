@@ -17,8 +17,10 @@ const Login: React.FC = () => {
     try {
       await login({ usernameOrEmail, password });
       // on success navigate happens inside login()
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err.message || "Login failed");
+    } catch (err: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const e: any = err;
+      setError(e?.response?.data?.message || e?.message || "Login failed");
     } finally {
       setLoading(false);
     }

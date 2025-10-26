@@ -19,9 +19,12 @@ const Register: React.FC = () => {
     setLoading(true);
     try {
       const resp = await register({ username, email, password });
-      setMsg(resp?.message || "Registration successful. Please login.");
-    } catch (error: any) {
-      setErr(error?.response?.data?.message || error.message || "Registration failed");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setMsg((resp as any)?.message || "Registration successful.");
+    } catch (err: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const e:any = err;
+      setErr(e?.response?.data?.message || e?.message || "Registration failed");
     } finally {
       setLoading(false);
     }
