@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import AuthLayout from "../layouts/AuthLayout";
 import { useAuth } from "../auth/AuthProvider";
+import { useNavigate } from "react-router-dom";
 
 const Register: React.FC = () => {
   const { register } = useAuth();
@@ -11,24 +12,33 @@ const Register: React.FC = () => {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErr(null);
-    setMsg(null);
-    setLoading(true);
-    try {
-      const resp = await register({ username, email, password });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setMsg((resp as any)?.message || "Registration successful.");
-    } catch (err: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const e:any = err;
-      setErr(e?.response?.data?.message || e?.message || "Registration failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+  e.preventDefault();
+  setErr(null);
+  setMsg(null);
+  setLoading(true);
+  try {
+    const resp = await register({ username, email, password });
+    // nếu backend trả message -> show briefly, rồi redirect
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const successMsg = (resp as any)?.message || "Registration successful. Redirecting to login...";
+    setMsg(successMsg);
+
+    // small UX delay để user thấy thông báo, rồi chuyển hướng
+    setTimeout(() => {
+      navigate("/login");
+    }, 900); // 900ms — đủ để đọc thông báo, không quá lâu
+
+  } catch (err: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const e: any = err;
+    setErr(e?.response?.data?.message || e?.message || "Registration failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <AuthLayout>
