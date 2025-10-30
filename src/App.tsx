@@ -1,15 +1,24 @@
-import { AuthProvider } from "./auth/AuthProvider";
+// src/App.tsx
 import AppRouter from "./routes/AppRouter";
 
-function App() {
-  return (
-    <AuthProvider>
-      <AppRouter />
-    </AuthProvider>
-  );
+export default function App() {
+  return <AppRouter />;
 }
 
-export default App;
+
+
+// import { AuthProvider } from "./auth/AuthProvider";
+// import AppRouter from "./routes/AppRouter";
+
+// function App() {
+//   return (
+//     <AuthProvider>
+//       <AppRouter />
+//     </AuthProvider>
+//   );
+// }
+
+// export default App;
 
 
 // import { useState } from 'react'
