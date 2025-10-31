@@ -1,16 +1,29 @@
 // src/auth/AuthProvider.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginRequest, meRequest } from "../api/auth";
+import { loginRequest } from "../api/auth";
 import api from "../api/axios";
 
-type User = { id?: number; username?: string; email?: string; role?: string } | null;
+type User = {
+  id?: number;
+  username?: string;
+  email?: string;
+  role?: string;
+} | null;
 
 interface AuthContextType {
   user: User;
   loading: boolean;
-  login: (credentials: { usernameOrEmail: string; password: string }) => Promise<void>;
-  register: (payload: { username: string; email: string; password: string; fullName?: string }) => Promise<void>;
+  login: (credentials: {
+    usernameOrEmail: string;
+    password: string;
+  }) => Promise<void>;
+  register: (payload: {
+    username: string;
+    email: string;
+    password: string;
+    fullName?: string;
+  }) => Promise<void>;
   logout: () => void;
 }
 
@@ -33,44 +46,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async ({ usernameOrEmail, password }: { usernameOrEmail: string; password: string }) => {
-    // eslint-disable-next-line no-useless-catch
-    try {
-      const body = { username: usernameOrEmail, password };
-      const resp = await loginRequest(body);
-      const data = resp.data ?? {};
+  try {
+    const body = { username: usernameOrEmail, password };
+    const resp = await loginRequest(body);
+    console.log("login resp.data:", resp.data); // debug: remove later
 
-      const token: string | undefined =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (data as any)?.accessToken || (data as any)?.token || (data as any)?.jwt || (data as any)?.access_token;
+    const data = resp.data ?? {};
 
-      if (!token) {
-        throw new Error("No token returned from server. Check backend response.");
-      }
-
-      localStorage.setItem("token", token);
-
-      // try to extract user from response or fallback to /auth/me
+    // Try multiple field names that backend might return
+    const token: string | undefined =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let userObj: any = (data as any)?.user || (data as any)?.data?.user || null;
-      if (!userObj) {
-        try {
-          const me = await meRequest();
-          userObj = me.data;
-        } catch {
-          userObj = { username: usernameOrEmail };
-        }
-      }
+      (data as any)?.accessToken ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (data as any)?.token ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (data as any)?.jwt ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (data as any)?.access_token ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (data as any)?.data?.accessToken ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (data as any)?.data?.token;
 
-      localStorage.setItem("user", JSON.stringify(userObj));
-      setUser(userObj);
-      navigate("/");
-    } catch (err: unknown) {
-      // rethrow to let UI show message
-      throw err;
+    if (!token) {
+      throw new Error("No token returned from server. Check login response payload in console.");
     }
-  };
 
-  const register = async (payload: { username: string; email: string; password: string; fullName?: string }) => {
+    // store token and user
+    localStorage.setItem("token", token);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userObj = (data as any)?.user || (data as any)?.data?.user || { username: usernameOrEmail };
+    localStorage.setItem("user", JSON.stringify(userObj));
+    setUser(userObj);
+
+    // navigate to dashboard
+    navigate("/");
+  } catch (err: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const e: any = err;
+    // rethrow so UI shows message (or set an error state)
+    throw e;
+  }
+};
+
+  // const login = async ({
+  //   usernameOrEmail,
+  //   password,
+  // }: {
+  //   usernameOrEmail: string;
+  //   password: string;
+  // }) => {
+  //   // eslint-disable-next-line no-useless-catch
+  //   try {
+  //     const body = { username: usernameOrEmail, password };
+  //     // inside login()
+  //     const resp = await loginRequest(body);
+  //     const data = resp.data ?? {};
+
+  //     // detect token (thử nhiều tên trường)
+  //     const token =
+  //       data?.accessToken || data?.token || data?.jwt || data?.access_token;
+  //     if (!token) throw new Error("No token returned from server");
+
+  //     localStorage.setItem("token", token); // <-- bắt buộc phải có
+  //     // optional: store user
+  //     const userObj = data?.user ||
+  //       data?.data?.user || { username: usernameOrEmail };
+  //     localStorage.setItem("user", JSON.stringify(userObj));
+  //     setUser(userObj);
+  //     navigate("/");
+  //     console.log("login resp.data:", resp.data);
+  //   } catch (err: unknown) {
+  //     // rethrow to let UI show message
+  //     throw err;
+  //   }
+  // };
+
+  const register = async (payload: {
+    username: string;
+    email: string;
+    password: string;
+    fullName?: string;
+  }) => {
     const resp = await api.post("/auth/register", payload);
     return resp.data;
   };
@@ -82,7 +139,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate("/login");
   };
 
-  return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -91,7 +152,6 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 }
-
 
 // import React, { createContext, useState, useEffect, useContext } from "react";
 

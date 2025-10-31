@@ -32,6 +32,22 @@ api.interceptors.response.use(
   }
 );
 
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  // debug:
+  console.log("[axios] attaching token:", token ? token.slice(0,20) : '<<no-token>>');
+  if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// api.interceptors.request.use((config) => {
+//   const token = localStorage.getItem("token");
+//   console.log("[axios] attaching token:", token?.slice(0,20)); // debug line
+//   if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
+//   return config;
+// });
+
+
 export default api;
 
 
