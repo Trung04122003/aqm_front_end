@@ -7,6 +7,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import api from "../api/axios";
 import { Form } from "react-bootstrap";
 import useAuth from "../auth/useAuth";
+import MapHeatmap from "../components/MapHeatmap";
 
 type Location = {
   id: number;
@@ -150,6 +151,11 @@ export default function Dashboard() {
       </div>
     </MainLayout>
   );
+
+    <MapHeatmap points={[
+    { id:1, lat:21.028, lng:105.834, value: 120 },
+    { id:2, lat:21.030, lng:105.84, value: 40 },
+  ]} />
 }
 
 // src/pages/Dashboard.tsx
