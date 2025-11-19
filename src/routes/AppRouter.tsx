@@ -11,6 +11,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
 import SensorsAdmin from "../pages/admin/SensorsAdmin";
 import ThresholdsAdmin from "../pages/admin/ThresholdsAdmin";
+import AdminLogin from "../pages/AdminLogin";
 
 export default function AppRouter() {
   return (
@@ -18,6 +19,7 @@ export default function AppRouter() {
       {/* Public routes */}
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<Login />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/register" element={<Register />} />
       </Route>
 
