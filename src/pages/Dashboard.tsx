@@ -54,6 +54,9 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return; // skip until auth restored
+    // call API...
     if (!selected) return;
     setLoading(true);
     (async () => {
@@ -152,10 +155,12 @@ export default function Dashboard() {
     </MainLayout>
   );
 
-    <MapHeatmap points={[
-    { id:1, lat:21.028, lng:105.834, value: 120 },
-    { id:2, lat:21.030, lng:105.84, value: 40 },
-  ]} />
+  <MapHeatmap
+    points={[
+      { id: 1, lat: 21.028, lng: 105.834, value: 120 },
+      { id: 2, lat: 21.03, lng: 105.84, value: 40 },
+    ]}
+  />;
 }
 
 // src/pages/Dashboard.tsx

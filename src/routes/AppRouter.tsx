@@ -8,6 +8,9 @@ import Reports from "../pages/Reports";
 import Support from "../pages/Support";
 import PublicRoute from "./PublicRoute";
 import ProtectedRoute from "./ProtectedRoute";
+import AdminRoute from "./AdminRoute";
+import SensorsAdmin from "../pages/admin/SensorsAdmin";
+import ThresholdsAdmin from "../pages/admin/ThresholdsAdmin";
 
 export default function AppRouter() {
   return (
@@ -26,10 +29,15 @@ export default function AppRouter() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/support" element={<Support />} />
       </Route>
+
+      {/* Admin */}
+      <Route element={<AdminRoute />}>
+        <Route path="/admin/sensors" element={<SensorsAdmin />} />
+        <Route path="/admin/thresholds" element={<ThresholdsAdmin />} />
+      </Route>
     </Routes>
   );
 }
-
 
 // import { BrowserRouter, Routes, Route } from "react-router-dom";
 // import Login from "../pages/Login";
