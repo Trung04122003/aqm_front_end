@@ -10,6 +10,7 @@ import AdminRoute from "./AdminRoute";
 import SensorsAdmin from "../pages/admin/SensorsAdmin";
 import ThresholdsAdmin from "../pages/admin/ThresholdsAdmin";
 import GuestNavbar from "../components/GuestNavbar";
+import AdminDashboard from "../pages/admin/AdminDashboard";
 
 export default function AppRouter() {
   return (
@@ -31,7 +32,7 @@ export default function AppRouter() {
 
         {/* Admin-protected */}
         <Route element={<AdminRoute />}>
-          {/* <Route path="/admin" element={<AdminDashboard />} /> */}
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/sensors" element={<SensorsAdmin />} />
           <Route path="/admin/thresholds" element={<ThresholdsAdmin />} />
         </Route>

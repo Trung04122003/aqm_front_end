@@ -10,7 +10,7 @@ export const registerRequest = (payload: { username: string; password: string; e
   api.post("/auth/register", payload);
 
 // Optional: /api/auth/me — BE có chưa thì ok, nếu chưa, this call may 404
-export const getCurrentUser = () => api.get("/auth/me");
+export const getCurrentUser = () => api.get("/user/me");
 
 
 // import api from "./axios";

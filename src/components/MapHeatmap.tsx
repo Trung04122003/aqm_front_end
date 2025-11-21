@@ -40,6 +40,8 @@ export default function MapHeatmap({ points = [] as SensorPoint[] }: { points: S
         <TileLayer
           attribution='&copy; OSM contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          // https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png
+          // https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png
         />
         {points.map(p => (
           <Marker key={p.id} position={[p.lat, p.lng]}>
