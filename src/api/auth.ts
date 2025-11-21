@@ -1,19 +1,31 @@
 // src/api/auth.ts
 
+// src/api/auth.ts
 import api from "./axios";
 
-export const loginRequest = (usernameOrEmail: string, password: string) => {
-  return api.post("/api/auth/login", { usernameOrEmail, password });
-};
+export const loginRequest = (payload: { usernameOrEmail: string; password: string }) =>
+  api.post("/auth/login", payload);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const registerRequest = (payload: any) => {
-  return api.post("/api/auth/register", payload);
-};
+export const registerRequest = (payload: { username: string; password: string; email: string; fullName: string }) =>
+  api.post("/auth/register", payload);
 
-export const getCurrentUser = () => {
-  return api.get("/api/auth/me");
-};
+// Optional: /api/auth/me — BE có chưa thì ok, nếu chưa, this call may 404
+export const getCurrentUser = () => api.get("/auth/me");
+
+
+// import api from "./axios";
+
+// export const loginRequest = (username: string, password: string) => {
+//   return api.post("/auth/login", { username, password });
+// };
+
+// export const registerRequest = (username: string, email: string, password: string) => {
+//   return api.post("/auth/register", { username, email, password});
+// };
+
+// export const getCurrentUser = () => {
+//   return api.get("/auth/me");
+// };
 
 
 // import api from "./axios";
