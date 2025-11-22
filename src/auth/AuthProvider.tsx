@@ -1,5 +1,4 @@
-// src/auth/AuthProvider.tsx
-// src/auth/AuthProvider.tsx
+// src/auth/AuthProvider.tsx (FIXED - No reload bug)
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginRequest, registerRequest, getCurrentUser } from "../api/auth";
@@ -16,6 +15,7 @@ type User = {
 
 type AuthContextType = {
   user: User;
+  loading: boolean; // ✅ ADD loading state
   login: (usernameOrEmail: string, password: string) => Promise<void>;
   loginAdmin: (usernameOrEmail: string, password: string) => Promise<void>;
   register: (payload: {
@@ -33,22 +33,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User>(null);
+  const [loading, setLoading] = useState(true); // ✅ ADD loading state
   const navigate = useNavigate();
 
-  // Restore session on boot
+  // ✅ FIXED: Restore session on boot
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userRaw = localStorage.getItem("user");
-    if (token) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    }
-    if (userRaw) {
-      try {
-        setUser(JSON.parse(userRaw));
-      } catch {
-        localStorage.removeItem("user");
+    const restoreSession = () => {
+      const token = localStorage.getItem("token");
+      const userRaw = localStorage.getItem("user");
+      
+      if (token) {
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        
+        if (userRaw) {
+          try {
+            const userData = JSON.parse(userRaw);
+            setUser(userData);
+          } catch (err) {
+            console.error("Failed to parse user data", err);
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+          }
+        }
       }
-    }
+      
+      setLoading(false); // ✅ IMPORTANT: Set loading to false after restore
+    };
+
+    restoreSession();
   }, []);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,77 +71,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(userObj);
   };
 
-  // Standard login for regular users
   const login = async (usernameOrEmail: string, password: string) => {
-    const res = await loginRequest({ usernameOrEmail, password });
-    // BE returns AuthResponse(token) in .data (based on your controller)
-    const token =
-      res?.data?.token || res?.data?.data?.token || (res?.data?.data ?? null);
-    // But in your AuthController earlier it returned new AuthResponse(token) in body
-    // Common shape we handle:
-    const extractedToken =
-      typeof res?.data === "string"
-        ? res.data
-        : res?.data?.token || res?.data?.data?.token || res?.data?.token;
-    // For safety, try several spots:
-    const finalToken =
-      res?.data?.token ||
-      (res?.data?.data && res.data.data.token) ||
-      (typeof res?.data === "string" ? res.data : undefined);
-
-    const tokenToUse = finalToken || extractedToken || token;
-    if (!tokenToUse) throw new Error("Không nhận được token từ server");
-
-    // set token then fetch user info if endpoint exists
-    api.defaults.headers.common["Authorization"] = `Bearer ${tokenToUse}`;
-    let userObj = null;
     try {
-      const me = await getCurrentUser();
-      userObj = me.data;
-    } catch {
-      // fall back to minimal user
-      userObj = { usernameOrEmail };
+      const res = await loginRequest({ usernameOrEmail, password });
+      const token = res?.data?.token || res?.data?.data?.token;
+      
+      if (!token) throw new Error("No token returned from server");
+
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      
+      let userObj = null;
+      try {
+        const me = await getCurrentUser();
+        userObj = me.data;
+      } catch {
+        userObj = { username: usernameOrEmail };
+      }
+      
+      setSession(token, userObj);
+      toast.success("Login successful!");
+      navigate("/");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error("Login error:", err);
+      toast.error(err?.response?.data?.message || err?.message || "Login failed");
+      throw err;
     }
-    setSession(tokenToUse, userObj);
-    navigate("/");
   };
 
-  // Admin login: same loginRequest but enforce role = ADMIN
   const loginAdmin = async (usernameOrEmail: string, password: string) => {
-    const res = await loginRequest({ usernameOrEmail, password });
-    const token =
-      res?.data?.token || (res?.data?.data && res.data.data.token) || undefined;
-    if (!token) throw new Error("Không nhận được token từ server");
-
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    let userObj = null;
     try {
-      const me = await getCurrentUser();
-      userObj = me.data;
-    } catch {
-      userObj = null;
+      const res = await loginRequest({ usernameOrEmail, password });
+      const token = res?.data?.token || res?.data?.data?.token;
+      
+      if (!token) throw new Error("No token returned from server");
+
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      
+      let userObj = null;
+      try {
+        const me = await getCurrentUser();
+        userObj = me.data;
+      } catch {
+        userObj = null;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const role = userObj?.role || userObj?.roles || (userObj as any)?.authorities || null;
+      const isAdmin =
+        (Array.isArray(role) &&
+          role.some((r: string) => r.toUpperCase().includes("ADMIN"))) ||
+        (typeof role === "string" && role.toUpperCase().includes("ADMIN"));
+
+      if (!isAdmin) {
+        delete api.defaults.headers.common["Authorization"];
+        throw new Error("Account does not have ADMIN privileges");
+      }
+
+      setSession(token, userObj);
+      toast.success("Admin login successful!");
+      navigate("/admin");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error("Admin login error:", err);
+      toast.error(err?.message || "Admin login failed");
+      throw err;
     }
-
-    // check role
-    const role =
-      (userObj &&
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (userObj.role || userObj.roles || (userObj as any).authorities)) ||
-      null;
-    // Normalize difference: if roles array
-    const isAdmin =
-      (Array.isArray(role) &&
-        role.some((r: string) => r.toUpperCase().includes("ADMIN"))) ||
-      (typeof role === "string" && role.toUpperCase().includes("ADMIN"));
-
-    if (!isAdmin) {
-      // cleanup and reject
-      delete api.defaults.headers.common["Authorization"];
-      throw new Error("Tài khoản không có quyền ADMIN");
-    }
-
-    setSession(token, userObj);
-    navigate("/admin");
   };
 
   const register = async (payload: {
@@ -138,9 +145,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     email: string;
     fullName: string;
   }) => {
-    await registerRequest(payload); // KHÔNG return res nữa để TypeScript không quạu
-    toast.success("Đăng ký thành công. Vui lòng đăng nhập.");
-    navigate("/login");
+    try {
+      await registerRequest(payload);
+      toast.success("Registration successful. Please login.");
+      navigate("/login");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error("Register error:", err);
+      toast.error(err?.response?.data?.message || "Registration failed");
+      throw err;
+    }
   };
 
   const logout = () => {
@@ -148,11 +162,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("user");
     delete api.defaults.headers.common["Authorization"];
     setUser(null);
+    toast.info("Logged out successfully");
     navigate("/login");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginAdmin, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginAdmin, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -165,156 +180,168 @@ export const useAuth = () => {
   return ctx;
 };
 
+// // src/auth/AuthProvider.tsx
 // import React, { createContext, useContext, useEffect, useState } from "react";
 // import { useNavigate } from "react-router-dom";
-// import { loginRequest } from "../api/auth";
+// import { loginRequest, registerRequest, getCurrentUser } from "../api/auth";
 // import api from "../api/axios";
+// import { toast } from "react-toastify";
 
 // type User = {
 //   id?: number;
 //   username?: string;
+//   fullName?: string;
 //   email?: string;
-//   role?: string;
+//   role?: string | null;
 // } | null;
 
-// interface AuthContextType {
+// type AuthContextType = {
 //   user: User;
-//   loading: boolean;
-//   login: (credentials: {
-//     username: string;
-//     password: string;
-//   }) => Promise<void>;
+//   login: (usernameOrEmail: string, password: string) => Promise<void>;
+//   loginAdmin: (usernameOrEmail: string, password: string) => Promise<void>;
 //   register: (payload: {
 //     username: string;
-//     email: string;
 //     password: string;
-//     fullName?: string;
+//     email: string;
+//     fullName: string;
 //   }) => Promise<void>;
 //   logout: () => void;
-// }
+// };
 
 // const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// export function AuthProvider({ children }: { children: React.ReactNode }) {
+// export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+//   children,
+// }) => {
 //   const [user, setUser] = useState<User>(null);
-//   const [loading, setLoading] = useState<boolean>(true);
 //   const navigate = useNavigate();
 
+//   // Restore session on boot
 //   useEffect(() => {
 //     const token = localStorage.getItem("token");
-//     const storedUser = localStorage.getItem("user");
-//     if (token && storedUser) {
-//       setUser(JSON.parse(storedUser));
-//       setLoading(false);
-//       return;
+//     const userRaw = localStorage.getItem("user");
+//     if (token) {
+//       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 //     }
-//     setLoading(false);
+//     if (userRaw) {
+//       try {
+//         setUser(JSON.parse(userRaw));
+//       } catch {
+//         localStorage.removeItem("user");
+//       }
+//     }
 //   }, []);
 
-//   const login = async ({ username, password }: { username: string; password: string }) => {
-//   try {
-//     const body = { username: username, password };
-//     const resp = await loginRequest(body);
-//     console.log("login resp.data:", resp.data); // debug: remove later
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   const setSession = (token: string, userObj: any) => {
+//     localStorage.setItem("token", token);
+//     localStorage.setItem("user", JSON.stringify(userObj));
+//     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+//     setUser(userObj);
+//   };
 
-//     const data = resp.data ?? {};
+//   // Standard login for regular users
+//   const login = async (usernameOrEmail: string, password: string) => {
+//     const res = await loginRequest({ usernameOrEmail, password });
+//     // BE returns AuthResponse(token) in .data (based on your controller)
+//     const token =
+//       res?.data?.token || res?.data?.data?.token || (res?.data?.data ?? null);
+//     // But in your AuthController earlier it returned new AuthResponse(token) in body
+//     // Common shape we handle:
+//     const extractedToken =
+//       typeof res?.data === "string"
+//         ? res.data
+//         : res?.data?.token || res?.data?.data?.token || res?.data?.token;
+//     // For safety, try several spots:
+//     const finalToken =
+//       res?.data?.token ||
+//       (res?.data?.data && res.data.data.token) ||
+//       (typeof res?.data === "string" ? res.data : undefined);
 
-//     // Try multiple field names that backend might return
-//     const token: string | undefined =
-//       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//       (data as any)?.accessToken ||
-//       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//       (data as any)?.token ||
-//       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//       (data as any)?.jwt ||
-//       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//       (data as any)?.access_token ||
-//       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//       (data as any)?.data?.accessToken ||
-//       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//       (data as any)?.data?.token;
+//     const tokenToUse = finalToken || extractedToken || token;
+//     if (!tokenToUse) throw new Error("Không nhận được token từ server");
 
-//     if (!token) {
-//       throw new Error("No token returned from server. Check login response payload in console.");
+//     // set token then fetch user info if endpoint exists
+//     api.defaults.headers.common["Authorization"] = `Bearer ${tokenToUse}`;
+//     let userObj = null;
+//     try {
+//       const me = await getCurrentUser();
+//       userObj = me.data;
+//     } catch {
+//       // fall back to minimal user
+//       userObj = { usernameOrEmail };
+//     }
+//     setSession(tokenToUse, userObj);
+//     navigate("/");
+//   };
+
+//   // Admin login: same loginRequest but enforce role = ADMIN
+//   const loginAdmin = async (usernameOrEmail: string, password: string) => {
+//     const res = await loginRequest({ usernameOrEmail, password });
+//     const token =
+//       res?.data?.token || (res?.data?.data && res.data.data.token) || undefined;
+//     if (!token) throw new Error("Không nhận được token từ server");
+
+//     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+//     let userObj = null;
+//     try {
+//       const me = await getCurrentUser();
+//       userObj = me.data;
+//     } catch {
+//       userObj = null;
 //     }
 
-//     // store token and user
-//     localStorage.setItem("token", token);
-//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//     const userObj = (data as any)?.user || (data as any)?.data?.user || { username: username };
-//     localStorage.setItem("user", JSON.stringify(userObj));
-//     setUser(userObj);
+//     // check role
+//     const role =
+//       (userObj &&
+//         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//         (userObj.role || userObj.roles || (userObj as any).authorities)) ||
+//       null;
+//     // Normalize difference: if roles array
+//     const isAdmin =
+//       (Array.isArray(role) &&
+//         role.some((r: string) => r.toUpperCase().includes("ADMIN"))) ||
+//       (typeof role === "string" && role.toUpperCase().includes("ADMIN"));
 
-//     // navigate to dashboard
-//     navigate("/");
-//   } catch (err: unknown) {
-//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//     const e: any = err;
-//     // rethrow so UI shows message (or set an error state)
-//     throw e;
-//   }
-// };
+//     if (!isAdmin) {
+//       // cleanup and reject
+//       delete api.defaults.headers.common["Authorization"];
+//       throw new Error("Tài khoản không có quyền ADMIN");
+//     }
 
-//   // const login = async ({
-//   //   username,
-//   //   password,
-//   // }: {
-//   //   username: string;
-//   //   password: string;
-//   // }) => {
-//   //   // eslint-disable-next-line no-useless-catch
-//   //   try {
-//   //     const body = { username: username, password };
-//   //     // inside login()
-//   //     const resp = await loginRequest(body);
-//   //     const data = resp.data ?? {};
-
-//   //     // detect token (thử nhiều tên trường)
-//   //     const token =
-//   //       data?.accessToken || data?.token || data?.jwt || data?.access_token;
-//   //     if (!token) throw new Error("No token returned from server");
-
-//   //     localStorage.setItem("token", token); // <-- bắt buộc phải có
-//   //     // optional: store user
-//   //     const userObj = data?.user ||
-//   //       data?.data?.user || { username: username };
-//   //     localStorage.setItem("user", JSON.stringify(userObj));
-//   //     setUser(userObj);
-//   //     navigate("/");
-//   //     console.log("login resp.data:", resp.data);
-//   //   } catch (err: unknown) {
-//   //     // rethrow to let UI show message
-//   //     throw err;
-//   //   }
-//   // };
+//     setSession(token, userObj);
+//     navigate("/admin");
+//   };
 
 //   const register = async (payload: {
 //     username: string;
-//     email: string;
 //     password: string;
-//     fullName?: string;
+//     email: string;
+//     fullName: string;
 //   }) => {
-//     const resp = await api.post("/auth/register", payload);
-//     return resp.data;
+//     await registerRequest(payload); // KHÔNG return res nữa để TypeScript không quạu
+//     toast.success("Đăng ký thành công. Vui lòng đăng nhập.");
+//     navigate("/login");
 //   };
 
 //   const logout = () => {
 //     localStorage.removeItem("token");
 //     localStorage.removeItem("user");
+//     delete api.defaults.headers.common["Authorization"];
 //     setUser(null);
 //     navigate("/login");
 //   };
 
 //   return (
-//     <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+//     <AuthContext.Provider value={{ user, login, loginAdmin, register, logout }}>
 //       {children}
 //     </AuthContext.Provider>
 //   );
-// }
+// };
 
 // // eslint-disable-next-line react-refresh/only-export-components
-// export function useAuth() {
+// export const useAuth = () => {
 //   const ctx = useContext(AuthContext);
-//   if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+//   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
 //   return ctx;
-// }
+// };

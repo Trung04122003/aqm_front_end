@@ -1,45 +1,53 @@
-// src/AppRouter.tsx
+// src/routes/AppRouter.tsx (FINAL COMPLETE VERSION)
 import { Routes, Route } from "react-router-dom";
 import Login from "../auth/Login";
 import Register from "../auth/Register";
 import AdminLogin from "../auth/AdminLogin";
 import AdminRegister from "../auth/AdminRegister";
 import Dashboard from "../pages/Dashboard";
+import Forecast from "../pages/Forecast";
+import Alerts from "../pages/Alerts";
+import Reports from "../pages/Reports";
+import Support from "../pages/Support";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
+import AdminDashboard from "../pages/admin/AdminDashboard";
+import UsersAdmin from "../pages/admin/UsersAdmin";
 import SensorsAdmin from "../pages/admin/SensorsAdmin";
 import ThresholdsAdmin from "../pages/admin/ThresholdsAdmin";
-import GuestNavbar from "../components/GuestNavbar";
-import AdminDashboard from "../pages/admin/AdminDashboard";
+import AlertsAdmin from "../pages/admin/AlertsAdmin";
+import ReportsAdmin from "../pages/admin/ReportsAdmin";
 
 export default function AppRouter() {
   return (
-    <>
-      <GuestNavbar />
-      <Routes>
-        {/* Public */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/admin-register" element={<AdminRegister />} />
+    <Routes>
+      {/* ==================== PUBLIC ROUTES ==================== */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/admin-login" element={<AdminLogin />} />
+      <Route path="/admin-register" element={<AdminRegister />} />
 
-        {/* User-protected */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/forecast" element={<Dashboard />} />
-          {/* other user routes */}
-        </Route>
+      {/* ==================== USER PROTECTED ROUTES ==================== */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/forecast" element={<Forecast />} />
+        <Route path="/alerts" element={<Alerts />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/support" element={<Support />} />
+      </Route>
 
-        {/* Admin-protected */}
-        <Route element={<AdminRoute />}>
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/sensors" element={<SensorsAdmin />} />
-          <Route path="/admin/thresholds" element={<ThresholdsAdmin />} />
-        </Route>
+      {/* ==================== ADMIN PROTECTED ROUTES ==================== */}
+      <Route element={<AdminRoute />}>
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<UsersAdmin />} />
+        <Route path="/admin/sensors" element={<SensorsAdmin />} />
+        <Route path="/admin/thresholds" element={<ThresholdsAdmin />} />
+        <Route path="/admin/alerts" element={<AlertsAdmin />} />
+        <Route path="/admin/reports" element={<ReportsAdmin />} />
+      </Route>
 
-        {/* fallback */}
-        <Route path="*" element={<Login />} />
-      </Routes>
-    </>
+      {/* ==================== FALLBACK ==================== */}
+      <Route path="*" element={<Login />} />
+    </Routes>
   );
 }
