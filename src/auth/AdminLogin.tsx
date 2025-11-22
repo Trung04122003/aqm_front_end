@@ -1,12 +1,13 @@
+// src/auth/AdminLogin.tsx (MILITARY COMMAND CENTER VIBE)
 import React, { useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { motion } from "framer-motion";
-import { FaUserShield, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaUserShield, FaLock, FaEye, FaEyeSlash, FaShieldAlt } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 const AdminLogin: React.FC = () => {
   const { loginAdmin } = useAuth();
-  const [usernameOrEmail, setusernameOrEmail] = useState("");
+  const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,196 +19,565 @@ const AdminLogin: React.FC = () => {
     setLoading(true);
     try {
       await loginAdmin(usernameOrEmail, password);
-    } catch (err: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const e: any = err;
-      setError(e?.response?.data || e?.message || "Admin login failed");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      setError(`⚠️ ${(err?.response?.data || err?.message || "ACCESS DENIED").toUpperCase()}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-gradient position-relative overflow-hidden">
-      {/* BG */}
-      <div
+    <div
+      className="min-vh-100 d-flex align-items-center justify-content-center position-relative overflow-hidden"
+      style={{ 
+        background: "#0a0e27",
+        fontFamily: "'Share Tech Mono', 'Courier New', monospace"
+      }}
+    >
+      {/* Animated Grid */}
+      <div 
         className="position-absolute w-100 h-100"
         style={{
-          background: "linear-gradient(135deg, #ff6b6b 0%, #d64ecf 100%)",
-          opacity: 0.9,
+          backgroundImage: `
+            linear-gradient(rgba(255,0,0,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,0,0,0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: "50px 50px",
+          animation: "gridMove 20s linear infinite"
         }}
       />
 
-      {/* Orbs */}
+      {/* Radar Sweep */}
       <motion.div
-        className="position-absolute rounded-circle"
+        className="position-absolute"
         style={{
-          width: 380,
-          height: 380,
-          background: "rgba(255,255,255,0.1)",
-          top: "-10%",
-          left: "-6%",
+          width: 800,
+          height: 800,
+          background: "conic-gradient(from 0deg, transparent 0%, rgba(255,0,0,0.3) 10%, transparent 20%)",
+          borderRadius: "50%",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          pointerEvents: "none"
         }}
-        animate={{ y: [0, 30, 0], rotate: [0, 75, 0] }}
-        transition={{ duration: 18, repeat: Infinity }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
       />
 
-      <motion.div
-        className="position-absolute rounded-circle"
-        style={{
-          width: 300,
-          height: 300,
-          background: "rgba(255,255,255,0.08)",
-          bottom: "-10%",
-          right: "-7%",
-        }}
-        animate={{ y: [0, -35, 0], rotate: [0, -80, 0] }}
-        transition={{ duration: 16, repeat: Infinity }}
-      />
+      {/* Corner Brackets */}
+      {[
+        { top: 20, left: 20, border: "borderTop: 3px solid #ff0000; borderLeft: 3px solid #ff0000" },
+        { top: 20, right: 20, border: "borderTop: 3px solid #ff0000; borderRight: 3px solid #ff0000" },
+        { bottom: 20, left: 20, border: "borderBottom: 3px solid #ff0000; borderLeft: 3px solid #ff0000" },
+        { bottom: 20, right: 20, border: "borderBottom: 3px solid #ff0000; borderRight: 3px solid #ff0000" }
+      ].map((corner, i) => (
+        <div key={i} className="position-absolute" style={{ ...corner, width: 80, height: 80 }}>
+          <div style={{ 
+            borderTop: corner.top ? "3px solid #ff0000" : "none",
+            borderBottom: corner.bottom ? "3px solid #ff0000" : "none",
+            borderLeft: corner.left ? "3px solid #ff0000" : "none",
+            borderRight: corner.right ? "3px solid #ff0000" : "none",
+            width: "100%", 
+            height: "100%" 
+          }} />
+        </div>
+      ))}
 
-      {/* Card */}
+      {/* Login Terminal */}
       <motion.div
-        initial={{ opacity: 0, y: 25 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="card border-0 shadow-lg position-relative"
-        style={{ width: "100%", maxWidth: 440, borderRadius: 20 }}
+        style={{
+          width: "100%",
+          maxWidth: 550,
+          background: "rgba(10, 14, 39, 0.95)",
+          border: "2px solid #ff0000",
+          boxShadow: "0 0 50px rgba(255, 0, 0, 0.5), inset 0 0 50px rgba(255, 0, 0, 0.1)",
+          backdropFilter: "blur(10px)",
+          position: "relative"
+        }}
       >
-        <div className="card-header bg-white text-center pt-5 pb-3 border-0">
-          <div
-            className="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+        {/* Header */}
+        <div
+          style={{
+            background: "linear-gradient(90deg, #ff0000 0%, #8b0000 100%)",
+            padding: "25px 30px",
+            borderBottom: "2px solid #ff0000",
+            position: "relative",
+            overflow: "hidden"
+          }}
+        >
+          <motion.div
+            className="position-absolute top-0 start-0 h-100"
             style={{
-              width: 80,
-              height: 80,
-              background: "linear-gradient(135deg, #d64ecf 0%, #ff6b6b 100%)",
-              boxShadow: "0 10px 30px rgba(255, 107, 107, 0.35)",
+              width: "100%",
+              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)",
             }}
-          >
-            <FaUserShield size={38} color="#fff" />
-          </div>
+            animate={{ x: ["-100%", "200%"] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          />
 
-          <h3 className="fw-bold" style={{ color: "#2d3748" }}>
-            Admin Portal
-          </h3>
-          <p className="text-muted small mb-0">Restricted Access Only</p>
+          <div className="text-center position-relative">
+            <motion.div
+              animate={{ 
+                boxShadow: ["0 0 20px #ff0000", "0 0 40px #ff0000", "0 0 20px #ff0000"]
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="d-inline-flex align-items-center justify-content-center mb-3"
+              style={{
+                width: 80,
+                height: 80,
+                background: "rgba(0, 0, 0, 0.3)",
+                border: "2px solid #ff0000"
+              }}
+            >
+              <FaShieldAlt size={45} color="#fff" />
+            </motion.div>
+
+            <div style={{ 
+              color: "#fff", 
+              fontSize: "28px", 
+              fontWeight: "bold",
+              letterSpacing: "4px",
+              textShadow: "0 0 10px #ff0000",
+              marginBottom: "5px"
+            }}>
+              ADMIN ACCESS
+            </div>
+            <div style={{ 
+              color: "rgba(255,255,255,0.7)", 
+              fontSize: "11px", 
+              letterSpacing: "2px" 
+            }}>
+              RESTRICTED AREA /// AUTHORIZED PERSONNEL ONLY
+            </div>
+          </div>
         </div>
 
-        <div className="card-body p-4 pt-3">
+        {/* Body */}
+        <div style={{ padding: "40px" }}>
+          {/* Status Indicator */}
+          <div 
+            className="mb-4 p-3"
+            style={{
+              background: "rgba(0, 255, 0, 0.05)",
+              border: "1px solid #00ff00",
+              borderLeft: "4px solid #00ff00"
+            }}
+          >
+            <div className="d-flex align-items-center gap-2" style={{ color: "#00ff00", fontSize: "12px" }}>
+              <motion.div
+                animate={{ opacity: [1, 0, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              >
+                ●
+              </motion.div>
+              SECURITY SYSTEM: ONLINE /// AWAITING CREDENTIALS
+            </div>
+          </div>
+
           {error && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="alert alert-danger mb-3"
-              style={{ borderRadius: 12 }}
+              className="mb-4 p-3"
+              style={{
+                background: "rgba(255, 0, 0, 0.1)",
+                border: "1px solid #ff0000",
+                borderLeft: "4px solid #ff0000",
+                color: "#ff0000",
+                fontSize: "12px",
+                letterSpacing: "1px"
+              }}
             >
               {error}
             </motion.div>
           )}
 
           <form onSubmit={submit}>
-            {/* usernameOrEmail */}
+            {/* Username */}
             <div className="mb-3">
-              <label className="form-label small fw-semibold text-muted">
-                Admin username
+              <label style={{ 
+                color: "#00ff00", 
+                fontSize: "11px", 
+                letterSpacing: "2px",
+                marginBottom: "8px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px"
+              }}>
+                <FaUserShield /> ADMIN USERNAME
               </label>
-              <div
-                className="input-group"
-                style={{ borderRadius: 12, overflow: "hidden" }}
-              >
-                <span className="input-group-text bg-light border-0">
-                  <FaUserShield className="text-muted" />
-                </span>
-                <input
-                  type="text"
-                  className="form-control bg-light border-0 ps-2"
-                  placeholder="Enter admin username"
-                  value={usernameOrEmail}
-                  onChange={(e) => setusernameOrEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                />
-              </div>
+              <input
+                type="text"
+                className="w-100"
+                style={{
+                  background: "rgba(0, 255, 0, 0.05)",
+                  border: "1px solid #00ff00",
+                  color: "#00ff00",
+                  padding: "12px 15px",
+                  fontSize: "14px",
+                  fontFamily: "inherit",
+                  outline: "none",
+                  transition: "all 0.3s"
+                }}
+                placeholder="ENTER ADMIN USERNAME"
+                value={usernameOrEmail}
+                onChange={(e) => setUsernameOrEmail(e.target.value)}
+                required
+                disabled={loading}
+                onFocus={(e) => e.target.style.boxShadow = "0 0 15px #00ff00"}
+                onBlur={(e) => e.target.style.boxShadow = "none"}
+              />
             </div>
 
-            {/* PASSWORD */}
+            {/* Password */}
             <div className="mb-4">
-              <label className="form-label small fw-semibold text-muted">
-                Password
+              <label style={{ 
+                color: "#00ff00", 
+                fontSize: "11px", 
+                letterSpacing: "2px",
+                marginBottom: "8px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px"
+              }}>
+                <FaLock /> PASSWORD
               </label>
-              <div
-                className="input-group"
-                style={{ borderRadius: 12, overflow: "hidden" }}
-              >
-                <span className="input-group-text bg-light border-0">
-                  <FaLock className="text-muted" />
-                </span>
-
+              <div className="position-relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  className="form-control bg-light border-0 ps-2"
-                  placeholder="Enter admin password"
+                  className="w-100"
+                  style={{
+                    background: "rgba(0, 255, 0, 0.05)",
+                    border: "1px solid #00ff00",
+                    color: "#00ff00",
+                    padding: "12px 45px 12px 15px",
+                    fontSize: "14px",
+                    fontFamily: "inherit"
+                  }}
+                  placeholder="ENTER SECURE PASSWORD"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
                 />
-
                 <button
                   type="button"
-                  className="btn bg-light border-0"
+                  className="position-absolute"
+                  style={{
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: "#00ff00",
+                    cursor: "pointer"
+                  }}
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
                 >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                 </button>
               </div>
             </div>
 
-            {/* BTN */}
+            {/* Submit */}
             <motion.button
               whileHover={{ scale: loading ? 1 : 1.02 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
-              className="btn w-100 text-white fw-semibold py-3 border-0 shadow"
-              style={{
-                background: "linear-gradient(135deg, #ff6b6b 0%, #d64ecf 100%)",
-                borderRadius: 12,
-                fontSize: 16,
-              }}
+              className="w-100"
               type="submit"
               disabled={loading}
+              style={{
+                background: loading ? "#555" : "linear-gradient(90deg, #ff0000, #8b0000)",
+                border: "2px solid #ff0000",
+                color: "#fff",
+                padding: "15px",
+                fontSize: "14px",
+                fontWeight: "bold",
+                letterSpacing: "3px",
+                cursor: loading ? "not-allowed" : "pointer",
+                boxShadow: "0 0 20px rgba(255, 0, 0, 0.5)"
+              }}
             >
               {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" />
-                  Verifying...
+                  VERIFYING...
                 </>
               ) : (
-                "Login as Admin"
+                <>
+                  <FaShieldAlt className="me-2" />
+                  AUTHENTICATE
+                </>
               )}
             </motion.button>
           </form>
         </div>
 
-        <div className="card-footer text-center bg-light border-0 py-4">
-          <p className="text-muted small mb-0">
-            Return to{" "}
-            <Link
-              to="/login"
-              className="fw-semibold"
-              style={{ color: "#ff6b6b" }}
-            >
-              User Login
-            </Link>
-          </p>
+        {/* Footer */}
+        <div
+          style={{
+            borderTop: "2px solid #ff0000",
+            padding: "20px 40px",
+            background: "rgba(0, 0, 0, 0.3)"
+          }}
+        >
+          <div className="text-center">
+            <div style={{ color: "#00ff00", fontSize: "11px", letterSpacing: "2px", marginBottom: "10px" }}>
+              NEED ADMIN CLEARANCE?{" "}
+              <Link
+                to="/admin-register"
+                style={{ 
+                  color: "#ff0000", 
+                  textDecoration: "none",
+                  fontWeight: "bold"
+                }}
+              >
+                REQUEST ACCESS
+              </Link>
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "10px" }}>
+              <Link
+                to="/login"
+                style={{ color: "rgba(255,255,255,0.4)", textDecoration: "none" }}
+              >
+                ← RETURN TO USER PORTAL
+              </Link>
+            </div>
+          </div>
         </div>
       </motion.div>
-      <div className="min-vh-100 d-flex align-items-center justify-content-center bg-gradient position-relative overflow-hidden">
-        {/* ... (paste the visual body you liked earlier) */}
-        {/* For brevity, reuse the AdminLogin UI provided earlier by Claude */}
-        {/* Ensure form submits to submit() */}
-      </div>
+
+      <style>{`
+        @keyframes gridMove {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(50px); }
+        }
+        input::placeholder {
+          color: rgba(0, 255, 0, 0.4);
+          letter-spacing: 1px;
+        }
+      `}</style>
     </div>
   );
 };
 
 export default AdminLogin;
+
+// import React, { useState } from "react";
+// import { useAuth } from "./AuthProvider";
+// import { motion } from "framer-motion";
+// import { FaUserShield, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+// import { Link } from "react-router-dom";
+
+// const AdminLogin: React.FC = () => {
+//   const { loginAdmin } = useAuth();
+//   const [usernameOrEmail, setusernameOrEmail] = useState("");
+//   const [password, setPassword] = useState("");
+//   const [showPassword, setShowPassword] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
+//   const [loading, setLoading] = useState(false);
+
+//   const submit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+//     setError(null);
+//     setLoading(true);
+//     try {
+//       await loginAdmin(usernameOrEmail, password);
+//     } catch (err: unknown) {
+//       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//       const e: any = err;
+//       setError(e?.response?.data || e?.message || "Admin login failed");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div className="min-vh-100 d-flex align-items-center justify-content-center bg-gradient position-relative overflow-hidden">
+//       {/* BG */}
+//       <div
+//         className="position-absolute w-100 h-100"
+//         style={{
+//           background: "linear-gradient(135deg, #ff6b6b 0%, #d64ecf 100%)",
+//           opacity: 0.9,
+//         }}
+//       />
+
+//       {/* Orbs */}
+//       <motion.div
+//         className="position-absolute rounded-circle"
+//         style={{
+//           width: 380,
+//           height: 380,
+//           background: "rgba(255,255,255,0.1)",
+//           top: "-10%",
+//           left: "-6%",
+//         }}
+//         animate={{ y: [0, 30, 0], rotate: [0, 75, 0] }}
+//         transition={{ duration: 18, repeat: Infinity }}
+//       />
+
+//       <motion.div
+//         className="position-absolute rounded-circle"
+//         style={{
+//           width: 300,
+//           height: 300,
+//           background: "rgba(255,255,255,0.08)",
+//           bottom: "-10%",
+//           right: "-7%",
+//         }}
+//         animate={{ y: [0, -35, 0], rotate: [0, -80, 0] }}
+//         transition={{ duration: 16, repeat: Infinity }}
+//       />
+
+//       {/* Card */}
+//       <motion.div
+//         initial={{ opacity: 0, y: 25 }}
+//         animate={{ opacity: 1, y: 0 }}
+//         transition={{ duration: 0.5 }}
+//         className="card border-0 shadow-lg position-relative"
+//         style={{ width: "100%", maxWidth: 440, borderRadius: 20 }}
+//       >
+//         <div className="card-header bg-white text-center pt-5 pb-3 border-0">
+//           <div
+//             className="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+//             style={{
+//               width: 80,
+//               height: 80,
+//               background: "linear-gradient(135deg, #d64ecf 0%, #ff6b6b 100%)",
+//               boxShadow: "0 10px 30px rgba(255, 107, 107, 0.35)",
+//             }}
+//           >
+//             <FaUserShield size={38} color="#fff" />
+//           </div>
+
+//           <h3 className="fw-bold" style={{ color: "#2d3748" }}>
+//             Admin Portal
+//           </h3>
+//           <p className="text-muted small mb-0">Restricted Access Only</p>
+//         </div>
+
+//         <div className="card-body p-4 pt-3">
+//           {error && (
+//             <motion.div
+//               initial={{ opacity: 0, x: -20 }}
+//               animate={{ opacity: 1, x: 0 }}
+//               className="alert alert-danger mb-3"
+//               style={{ borderRadius: 12 }}
+//             >
+//               {error}
+//             </motion.div>
+//           )}
+
+//           <form onSubmit={submit}>
+//             {/* usernameOrEmail */}
+//             <div className="mb-3">
+//               <label className="form-label small fw-semibold text-muted">
+//                 Admin username
+//               </label>
+//               <div
+//                 className="input-group"
+//                 style={{ borderRadius: 12, overflow: "hidden" }}
+//               >
+//                 <span className="input-group-text bg-light border-0">
+//                   <FaUserShield className="text-muted" />
+//                 </span>
+//                 <input
+//                   type="text"
+//                   className="form-control bg-light border-0 ps-2"
+//                   placeholder="Enter admin username"
+//                   value={usernameOrEmail}
+//                   onChange={(e) => setusernameOrEmail(e.target.value)}
+//                   required
+//                   disabled={loading}
+//                 />
+//               </div>
+//             </div>
+
+//             {/* PASSWORD */}
+//             <div className="mb-4">
+//               <label className="form-label small fw-semibold text-muted">
+//                 Password
+//               </label>
+//               <div
+//                 className="input-group"
+//                 style={{ borderRadius: 12, overflow: "hidden" }}
+//               >
+//                 <span className="input-group-text bg-light border-0">
+//                   <FaLock className="text-muted" />
+//                 </span>
+
+//                 <input
+//                   type={showPassword ? "text" : "password"}
+//                   className="form-control bg-light border-0 ps-2"
+//                   placeholder="Enter admin password"
+//                   value={password}
+//                   onChange={(e) => setPassword(e.target.value)}
+//                   required
+//                   disabled={loading}
+//                 />
+
+//                 <button
+//                   type="button"
+//                   className="btn bg-light border-0"
+//                   onClick={() => setShowPassword(!showPassword)}
+//                   disabled={loading}
+//                 >
+//                   {showPassword ? <FaEyeSlash /> : <FaEye />}
+//                 </button>
+//               </div>
+//             </div>
+
+//             {/* BTN */}
+//             <motion.button
+//               whileHover={{ scale: loading ? 1 : 1.02 }}
+//               whileTap={{ scale: loading ? 1 : 0.98 }}
+//               className="btn w-100 text-white fw-semibold py-3 border-0 shadow"
+//               style={{
+//                 background: "linear-gradient(135deg, #ff6b6b 0%, #d64ecf 100%)",
+//                 borderRadius: 12,
+//                 fontSize: 16,
+//               }}
+//               type="submit"
+//               disabled={loading}
+//             >
+//               {loading ? (
+//                 <>
+//                   <span className="spinner-border spinner-border-sm me-2" />
+//                   Verifying...
+//                 </>
+//               ) : (
+//                 "Login as Admin"
+//               )}
+//             </motion.button>
+//           </form>
+//         </div>
+
+//         <div className="card-footer text-center bg-light border-0 py-4">
+//           <p className="text-muted small mb-0">
+//             Return to{" "}
+//             <Link
+//               to="/login"
+//               className="fw-semibold"
+//               style={{ color: "#ff6b6b" }}
+//             >
+//               User Login
+//             </Link>
+//           </p>
+//         </div>
+//       </motion.div>
+//       <div className="min-vh-100 d-flex align-items-center justify-content-center bg-gradient position-relative overflow-hidden">
+//         {/* ... (paste the visual body you liked earlier) */}
+//         {/* For brevity, reuse the AdminLogin UI provided earlier by Claude */}
+//         {/* Ensure form submits to submit() */}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default AdminLogin;
