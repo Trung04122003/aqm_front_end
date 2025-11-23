@@ -272,22 +272,33 @@ export default function Alerts() {
         className="mb-4"
       >
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h2 className="mb-1 fw-bold d-flex align-items-center gap-2" style={{ color: "#1e293b" }}>
-              🔔 Air Quality Alerts
-              {unreadCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="badge bg-danger rounded-pill"
-                >
-                  {unreadCount}
-                </motion.span>
-              )}
-            </h2>
-            <p className="text-muted mb-0">
-              Real-time notifications when air quality exceeds your thresholds
-            </p>
+          <div className="d-flex align-items-center gap-3">
+            <motion.a
+              href="/"
+              whileHover={{ scale: 1.1, x: -5 }}
+              whileTap={{ scale: 0.9 }}
+              className="btn btn-light rounded-circle d-flex align-items-center justify-content-center"
+              style={{ width: 48, height: 48, textDecoration: "none" }}
+            >
+              <span style={{ fontSize: "20px" }}>←</span>
+            </motion.a>
+            <div>
+              <h2 className="mb-1 fw-bold d-flex align-items-center gap-2" style={{ color: "#1e293b" }}>
+                🔔 Air Quality Alerts
+                {unreadCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="badge bg-danger rounded-pill"
+                  >
+                    {unreadCount}
+                  </motion.span>
+                )}
+              </h2>
+              <p className="text-muted mb-0">
+                Real-time notifications when air quality exceeds your thresholds
+              </p>
+            </div>
           </div>
           
           {unreadCount > 0 && (
@@ -391,18 +402,3 @@ export default function Alerts() {
     </div>
   );
 }
-
-// // src/pages/Alerts.tsx
-// import React from "react";
-// import MainLayout from "../layouts/MainLayout";
-
-// const Alerts: React.FC = () => {
-//   return (
-//     <MainLayout>
-//       <h2>Alerts</h2>
-//       <p>Placeholder alerts list for current user.</p>
-//     </MainLayout>
-//   );
-// };
-
-// export default Alerts;
