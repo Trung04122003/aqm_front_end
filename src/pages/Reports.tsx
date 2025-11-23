@@ -1,45 +1,46 @@
 // src/pages/Reports.tsx (ENHANCED - PHASE 4)
 import { useEffect, useState } from "react";
+import api from "../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Mock API
-const mockApi = {
-  get: async (_url: string) => {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    if (_url === "/locations") {
-      return { 
-        data: [
-          { id: 1, name: "Hanoi" },
-          { id: 2, name: "Ho Chi Minh" },
-          { id: 3, name: "Da Nang" }
-        ]
-      };
-    }
-    
-    if (_url.includes("/reports")) {
-      return {
-        data: {
-          locationId: 1,
-          locationName: "Hanoi",
-          fromDate: "2025-01-01",
-          toDate: "2025-01-31",
-          avgPm25: 42.5,
-          avgPm10: 68.3,
-          avgAqi: 105,
-          maxAqi: 178,
-          minAqi: 45,
-          goodDays: 8,
-          moderateDays: 15,
-          unhealthyDays: 8,
-          totalDataPoints: 744
-        }
-      };
-    }
-    
-    return { data: [] };
-  }
-};
+// const mockApi = {
+//   get: async (_url: string) => {
+//     await new Promise(resolve => setTimeout(resolve, 800));
+
+//     if (_url === "/locations") {
+//       return {
+//         data: [
+//           { id: 1, name: "Hanoi" },
+//           { id: 2, name: "Ho Chi Minh" },
+//           { id: 3, name: "Da Nang" }
+//         ]
+//       };
+//     }
+
+//     if (_url.includes("/reports")) {
+//       return {
+//         data: {
+//           locationId: 1,
+//           locationName: "Hanoi",
+//           fromDate: "2025-01-01",
+//           toDate: "2025-01-31",
+//           avgPm25: 42.5,
+//           avgPm10: 68.3,
+//           avgAqi: 105,
+//           maxAqi: 178,
+//           minAqi: 45,
+//           goodDays: 8,
+//           moderateDays: 15,
+//           unhealthyDays: 8,
+//           totalDataPoints: 744
+//         }
+//       };
+//     }
+
+//     return { data: [] };
+//   }
+// };
 
 type Location = { id: number; name: string };
 type Report = {
@@ -58,16 +59,16 @@ type Report = {
   totalDataPoints: number;
 };
 
-const StatCard = ({ 
-  icon, 
-  label, 
-  value, 
-  color, 
-  suffix = "" 
-}: { 
-  icon: string; 
-  label: string; 
-  value: number | string; 
+const StatCard = ({
+  icon,
+  label,
+  value,
+  color,
+  suffix = "",
+}: {
+  icon: string;
+  label: string;
+  value: number | string;
   color: string;
   suffix?: string;
 }) => (
@@ -80,20 +81,21 @@ const StatCard = ({
   >
     <div className="card-body p-4">
       <div className="d-flex justify-content-between align-items-start mb-3">
-        <div 
+        <div
           className="rounded-circle d-flex align-items-center justify-content-center"
-          style={{ 
-            width: 48, 
-            height: 48, 
+          style={{
+            width: 48,
+            height: 48,
             background: `${color}15`,
-            fontSize: "24px"
+            fontSize: "24px",
           }}
         >
           {icon}
         </div>
       </div>
       <div className="h3 fw-bold mb-1" style={{ color }}>
-        {value}{suffix}
+        {value}
+        {suffix}
       </div>
       <div className="text-muted small">{label}</div>
     </div>
@@ -113,14 +115,18 @@ export default function Reports() {
     loadLocations();
     // Set default dates (last 30 days)
     const today = new Date();
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
-    setToDate(today.toISOString().split('T')[0]);
-    setFromDate(lastMonth.toISOString().split('T')[0]);
+    const lastMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() - 1,
+      today.getDate()
+    );
+    setToDate(today.toISOString().split("T")[0]);
+    setFromDate(lastMonth.toISOString().split("T")[0]);
   }, []);
 
   const loadLocations = async () => {
     try {
-      const res = await mockApi.get("/locations");
+      const res = await api.get("/locations");
       setLocations(res.data || []);
       if (res.data.length > 0) setSelectedLocation(res.data[0].id);
     } catch (err) {
@@ -137,8 +143,8 @@ export default function Reports() {
     setLoading(true);
     setError(null);
     try {
-      const res = await mockApi.get(
-        `/reports?location=${selectedLocation}&from=${fromDate}&to=${toDate}`
+      const res = await api.get(
+        `/reports?locationId=${selectedLocation}&from=${fromDate}&to=${toDate}`
       );
       setReport(res.data);
     } catch (err) {
@@ -153,7 +159,9 @@ export default function Reports() {
     alert("📥 Download feature coming soon! Report will be exported as PDF.");
   };
 
-  const totalDays = report ? report.goodDays + report.moderateDays + report.unhealthyDays : 0;
+  const totalDays = report
+    ? report.goodDays + report.moderateDays + report.unhealthyDays
+    : 0;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8fafc", padding: "2rem" }}>
@@ -304,20 +312,24 @@ export default function Reports() {
           animate={{ opacity: 1, y: 0 }}
         >
           {/* Report Header */}
-          <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 16 }}>
-            <div 
+          <div
+            className="card border-0 shadow-sm mb-4"
+            style={{ borderRadius: 16 }}
+          >
+            <div
               className="card-body p-4 text-white"
               style={{
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
               }}
             >
-              <h4 className="mb-2 fw-bold">
-                Air Quality Report
-              </h4>
+              <h4 className="mb-2 fw-bold">Air Quality Report</h4>
               <div className="d-flex align-items-center gap-3 flex-wrap">
                 <span>📍 {report.locationName}</span>
                 <span>•</span>
-                <span>📅 {new Date(report.fromDate).toLocaleDateString()} - {new Date(report.toDate).toLocaleDateString()}</span>
+                <span>
+                  📅 {new Date(report.fromDate).toLocaleDateString()} -{" "}
+                  {new Date(report.toDate).toLocaleDateString()}
+                </span>
                 <span>•</span>
                 <span>📊 {report.totalDataPoints} data points</span>
               </div>
@@ -363,20 +375,23 @@ export default function Reports() {
           </div>
 
           {/* Air Quality Distribution */}
-          <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 16 }}>
+          <div
+            className="card border-0 shadow-sm mb-4"
+            style={{ borderRadius: 16 }}
+          >
             <div className="card-body p-4">
               <h5 className="mb-4">📊 Air Quality Distribution</h5>
-              
+
               <div className="row g-4">
                 <div className="col-md-4">
                   <div className="text-center">
-                    <div 
+                    <div
                       className="mx-auto mb-3 rounded-circle d-flex align-items-center justify-content-center"
                       style={{
                         width: 100,
                         height: 100,
                         background: "linear-gradient(135deg, #10b981, #059669)",
-                        boxShadow: "0 8px 24px rgba(16, 185, 129, 0.3)"
+                        boxShadow: "0 8px 24px rgba(16, 185, 129, 0.3)",
                       }}
                     >
                       <div className="text-white">
@@ -384,55 +399,68 @@ export default function Reports() {
                         <div className="small">days</div>
                       </div>
                     </div>
-                    <div className="fw-semibold" style={{ color: "#10b981" }}>😊 Good</div>
+                    <div className="fw-semibold" style={{ color: "#10b981" }}>
+                      😊 Good
+                    </div>
                     <div className="text-muted small">
-                      {((report.goodDays / totalDays) * 100).toFixed(0)}% of period
+                      {((report.goodDays / totalDays) * 100).toFixed(0)}% of
+                      period
                     </div>
                   </div>
                 </div>
 
                 <div className="col-md-4">
                   <div className="text-center">
-                    <div 
+                    <div
                       className="mx-auto mb-3 rounded-circle d-flex align-items-center justify-content-center"
                       style={{
                         width: 100,
                         height: 100,
                         background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                        boxShadow: "0 8px 24px rgba(245, 158, 11, 0.3)"
+                        boxShadow: "0 8px 24px rgba(245, 158, 11, 0.3)",
                       }}
                     >
                       <div className="text-white">
-                        <div className="h2 fw-bold mb-0">{report.moderateDays}</div>
+                        <div className="h2 fw-bold mb-0">
+                          {report.moderateDays}
+                        </div>
                         <div className="small">days</div>
                       </div>
                     </div>
-                    <div className="fw-semibold" style={{ color: "#f59e0b" }}>😐 Moderate</div>
+                    <div className="fw-semibold" style={{ color: "#f59e0b" }}>
+                      😐 Moderate
+                    </div>
                     <div className="text-muted small">
-                      {((report.moderateDays / totalDays) * 100).toFixed(0)}% of period
+                      {((report.moderateDays / totalDays) * 100).toFixed(0)}% of
+                      period
                     </div>
                   </div>
                 </div>
 
                 <div className="col-md-4">
                   <div className="text-center">
-                    <div 
+                    <div
                       className="mx-auto mb-3 rounded-circle d-flex align-items-center justify-content-center"
                       style={{
                         width: 100,
                         height: 100,
                         background: "linear-gradient(135deg, #ef4444, #dc2626)",
-                        boxShadow: "0 8px 24px rgba(239, 68, 68, 0.3)"
+                        boxShadow: "0 8px 24px rgba(239, 68, 68, 0.3)",
                       }}
                     >
                       <div className="text-white">
-                        <div className="h2 fw-bold mb-0">{report.unhealthyDays}</div>
+                        <div className="h2 fw-bold mb-0">
+                          {report.unhealthyDays}
+                        </div>
                         <div className="small">days</div>
                       </div>
                     </div>
-                    <div className="fw-semibold" style={{ color: "#ef4444" }}>😷 Unhealthy</div>
+                    <div className="fw-semibold" style={{ color: "#ef4444" }}>
+                      😷 Unhealthy
+                    </div>
                     <div className="text-muted small">
-                      {((report.unhealthyDays / totalDays) * 100).toFixed(0)}% of period
+                      {((report.unhealthyDays / totalDays) * 100).toFixed(0)}%
+                      of period
                     </div>
                   </div>
                 </div>
@@ -440,23 +468,26 @@ export default function Reports() {
 
               {/* Progress Bar */}
               <div className="mt-4">
-                <div className="d-flex" style={{ height: 24, borderRadius: 12, overflow: "hidden" }}>
-                  <div 
-                    style={{ 
+                <div
+                  className="d-flex"
+                  style={{ height: 24, borderRadius: 12, overflow: "hidden" }}
+                >
+                  <div
+                    style={{
                       width: `${(report.goodDays / totalDays) * 100}%`,
-                      background: "#10b981"
+                      background: "#10b981",
                     }}
                   />
-                  <div 
-                    style={{ 
+                  <div
+                    style={{
                       width: `${(report.moderateDays / totalDays) * 100}%`,
-                      background: "#f59e0b"
+                      background: "#f59e0b",
                     }}
                   />
-                  <div 
-                    style={{ 
+                  <div
+                    style={{
                       width: `${(report.unhealthyDays / totalDays) * 100}%`,
-                      background: "#ef4444"
+                      background: "#ef4444",
                     }}
                   />
                 </div>
@@ -469,15 +500,28 @@ export default function Reports() {
             <div className="card-body p-4">
               <h5 className="mb-3">📝 Summary</h5>
               <p className="text-muted mb-2">
-                During the period from <strong>{new Date(report.fromDate).toLocaleDateString()}</strong> to <strong>{new Date(report.toDate).toLocaleDateString()}</strong>, 
-                the air quality in <strong>{report.locationName}</strong> averaged an AQI of <strong>{report.avgAqi}</strong>, 
-                which is considered <strong>{report.avgAqi > 100 ? "Moderate to Unhealthy" : "Good to Moderate"}</strong>.
+                During the period from{" "}
+                <strong>
+                  {new Date(report.fromDate).toLocaleDateString()}
+                </strong>{" "}
+                to{" "}
+                <strong>{new Date(report.toDate).toLocaleDateString()}</strong>,
+                the air quality in <strong>{report.locationName}</strong>{" "}
+                averaged an AQI of <strong>{report.avgAqi}</strong>, which is
+                considered{" "}
+                <strong>
+                  {report.avgAqi > 100
+                    ? "Moderate to Unhealthy"
+                    : "Good to Moderate"}
+                </strong>
+                .
               </p>
               <p className="text-muted mb-0">
-                The location experienced <strong>{report.goodDays} good days</strong>, 
-                <strong> {report.moderateDays} moderate days</strong>, and 
-                <strong> {report.unhealthyDays} unhealthy days</strong>. 
-                Peak pollution reached an AQI of <strong>{report.maxAqi}</strong>.
+                The location experienced{" "}
+                <strong>{report.goodDays} good days</strong>,
+                <strong> {report.moderateDays} moderate days</strong>, and
+                <strong> {report.unhealthyDays} unhealthy days</strong>. Peak
+                pollution reached an AQI of <strong>{report.maxAqi}</strong>.
               </p>
             </div>
           </div>
@@ -492,7 +536,9 @@ export default function Reports() {
           className="card border-0 shadow-sm text-center py-5"
           style={{ borderRadius: 20 }}
         >
-          <div style={{ fontSize: "5rem" }} className="mb-3">📊</div>
+          <div style={{ fontSize: "5rem" }} className="mb-3">
+            📊
+          </div>
           <h5 className="mb-2">No Report Generated Yet</h5>
           <p className="text-muted">
             Select a location and date range, then click "Generate Report"

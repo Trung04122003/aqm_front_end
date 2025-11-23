@@ -1,60 +1,62 @@
 // src/pages/Support.tsx (ENHANCED - PHASE 4)
 import { useEffect, useState } from "react";
+import api from "../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-toastify";
 
 // Mock API
-const mockApi = {
-  get: async (url: string) => {
-    await new Promise(resolve => setTimeout(resolve, 600));
-    
-    if (url === "/support/my") {
-      return {
-        data: [
-          {
-            id: 1,
-            subject: "Dashboard not loading data",
-            message: "The dashboard shows loading spinner but never displays data.",
-            status: "OPEN",
-            submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            adminReply: null
-          },
-          {
-            id: 2,
-            subject: "Alert notifications not working",
-            message: "I set up alert thresholds but I'm not receiving any notifications.",
-            status: "IN_PROGRESS",
-            submittedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            adminReply: "We're investigating this issue. Will update you soon."
-          },
-          {
-            id: 3,
-            subject: "How to export reports?",
-            message: "Is there a way to export air quality reports as PDF?",
-            status: "RESOLVED",
-            submittedAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-            adminReply: "Yes! Click the 'Download PDF' button in the Reports page after generating a report."
-          }
-        ]
-      };
-    }
-    
-    return { data: [] };
-  },
-  
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  post: async (_url: string, data: any) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { 
-      data: {
-        id: Date.now(),
-        ...data,
-        status: "OPEN",
-        submittedAt: new Date().toISOString(),
-        adminReply: null
-      }
-    };
-  }
-};
+// const mockApi = {
+//   get: async (url: string) => {
+//     await new Promise(resolve => setTimeout(resolve, 600));
+
+//     if (url === "/support/my") {
+//       return {
+//         data: [
+//           {
+//             id: 1,
+//             subject: "Dashboard not loading data",
+//             message: "The dashboard shows loading spinner but never displays data.",
+//             status: "OPEN",
+//             submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+//             adminReply: null
+//           },
+//           {
+//             id: 2,
+//             subject: "Alert notifications not working",
+//             message: "I set up alert thresholds but I'm not receiving any notifications.",
+//             status: "IN_PROGRESS",
+//             submittedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+//             adminReply: "We're investigating this issue. Will update you soon."
+//           },
+//           {
+//             id: 3,
+//             subject: "How to export reports?",
+//             message: "Is there a way to export air quality reports as PDF?",
+//             status: "RESOLVED",
+//             submittedAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
+//             adminReply: "Yes! Click the 'Download PDF' button in the Reports page after generating a report."
+//           }
+//         ]
+//       };
+//     }
+
+//     return { data: [] };
+//   },
+
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   post: async (_url: string, data: any) => {
+//     await new Promise(resolve => setTimeout(resolve, 500));
+//     return {
+//       data: {
+//         id: Date.now(),
+//         ...data,
+//         status: "OPEN",
+//         submittedAt: new Date().toISOString(),
+//         adminReply: null
+//       }
+//     };
+//   }
+// };
 
 type Ticket = {
   id: number;
@@ -66,20 +68,14 @@ type Ticket = {
 };
 
 const TicketCard = ({ ticket }: { ticket: Ticket }) => {
-  const statusConfig = {
-    OPEN: { color: "#3b82f6", bg: "#eff6ff", label: "Open", icon: "🆕" },
-    IN_PROGRESS: { color: "#f59e0b", bg: "#fffbeb", label: "In Progress", icon: "⏳" },
-    RESOLVED: { color: "#10b981", bg: "#f0fdf4", label: "Resolved", icon: "✅" }
-  };
-
-  const config = statusConfig[ticket.status];
+  const config = { color: "#000", bg: "#fff", label: "Unknown", icon: "❓" };
 
   const formatTime = (ts: string) => {
     const date = new Date(ts);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    
+
     if (diffHours < 24) return `${diffHours}h ago`;
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays < 7) return `${diffDays}d ago`;
@@ -94,10 +90,7 @@ const TicketCard = ({ ticket }: { ticket: Ticket }) => {
       className="card border-0 shadow-sm mb-3"
       style={{ borderRadius: 16, overflow: "hidden" }}
     >
-      <div 
-        className="px-4 py-3"
-        style={{ background: config.bg }}
-      >
+      <div className="px-4 py-3" style={{ background: config.bg }}>
         <div className="d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center gap-2">
             <span style={{ fontSize: "20px" }}>{config.icon}</span>
@@ -106,10 +99,15 @@ const TicketCard = ({ ticket }: { ticket: Ticket }) => {
             </h6>
           </div>
           <div className="d-flex align-items-center gap-2">
-            <span className="badge" style={{ background: config.color, fontSize: "0.75rem" }}>
+            <span
+              className="badge"
+              style={{ background: config.color, fontSize: "0.75rem" }}
+            >
               {config.label}
             </span>
-            <span className="text-muted small">{formatTime(ticket.submittedAt)}</span>
+            <span className="text-muted small">
+              {formatTime(ticket.submittedAt)}
+            </span>
           </div>
         </div>
       </div>
@@ -117,7 +115,9 @@ const TicketCard = ({ ticket }: { ticket: Ticket }) => {
       <div className="card-body p-4">
         <div className="mb-3">
           <div className="small text-muted mb-1">Your Message:</div>
-          <p className="mb-0" style={{ color: "#475569" }}>{ticket.message}</p>
+          <p className="mb-0" style={{ color: "#475569" }}>
+            {ticket.message}
+          </p>
         </div>
 
         {ticket.adminReply && (
@@ -129,7 +129,9 @@ const TicketCard = ({ ticket }: { ticket: Ticket }) => {
           >
             <div className="d-flex align-items-center gap-2 mb-2">
               <span style={{ fontSize: "18px" }}>👨‍💼</span>
-              <span className="small fw-semibold text-muted">Admin Response:</span>
+              <span className="small fw-semibold text-muted">
+                Admin Response:
+              </span>
             </div>
             <p className="mb-0 small" style={{ color: "#475569" }}>
               {ticket.adminReply}
@@ -146,7 +148,7 @@ export default function Support() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  
+
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
 
@@ -157,10 +159,11 @@ export default function Support() {
   const loadTickets = async () => {
     setLoading(true);
     try {
-      const res = await mockApi.get("/support/my");
+      const res = await api.get("/support/my");
       setTickets(res.data || []);
     } catch (err) {
       console.error(err);
+      toast.error("Failed to load tickets");
     } finally {
       setLoading(false);
     }
@@ -168,31 +171,33 @@ export default function Support() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!subject.trim() || !message.trim()) {
-      alert("Please fill all fields");
+      toast.error("Please fill all fields");
       return;
     }
 
     setSubmitting(true);
     try {
-      const res = await mockApi.post("/support", { subject, message });
-      setTickets(prev => [res.data, ...prev]);
+      const res = await api.post("/support", { subject, message });
+      setTickets((prev) => [res.data, ...prev]);
       setSubject("");
       setMessage("");
       setShowForm(false);
-      alert("✅ Ticket submitted successfully!");
+      toast.success("Ticket submitted successfully!");
     } catch (err) {
       console.error(err);
-      alert("❌ Failed to submit ticket");
+      toast.error("Failed to submit ticket");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const openCount = tickets.filter(t => t.status === "OPEN").length;
-  const inProgressCount = tickets.filter(t => t.status === "IN_PROGRESS").length;
-  const resolvedCount = tickets.filter(t => t.status === "RESOLVED").length;
+  const openCount = tickets.filter((t) => t.status === "OPEN").length;
+  const inProgressCount = tickets.filter(
+    (t) => t.status === "IN_PROGRESS"
+  ).length;
+  const resolvedCount = tickets.filter((t) => t.status === "RESOLVED").length;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8fafc", padding: "2rem" }}>
@@ -238,16 +243,26 @@ export default function Support() {
         {/* Stats Cards */}
         <div className="row g-3 mb-4">
           <div className="col-md-4">
-            <div className="card border-0 shadow-sm" style={{ borderRadius: 16 }}>
+            <div
+              className="card border-0 shadow-sm"
+              style={{ borderRadius: 16 }}
+            >
               <div className="card-body p-3 d-flex align-items-center gap-3">
-                <div 
+                <div
                   className="rounded-circle d-flex align-items-center justify-content-center"
-                  style={{ width: 48, height: 48, background: "#eff6ff", fontSize: "24px" }}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    background: "#eff6ff",
+                    fontSize: "24px",
+                  }}
                 >
                   🆕
                 </div>
                 <div>
-                  <div className="h4 mb-0 fw-bold" style={{ color: "#3b82f6" }}>{openCount}</div>
+                  <div className="h4 mb-0 fw-bold" style={{ color: "#3b82f6" }}>
+                    {openCount}
+                  </div>
                   <div className="small text-muted">Open Tickets</div>
                 </div>
               </div>
@@ -255,16 +270,26 @@ export default function Support() {
           </div>
 
           <div className="col-md-4">
-            <div className="card border-0 shadow-sm" style={{ borderRadius: 16 }}>
+            <div
+              className="card border-0 shadow-sm"
+              style={{ borderRadius: 16 }}
+            >
               <div className="card-body p-3 d-flex align-items-center gap-3">
-                <div 
+                <div
                   className="rounded-circle d-flex align-items-center justify-content-center"
-                  style={{ width: 48, height: 48, background: "#fffbeb", fontSize: "24px" }}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    background: "#fffbeb",
+                    fontSize: "24px",
+                  }}
                 >
                   ⏳
                 </div>
                 <div>
-                  <div className="h4 mb-0 fw-bold" style={{ color: "#f59e0b" }}>{inProgressCount}</div>
+                  <div className="h4 mb-0 fw-bold" style={{ color: "#f59e0b" }}>
+                    {inProgressCount}
+                  </div>
                   <div className="small text-muted">In Progress</div>
                 </div>
               </div>
@@ -272,16 +297,26 @@ export default function Support() {
           </div>
 
           <div className="col-md-4">
-            <div className="card border-0 shadow-sm" style={{ borderRadius: 16 }}>
+            <div
+              className="card border-0 shadow-sm"
+              style={{ borderRadius: 16 }}
+            >
               <div className="card-body p-3 d-flex align-items-center gap-3">
-                <div 
+                <div
                   className="rounded-circle d-flex align-items-center justify-content-center"
-                  style={{ width: 48, height: 48, background: "#f0fdf4", fontSize: "24px" }}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    background: "#f0fdf4",
+                    fontSize: "24px",
+                  }}
                 >
                   ✅
                 </div>
                 <div>
-                  <div className="h4 mb-0 fw-bold" style={{ color: "#10b981" }}>{resolvedCount}</div>
+                  <div className="h4 mb-0 fw-bold" style={{ color: "#10b981" }}>
+                    {resolvedCount}
+                  </div>
                   <div className="small text-muted">Resolved</div>
                 </div>
               </div>
@@ -300,9 +335,11 @@ export default function Support() {
             className="card border-0 shadow-sm mb-4"
             style={{ borderRadius: 16, overflow: "hidden" }}
           >
-            <div 
+            <div
               className="p-3 text-white"
-              style={{ background: "linear-gradient(135deg, #667eea, #764ba2)" }}
+              style={{
+                background: "linear-gradient(135deg, #667eea, #764ba2)",
+              }}
             >
               <h5 className="mb-0 fw-bold">📝 Submit New Ticket</h5>
             </div>
@@ -374,7 +411,9 @@ export default function Support() {
           className="card border-0 shadow-sm text-center py-5"
           style={{ borderRadius: 20 }}
         >
-          <div style={{ fontSize: "5rem" }} className="mb-3">💬</div>
+          <div style={{ fontSize: "5rem" }} className="mb-3">
+            💬
+          </div>
           <h5 className="mb-2">No Support Tickets Yet</h5>
           <p className="text-muted mb-4">
             Click "New Ticket" to submit your first support request
@@ -440,9 +479,7 @@ export default function Support() {
                 <span style={{ fontSize: "24px" }}>📧</span>
                 <div>
                   <div className="fw-semibold mb-1">Email Support</div>
-                  <p className="small text-muted mb-0">
-                    support@aqm.system
-                  </p>
+                  <p className="small text-muted mb-0">support@aqm.system</p>
                 </div>
               </div>
             </div>

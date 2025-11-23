@@ -2,13 +2,13 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 import { motion } from "framer-motion";
-import { 
-  FaCloudSun, 
-  FaWind, 
-  FaTint, 
+import {
+  FaCloudSun,
+  FaWind,
+  FaTint,
   FaMapMarkerAlt,
   FaChartLine,
-  FaLeaf
+  FaLeaf,
 } from "react-icons/fa";
 import api from "../api/axios";
 import { Form } from "react-bootstrap";
@@ -24,8 +24,9 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 } from "chart.js";
+import { toast } from "react-toastify";
 
 ChartJS.register(
   CategoryScale,
@@ -69,7 +70,7 @@ export default function Dashboard() {
     if (!selected) return;
     loadAirQualityData();
     loadWeather();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
   const loadLocations = async () => {
@@ -87,19 +88,24 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const res = await api.get(`/data?locationId=${selected}&range=24h`);
-      const payload = res.data || {};
+      const payload = res.data?.data || res.data || {}; // ← Handle nested response
+
       setAqi(payload?.current?.aqi ?? 50);
       setPm25(payload?.current?.pm25 ?? 15.5);
       setPm10(payload?.current?.pm10 ?? 28.3);
-      
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const hist: DataPoint[] = (payload.history || []).map((p: any) => ({
-        ts: new Date(p.ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      const hist = (payload.history || []).map((p: any) => ({
+        ts: new Date(p.ts).toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
         value: p.value ?? p.aqi ?? 0,
       }));
       setHistory(hist);
     } catch (e) {
       console.error(e);
+      toast.error("Failed to load air quality data");
     } finally {
       setLoading(false);
     }
@@ -119,27 +125,32 @@ export default function Dashboard() {
   const getAQIStatus = (aqi: number) => {
     if (aqi <= 50) return { label: "Good", color: "#10b981", emoji: "😊" };
     if (aqi <= 100) return { label: "Moderate", color: "#f59e0b", emoji: "😐" };
-    if (aqi <= 150) return { label: "Unhealthy for Sensitive", color: "#ef4444", emoji: "😷" };
+    if (aqi <= 150)
+      return {
+        label: "Unhealthy for Sensitive",
+        color: "#ef4444",
+        emoji: "😷",
+      };
     return { label: "Unhealthy", color: "#dc2626", emoji: "🤢" };
   };
 
   const status = getAQIStatus(aqi);
-  const selectedLocation = locations.find(l => l.id === selected);
+  const selectedLocation = locations.find((l) => l.id === selected);
 
   const lineChartData = {
-    labels: history.map(h => h.ts),
+    labels: history.map((h) => h.ts),
     datasets: [
       {
         label: "AQI",
-        data: history.map(h => h.value),
+        data: history.map((h) => h.value),
         borderColor: "rgb(102, 126, 234)",
         backgroundColor: "rgba(102, 126, 234, 0.1)",
         fill: true,
         tension: 0.4,
         pointRadius: 4,
-        pointHoverRadius: 6
-      }
-    ]
+        pointHoverRadius: 6,
+      },
+    ],
   };
 
   const doughnutData = {
@@ -148,16 +159,22 @@ export default function Dashboard() {
       {
         data: [16, 6, 2],
         backgroundColor: ["#10b981", "#f59e0b", "#ef4444"],
-        borderWidth: 0
-      }
-    ]
+        borderWidth: 0,
+      },
+    ],
   };
 
   if (loading) {
     return (
       <MainLayout>
-        <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}>
-          <div className="spinner-border text-primary" style={{ width: 60, height: 60 }} />
+        <div
+          className="d-flex align-items-center justify-content-center"
+          style={{ minHeight: "60vh" }}
+        >
+          <div
+            className="spinner-border text-primary"
+            style={{ width: 60, height: 60 }}
+          />
         </div>
       </MainLayout>
     );
@@ -172,13 +189,16 @@ export default function Dashboard() {
         className="position-relative rounded-4 p-5 mb-4 text-white overflow-hidden"
         style={{
           background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-          boxShadow: "0 20px 60px rgba(102, 126, 234, 0.3)"
+          boxShadow: "0 20px 60px rgba(102, 126, 234, 0.3)",
         }}
       >
-        <div className="position-absolute top-0 end-0 opacity-25" style={{ fontSize: "15rem" }}>
+        <div
+          className="position-absolute top-0 end-0 opacity-25"
+          style={{ fontSize: "15rem" }}
+        >
           {status.emoji}
         </div>
-        
+
         <div className="row align-items-center position-relative">
           <div className="col-lg-8">
             <motion.div
@@ -190,13 +210,15 @@ export default function Dashboard() {
                 <FaMapMarkerAlt />
                 <span className="opacity-75">Current Location</span>
               </div>
-              <h1 className="display-4 fw-bold mb-3">{selectedLocation?.name || "Select Location"}</h1>
+              <h1 className="display-4 fw-bold mb-3">
+                {selectedLocation?.name || "Select Location"}
+              </h1>
               <p className="lead mb-4 opacity-90">
                 Real-time air quality monitoring and forecasting system
               </p>
             </motion.div>
           </div>
-          
+
           <div className="col-lg-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
@@ -207,10 +229,10 @@ export default function Dashboard() {
                 value={selected ?? undefined}
                 onChange={(e) => setSelected(Number(e.target.value))}
                 className="form-select-lg border-0 shadow"
-                style={{ 
+                style={{
                   borderRadius: 16,
                   background: "rgba(255, 255, 255, 0.95)",
-                  backdropFilter: "blur(10px)"
+                  backdropFilter: "blur(10px)",
                 }}
               >
                 {locations.map((loc) => (
@@ -233,16 +255,16 @@ export default function Dashboard() {
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ scale: 1.02 }}
             className="card border-0 shadow-lg h-100 position-relative overflow-hidden"
-            style={{ 
+            style={{
               borderRadius: 24,
-              background: `linear-gradient(135deg, ${status.color}15, ${status.color}05)`
+              background: `linear-gradient(135deg, ${status.color}15, ${status.color}05)`,
             }}
           >
             <div className="card-body p-5 text-center">
               <div className="mb-3" style={{ fontSize: "4rem" }}>
                 {status.emoji}
               </div>
-              
+
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -252,20 +274,26 @@ export default function Dashboard() {
               >
                 {aqi}
               </motion.div>
-              
+
               <div className="h5 mb-4" style={{ color: status.color }}>
                 {status.label}
               </div>
 
               <div className="row g-3 text-start">
                 <div className="col-6">
-                  <div className="p-3 rounded-3" style={{ background: "rgba(0,0,0,0.03)" }}>
+                  <div
+                    className="p-3 rounded-3"
+                    style={{ background: "rgba(0,0,0,0.03)" }}
+                  >
                     <div className="text-muted small mb-1">PM2.5</div>
                     <div className="h4 mb-0 fw-bold">{pm25.toFixed(1)}</div>
                   </div>
                 </div>
                 <div className="col-6">
-                  <div className="p-3 rounded-3" style={{ background: "rgba(0,0,0,0.03)" }}>
+                  <div
+                    className="p-3 rounded-3"
+                    style={{ background: "rgba(0,0,0,0.03)" }}
+                  >
                     <div className="text-muted small mb-1">PM10</div>
                     <div className="h4 mb-0 fw-bold">{pm10.toFixed(1)}</div>
                   </div>
@@ -275,7 +303,9 @@ export default function Dashboard() {
               <div className="mt-4 pt-4 border-top">
                 <div className="d-flex align-items-center justify-content-center gap-2 text-muted">
                   <FaLeaf className="text-success" />
-                  <small>Last updated: {new Date().toLocaleTimeString('vi-VN')}</small>
+                  <small>
+                    Last updated: {new Date().toLocaleTimeString("vi-VN")}
+                  </small>
                 </div>
               </div>
             </div>
@@ -310,7 +340,9 @@ export default function Dashboard() {
                     <FaTint className="text-info" size={20} />
                     <div>
                       <div className="small text-muted">Humidity</div>
-                      <div className="fw-bold">{weather?.humidityPct?.toFixed(0) ?? "—"}%</div>
+                      <div className="fw-bold">
+                        {weather?.humidityPct?.toFixed(0) ?? "—"}%
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -319,7 +351,9 @@ export default function Dashboard() {
                     <FaWind className="text-primary" size={20} />
                     <div>
                       <div className="small text-muted">Wind</div>
-                      <div className="fw-bold">{weather?.windSpeedMps?.toFixed(1) ?? "—"} m/s</div>
+                      <div className="fw-bold">
+                        {weather?.windSpeedMps?.toFixed(1) ?? "—"} m/s
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -339,12 +373,12 @@ export default function Dashboard() {
           >
             <div className="card-body p-4">
               <h5 className="mb-4">24h Distribution</h5>
-              <Doughnut 
-                data={doughnutData} 
-                options={{ 
+              <Doughnut
+                data={doughnutData}
+                options={{
                   cutout: "70%",
-                  plugins: { legend: { position: "bottom" } }
-                }} 
+                  plugins: { legend: { position: "bottom" } },
+                }}
               />
               <div className="text-center mt-3">
                 <div className="text-muted small">Average AQI Today</div>
@@ -368,19 +402,19 @@ export default function Dashboard() {
             <FaChartLine size={24} className="text-primary" />
             <h5 className="mb-0">24-Hour Trend</h5>
           </div>
-          <Line 
-            data={lineChartData} 
-            options={{ 
-              responsive: true, 
+          <Line
+            data={lineChartData}
+            options={{
+              responsive: true,
               maintainAspectRatio: true,
               plugins: {
-                legend: { display: false }
+                legend: { display: false },
               },
               scales: {
                 y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
-                x: { grid: { display: false } }
-              }
-            }} 
+                x: { grid: { display: false } },
+              },
+            }}
           />
         </div>
       </motion.div>
@@ -464,7 +498,7 @@ export default function Dashboard() {
 //         const payload = r1.data || {};
 //         setAqi(payload?.current?.aqi ?? 0);
 //         setPm25(payload?.current?.pm25 ?? undefined);
-        
+
 //         // eslint-disable-next-line @typescript-eslint/no-explicit-any
 //         const hist: DataPoint[] = (payload.history || []).map((p: any) => ({
 //           ts: p.ts || p.time || "",
@@ -602,8 +636,8 @@ export default function Dashboard() {
 //         </div>
 
 //         <div className="col-12 col-md-6 col-xl-2">
-//           <StatCard 
-//             label="Forecast model" 
+//           <StatCard
+//             label="Forecast model"
 //             value={"LSTM v1.0"}
 //             help="AI prediction"
 //           />
@@ -641,8 +675,8 @@ export default function Dashboard() {
 //             ) : history.length > 0 ? (
 //               <ul className="list-unstyled">
 //                 {history.slice(0, 6).map((h, i) => (
-//                   <li 
-//                     key={i} 
+//                   <li
+//                     key={i}
 //                     className="py-2 border-bottom d-flex justify-content-between"
 //                   >
 //                     <span className="text-muted small">{h.ts}</span>
