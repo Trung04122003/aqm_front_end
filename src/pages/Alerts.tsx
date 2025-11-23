@@ -232,7 +232,7 @@ export default function Alerts() {
     setLoading(true);
     try {
       const res = await api.get("/alerts"); // ← Real backend call
-      setAlerts(res.data || []);
+      setAlerts(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error(err);
       toast.error("Failed to load alerts");
