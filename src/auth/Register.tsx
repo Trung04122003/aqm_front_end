@@ -1,17 +1,12 @@
 // src/auth/Register.tsx (FAIRY TALE WONDERLAND EDITION)
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "./AuthProvider";
 
 const Register = () => {
   // Mock register function (replace with your actual auth logic)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const register = async (data: any) => {
-    console.log("Registering:", data);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    alert("Welcome to Wonderland! 🦄✨");
-  };
-
+  
+  const { register } = useAuth();
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
