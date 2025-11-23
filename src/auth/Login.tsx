@@ -443,8 +443,6 @@ const Login: React.FC = () => {
 };
 
 export default Login;
-
-// // src/pages/Login.tsx - REDESIGNED
 // import React, { useState } from "react";
 // import { Link } from "react-router-dom";
 // import { useAuth } from "./AuthProvider";
