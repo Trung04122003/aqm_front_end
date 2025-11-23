@@ -250,7 +250,7 @@ const Register = () => {
             Join the Magic ✨
           </h2>
           <p className="text-center mb-0" style={{ color: "#7c5ba4", fontSize: "15px" }}>
-            Create your magical account now! 🌈
+            Create your magical AQM account now! 🌈
           </p>
         </div>
 
