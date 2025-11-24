@@ -3,36 +3,6 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Mock API (replace with real axios calls)
-// const mockApi = {
-//   get: async (url: string) => {
-//     await new Promise(resolve => setTimeout(resolve, 800));
-
-//     if (url === "/locations") {
-//       return {
-//         data: [
-//           { id: 1, name: "Hanoi", latitude: 21.0285, longitude: 105.8542 },
-//           { id: 2, name: "Ho Chi Minh", latitude: 10.8231, longitude: 106.6297 },
-//           { id: 3, name: "Da Nang", latitude: 16.0544, longitude: 108.2022 }
-//         ]
-//       };
-//     }
-
-//     // Mock forecast data
-//     const hours = [3, 6, 9, 12, 24, 48];
-//     return {
-//       data: hours.map((h, i) => ({
-//         id: i + 1,
-//         timestampUtc: new Date(Date.now() + h * 60 * 60 * 1000).toISOString(),
-//         predictedPm25: 15 + Math.random() * 30,
-//         predictedPm10: 25 + Math.random() * 40,
-//         predictedAqi: 50 + Math.random() * 80,
-//         modelVersion: "LSTM-v1.3"
-//       }))
-//     };
-//   }
-// };
-
 type Location = { id: number; name: string };
 type Forecast = {
   id: number;

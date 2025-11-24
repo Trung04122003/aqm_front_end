@@ -3,45 +3,6 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Mock API
-// const mockApi = {
-//   get: async (_url: string) => {
-//     await new Promise(resolve => setTimeout(resolve, 800));
-
-//     if (_url === "/locations") {
-//       return {
-//         data: [
-//           { id: 1, name: "Hanoi" },
-//           { id: 2, name: "Ho Chi Minh" },
-//           { id: 3, name: "Da Nang" }
-//         ]
-//       };
-//     }
-
-//     if (_url.includes("/reports")) {
-//       return {
-//         data: {
-//           locationId: 1,
-//           locationName: "Hanoi",
-//           fromDate: "2025-01-01",
-//           toDate: "2025-01-31",
-//           avgPm25: 42.5,
-//           avgPm10: 68.3,
-//           avgAqi: 105,
-//           maxAqi: 178,
-//           minAqi: 45,
-//           goodDays: 8,
-//           moderateDays: 15,
-//           unhealthyDays: 8,
-//           totalDataPoints: 744
-//         }
-//       };
-//     }
-
-//     return { data: [] };
-//   }
-// };
-
 type Location = { id: number; name: string };
 type Report = {
   locationId: number;

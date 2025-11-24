@@ -4,60 +4,6 @@ import api from "../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 
-// Mock API
-// const mockApi = {
-//   get: async (url: string) => {
-//     await new Promise(resolve => setTimeout(resolve, 600));
-
-//     if (url === "/support/my") {
-//       return {
-//         data: [
-//           {
-//             id: 1,
-//             subject: "Dashboard not loading data",
-//             message: "The dashboard shows loading spinner but never displays data.",
-//             status: "OPEN",
-//             submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-//             adminReply: null
-//           },
-//           {
-//             id: 2,
-//             subject: "Alert notifications not working",
-//             message: "I set up alert thresholds but I'm not receiving any notifications.",
-//             status: "IN_PROGRESS",
-//             submittedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-//             adminReply: "We're investigating this issue. Will update you soon."
-//           },
-//           {
-//             id: 3,
-//             subject: "How to export reports?",
-//             message: "Is there a way to export air quality reports as PDF?",
-//             status: "RESOLVED",
-//             submittedAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-//             adminReply: "Yes! Click the 'Download PDF' button in the Reports page after generating a report."
-//           }
-//         ]
-//       };
-//     }
-
-//     return { data: [] };
-//   },
-
-//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//   post: async (_url: string, data: any) => {
-//     await new Promise(resolve => setTimeout(resolve, 500));
-//     return {
-//       data: {
-//         id: Date.now(),
-//         ...data,
-//         status: "OPEN",
-//         submittedAt: new Date().toISOString(),
-//         adminReply: null
-//       }
-//     };
-//   }
-// };
-
 type Ticket = {
   id: number;
   subject: string;
