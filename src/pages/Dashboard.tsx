@@ -1,4 +1,4 @@
-// src/pages/Dashboard.tsx (ULTRA-BEAUTIFUL ENHANCED VERSION)
+// src/pages/Dashboard.tsx (ULTRA-BEAUTIFUL ENHANCED VERSION WITH LOCATION SELECTOR)
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 import { motion } from "framer-motion";
@@ -11,7 +11,6 @@ import {
   FaLeaf,
 } from "react-icons/fa";
 import api from "../api/axios";
-import { Form } from "react-bootstrap";
 import useAuth from "../auth/useAuth";
 import { Line, Doughnut } from "react-chartjs-2";
 import {
@@ -27,6 +26,7 @@ import {
   Filler,
 } from "chart.js";
 import { toast } from "react-toastify";
+import LocationSelector from "../components/LocationSelector"; // ✅ NEW: Import LocationSelector
 
 ChartJS.register(
   CategoryScale,
@@ -47,6 +47,24 @@ type Location = {
   longitude?: number;
 };
 
+// ✅ FIXED: Type definitions matching Backend
+type AirQualityResponse = {
+  current: {
+    aqi: number;
+    pm25: number;
+    pm10: number;
+    no2?: number;
+    co?: number;
+    o3?: number;
+    so2?: number;
+    timestamp?: string;
+  };
+  history: Array<{
+    ts: string;
+    value: number;
+  }>;
+};
+
 type DataPoint = { ts: string; value: number };
 
 export default function Dashboard() {
@@ -59,6 +77,7 @@ export default function Dashboard() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [weather, setWeather] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingLocations, setLoadingLocations] = useState(true); // ✅ NEW: State for locations loading
   const { user } = useAuth();
 
   useEffect(() => {
@@ -74,6 +93,7 @@ export default function Dashboard() {
   }, [selected]);
 
   const loadLocations = async () => {
+    setLoadingLocations(true); // ✅ NEW: Start loading
     try {
       const res = await api.get("/locations");
       const locs = res.data || [];
@@ -81,44 +101,61 @@ export default function Dashboard() {
       if (locs.length > 0) setSelected(locs[0].id);
     } catch (e) {
       console.error(e);
+      toast.error("Failed to load locations");
+    } finally {
+      setLoadingLocations(false); // ✅ NEW: End loading
     }
   };
 
+  // ✅ FIXED: Load Air Quality Data
   const loadAirQualityData = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/data?locationId=${selected}&range=24h`);
-      const payload = res.data?.data || res.data || {}; // ← Handle nested response
+      const res = await api.get<AirQualityResponse>(
+        `/data?locationId=${selected}&range=24h`
+      );
 
-      setAqi(payload?.current?.aqi ?? 50);
-      setPm25(payload?.current?.pm25 ?? 15.5);
-      setPm10(payload?.current?.pm10 ?? 28.3);
+      // ✅ Direct access - no optional chaining hell
+      const { current, history } = res.data;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const hist = (payload.history || []).map((p: any) => ({
-        ts: new Date(p.ts).toLocaleTimeString("vi-VN", {
+      if (!current) {
+        toast.error("No air quality data available");
+        return;
+      }
+
+      setAqi(current.aqi);
+      setPm25(current.pm25);
+      setPm10(current.pm10);
+
+      // ✅ Format history for charts
+      const formattedHistory = history.map((point) => ({
+        ts: new Date(point.ts).toLocaleTimeString("vi-VN", {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        value: p.value ?? p.aqi ?? 0,
+        value: point.value,
       }));
-      setHistory(hist);
+
+      setHistory(formattedHistory);
     } catch (e) {
-      console.error(e);
+      console.error("Failed to load air quality:", e);
       toast.error("Failed to load air quality data");
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ FIXED: Load Weather Data
   const loadWeather = async () => {
     try {
       const res = await api.get(`/weather?location=${selected}`);
+
+      // Backend returns WeatherDataDto[]
       if (res.data && res.data.length > 0) {
-        setWeather(res.data[0]);
+        setWeather(res.data[0]); // Latest weather
       }
     } catch (e) {
-      console.error(e);
+      console.error("Failed to load weather:", e);
     }
   };
 
@@ -225,22 +262,13 @@ export default function Dashboard() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <Form.Select
-                value={selected ?? undefined}
-                onChange={(e) => setSelected(Number(e.target.value))}
-                className="form-select-lg border-0 shadow"
-                style={{
-                  borderRadius: 16,
-                  background: "rgba(255, 255, 255, 0.95)",
-                  backdropFilter: "blur(10px)",
-                }}
-              >
-                {locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    📍 {loc.name}
-                  </option>
-                ))}
-              </Form.Select>
+              {/* ✅ NEW: Replace Form.Select with LocationSelector */}
+              <LocationSelector
+                locations={locations}
+                selected={selected}
+                onChange={setSelected}
+                loading={loadingLocations}
+              />
             </motion.div>
           </div>
         </div>

@@ -1,159 +1,26 @@
-// src/pages/Alerts.tsx (ENHANCED - PHASE 4)
+// src/pages/Alerts.tsx (FIXED)
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
+import AlertCard from "../components/AlertCard";
 
+// ✅ FIXED: Match Backend AlertDto
 type Alert = {
   id: number;
   pollutant: string;
   value: number;
-  location: { id: number; name: string };
+  locationName: string; // ✅ Direct string from BE
   triggeredAt: string;
   isRead: boolean;
-};
-
-const AlertCard = ({
-  alert,
-  onMarkAsRead,
-}: {
-  alert: Alert;
-  onMarkAsRead: (id: number) => void;
-}) => {
-  const formatTime = (ts: string) => {
-    const date = new Date(ts);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  };
-
-  const getSeverity = () => {
-    if (alert.pollutant === "PM2.5" && alert.value > 55)
-      return { level: "danger", color: "#ef4444", emoji: "🚨" };
-    if (alert.pollutant === "PM10" && alert.value > 150)
-      return { level: "danger", color: "#ef4444", emoji: "🚨" };
-    if (alert.pollutant === "AQI" && alert.value > 150)
-      return { level: "danger", color: "#ef4444", emoji: "🚨" };
-    return { level: "warning", color: "#f59e0b", emoji: "⚠️" };
-  };
-
-  const severity = getSeverity();
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      whileHover={{ scale: 1.01 }}
-      className={`card border-0 shadow-sm mb-3 ${!alert.isRead ? "border-start border-4" : ""}`}
-      style={{
-        borderRadius: 16,
-        borderLeftColor: !alert.isRead ? severity.color : undefined,
-        opacity: alert.isRead ? 0.7 : 1,
-        transition: "opacity 0.3s",
-      }}
-    >
-      <div className="card-body p-4">
-        <div className="d-flex align-items-start gap-3">
-          {/* Icon */}
-          <div
-            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-            style={{
-              width: 56,
-              height: 56,
-              background: `${severity.color}15`,
-              fontSize: "28px",
-            }}
-          >
-            {severity.emoji}
-          </div>
-
-          {/* Content */}
-          <div className="flex-grow-1">
-            <div className="d-flex justify-content-between align-items-start mb-2">
-              <div>
-                <h6 className="mb-1 fw-bold" style={{ color: "#1e293b" }}>
-                  {alert.pollutant} Alert
-                  {!alert.isRead && (
-                    <span
-                      className="badge ms-2"
-                      style={{
-                        background: severity.color,
-                        fontSize: "0.65rem",
-                        padding: "4px 8px",
-                      }}
-                    >
-                      NEW
-                    </span>
-                  )}
-                </h6>
-                <div className="small text-muted">
-                  📍 {alert.location.name} • {formatTime(alert.triggeredAt)}
-                </div>
-              </div>
-
-              {alert.isRead && (
-                <span
-                  className="badge bg-success"
-                  style={{ fontSize: "0.7rem" }}
-                >
-                  ✓ Read
-                </span>
-              )}
-            </div>
-
-            {/* Value Display */}
-            <div
-              className="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-3"
-              style={{
-                background: `${severity.color}10`,
-                border: `1px solid ${severity.color}30`,
-              }}
-            >
-              <span className="text-muted small">Current value:</span>
-              <span
-                className="fw-bold"
-                style={{
-                  color: severity.color,
-                  fontSize: "1.1rem",
-                }}
-              >
-                {alert.value.toFixed(1)}
-              </span>
-              <span className="text-muted small">
-                {alert.pollutant === "AQI" ? "" : "µg/m³"}
-              </span>
-            </div>
-
-            {/* Action Button */}
-            {!alert.isRead && (
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="btn btn-sm btn-outline-success"
-                style={{ borderRadius: 8 }}
-                onClick={() => onMarkAsRead(alert.id)}
-              >
-                ✓ Mark as Read
-              </motion.button>
-            )}
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
+  status?: string;
 };
 
 export default function Alerts() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
   const [loading, setLoading] = useState(true);
-  const [error] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadAlerts();
@@ -161,11 +28,16 @@ export default function Alerts() {
 
   const loadAlerts = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await api.get("/alerts"); // ← Real backend call
-      setAlerts(Array.isArray(res.data) ? res.data : []);
+      const res = await api.get("/alerts");
+      
+      // ✅ Backend returns AlertDto[] directly
+      const alertData = Array.isArray(res.data) ? res.data : [];
+      setAlerts(alertData);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load alerts:", err);
+      setError("Failed to load alerts. Please try again.");
       toast.error("Failed to load alerts");
     } finally {
       setLoading(false);
@@ -174,21 +46,25 @@ export default function Alerts() {
 
   const handleMarkAsRead = async (id: number) => {
     try {
-      await api.put(`/alerts/${id}/read`); // ← Real backend call
+      await api.put(`/alerts/${id}/read`);
+      
+      // Update local state
       setAlerts((prev) =>
         prev.map((alert) =>
           alert.id === id ? { ...alert, isRead: true } : alert
         )
       );
+      
       toast.success("Alert marked as read");
     } catch (err) {
-      console.error(err);
+      console.error("Failed to mark as read:", err);
       toast.error("Failed to mark as read");
     }
   };
 
   const handleMarkAllAsRead = async () => {
     const unreadIds = alerts.filter((a) => !a.isRead).map((a) => a.id);
+    
     for (const id of unreadIds) {
       await handleMarkAsRead(id);
     }
@@ -242,7 +118,6 @@ export default function Alerts() {
               </p>
             </div>
           </div>
-
           {unreadCount > 0 && (
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -337,7 +212,12 @@ export default function Alerts() {
           filteredAlerts.map((alert) => (
             <AlertCard
               key={alert.id}
-              alert={alert}
+              id={alert.id}
+              pollutant={alert.pollutant}
+              value={alert.value}
+              locationName={alert.locationName}
+              triggeredAt={alert.triggeredAt}
+              isRead={alert.isRead}
               onMarkAsRead={handleMarkAsRead}
             />
           ))}

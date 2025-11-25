@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 type Location = { id: number; name: string };
 type Report = {
+  id?: number;
   locationId: number;
   locationName: string;
   fromDate: string;
@@ -14,10 +15,11 @@ type Report = {
   avgAqi: number;
   maxAqi: number;
   minAqi: number;
-  goodDays: number;
-  moderateDays: number;
-  unhealthyDays: number;
-  totalDataPoints: number;
+  goodDays: number; // ✅ NOW EXISTS IN BE
+  moderateDays: number; // ✅ NOW EXISTS IN BE
+  unhealthyDays: number; // ✅ NOW EXISTS IN BE
+  totalDataPoints: number; // ✅ NOW EXISTS IN BE
+  generatedAt?: string;
 };
 
 const StatCard = ({
@@ -95,6 +97,7 @@ export default function Reports() {
     }
   };
 
+  // ✅ FIXED: API Call
   const handleGenerate = async () => {
     if (!selectedLocation || !fromDate || !toDate) {
       setError("Please select all required fields");
@@ -103,21 +106,20 @@ export default function Reports() {
 
     setLoading(true);
     setError(null);
+
     try {
-      const res = await api.get(
+      const res = await api.get<Report>(
         `/reports?locationId=${selectedLocation}&from=${fromDate}&to=${toDate}`
       );
+
+      // ✅ Backend now returns complete ReportDto with all fields
       setReport(res.data);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to generate report:", err);
       setError("Failed to generate report");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDownload = () => {
-    alert("📥 Download feature coming soon! Report will be exported as PDF.");
   };
 
   const totalDays = report
@@ -154,16 +156,153 @@ export default function Reports() {
           </div>
 
           {report && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="btn btn-success d-flex align-items-center gap-2"
-              style={{ borderRadius: 12 }}
-              onClick={handleDownload}
-            >
-              <span>📥</span>
-              <span>Download PDF</span>
-            </motion.button>
+            <>
+              {/* Air Quality Distribution */}
+              <div
+                className="card border-0 shadow-sm mb-4"
+                style={{ borderRadius: 16 }}
+              >
+                <div className="card-body p-4">
+                  <h5 className="mb-4">📊 Air Quality Distribution</h5>
+                  <div className="row g-4">
+                    <div className="col-md-4">
+                      <div className="text-center">
+                        <div
+                          className="h2 fw-bold mb-0"
+                          style={{ color: "#10b981" }}
+                        >
+                          {report.goodDays}
+                        </div>
+                        <div className="small text-muted">Good Days</div>
+                        <div
+                          className="text-muted"
+                          style={{ fontSize: "0.75rem" }}
+                        >
+                          {totalDays > 0
+                            ? `${((report.goodDays / totalDays) * 100).toFixed(0)}% of period`
+                            : "N/A"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-md-4">
+                      <div className="text-center">
+                        <div
+                          className="h2 fw-bold mb-0"
+                          style={{ color: "#f59e0b" }}
+                        >
+                          {report.moderateDays}
+                        </div>
+                        <div className="small text-muted">Moderate Days</div>
+                        <div
+                          className="text-muted"
+                          style={{ fontSize: "0.75rem" }}
+                        >
+                          {totalDays > 0
+                            ? `${((report.moderateDays / totalDays) * 100).toFixed(0)}% of period`
+                            : "N/A"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-md-4">
+                      <div className="text-center">
+                        <div
+                          className="h2 fw-bold mb-0"
+                          style={{ color: "#ef4444" }}
+                        >
+                          {report.unhealthyDays}
+                        </div>
+                        <div className="small text-muted">Unhealthy Days</div>
+                        <div
+                          className="text-muted"
+                          style={{ fontSize: "0.75rem" }}
+                        >
+                          {totalDays > 0
+                            ? `${((report.unhealthyDays / totalDays) * 100).toFixed(0)}% of period`
+                            : "N/A"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="mt-4">
+                    <div
+                      className="d-flex"
+                      style={{
+                        height: 24,
+                        borderRadius: 12,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${(report.goodDays / totalDays) * 100}%`,
+                          background: "#10b981",
+                        }}
+                      />
+                      <div
+                        style={{
+                          width: `${(report.moderateDays / totalDays) * 100}%`,
+                          background: "#f59e0b",
+                        }}
+                      />
+                      <div
+                        style={{
+                          width: `${(report.unhealthyDays / totalDays) * 100}%`,
+                          background: "#ef4444",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Summary with ALL stats */}
+              <div
+                className="card border-0 shadow-sm"
+                style={{ borderRadius: 16 }}
+              >
+                <div className="card-body p-4">
+                  <h5 className="mb-3">📝 Summary</h5>
+                  <p className="text-muted mb-2">
+                    During the period from{" "}
+                    <strong>
+                      {new Date(report.fromDate).toLocaleDateString()}
+                    </strong>{" "}
+                    to{" "}
+                    <strong>
+                      {new Date(report.toDate).toLocaleDateString()}
+                    </strong>
+                    , the air quality in <strong>{report.locationName}</strong>{" "}
+                    averaged an AQI of{" "}
+                    <strong>{report.avgAqi.toFixed(0)}</strong>, which is
+                    considered{" "}
+                    <strong>
+                      {report.avgAqi > 100
+                        ? "Moderate to Unhealthy"
+                        : "Good to Moderate"}
+                    </strong>
+                    .
+                  </p>
+                  <p className="text-muted mb-0">
+                    The location experienced{" "}
+                    <strong>{report.goodDays} good days</strong>,
+                    <strong> {report.moderateDays} moderate days</strong>, and
+                    <strong> {report.unhealthyDays} unhealthy days</strong>.
+                    Peak pollution reached an AQI of{" "}
+                    <strong>{report.maxAqi}</strong>, with a minimum of{" "}
+                    <strong>{report.minAqi}</strong>.
+                  </p>
+                  <p className="text-muted small mt-2 mb-0">
+                    <em>
+                      Analysis based on {report.totalDataPoints} data points
+                    </em>
+                  </p>
+                </div>
+              </div>
+            </>
           )}
         </div>
 
