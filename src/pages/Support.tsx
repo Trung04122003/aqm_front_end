@@ -1,8 +1,10 @@
-// src/pages/Support.tsx (ENHANCED - PHASE 4)
+// src/pages/Support.tsx - CHRISTMAS 2025 EDITION 🎁
+
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
+import { FaSnowflake } from "react-icons/fa";
 
 type Ticket = {
   id: number;
@@ -13,77 +15,132 @@ type Ticket = {
   adminReply: string | null;
 };
 
-const TicketCard = ({ ticket }: { ticket: Ticket }) => {
-  const config = { color: "#000", bg: "#fff", label: "Unknown", icon: "❓" };
+// Christmas Ticket Card Component
+const ChristmasTicketCard = ({ ticket }: { ticket: Ticket }) => {
+  const getConfig = () => {
+    switch (ticket.status) {
+      case "OPEN":
+        return { color: "#C41E3A", bg: "rgba(196, 30, 58, 0.1)", label: "Open 🎁", icon: "🎅" };
+      case "IN_PROGRESS":
+        return { color: "#FFD700", bg: "rgba(255, 215, 0, 0.1)", label: "In Progress ⛄", icon: "🦌" };
+      case "RESOLVED":
+        return { color: "#165B33", bg: "rgba(22, 91, 51, 0.1)", label: "Resolved 🎄", icon: "✅" };
+      default:
+        return { color: "#000", bg: "#fff", label: "Unknown ❓", icon: "❓" };
+    }
+  };
+
+  const config = getConfig();
 
   const formatTime = (ts: string) => {
-    const date = new Date(ts);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-    if (diffHours < 24) return `${diffHours}h ago`;
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    try {
+      const date = new Date(ts);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+      return date.toLocaleDateString("vi-VN");
+    } catch {
+      return ts;
+    }
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      className="card border-0 shadow-sm mb-3"
-      style={{ borderRadius: 16, overflow: "hidden" }}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      whileHover={{ scale: 1.01, boxShadow: "0 12px 32px rgba(196, 30, 58, 0.3)" }}
+      className="card mb-3 position-relative overflow-hidden"
+      style={{
+        border: `3px solid ${config.color}`,
+        borderRadius: 20,
+        background: config.bg,
+        transition: "all 0.3s"
+      }}
     >
-      <div className="px-4 py-3" style={{ background: config.bg }}>
-        <div className="d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-2">
-            <span style={{ fontSize: "20px" }}>{config.icon}</span>
-            <h6 className="mb-0 fw-bold" style={{ color: config.color }}>
-              {ticket.subject}
-            </h6>
-          </div>
-          <div className="d-flex align-items-center gap-2">
-            <span
-              className="badge"
-              style={{ background: config.color, fontSize: "0.75rem" }}
-            >
-              {config.label}
-            </span>
-            <span className="text-muted small">
-              {formatTime(ticket.submittedAt)}
-            </span>
-          </div>
-        </div>
+      {/* Christmas Ornament Background */}
+      <div className="position-absolute" style={{ top: -20, right: -20, fontSize: "80px", opacity: 0.1 }}>
+        🎄
       </div>
 
       <div className="card-body p-4">
-        <div className="mb-3">
-          <div className="small text-muted mb-1">Your Message:</div>
-          <p className="mb-0" style={{ color: "#475569" }}>
-            {ticket.message}
-          </p>
-        </div>
-
-        {ticket.adminReply && (
+        <div className="d-flex align-items-start gap-3">
+          {/* Icon */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="p-3 rounded-3"
-            style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}
+            animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="rounded-circle d-flex align-items-center justify-content-center"
+            style={{
+              width: 60,
+              height: 60,
+              background: `linear-gradient(135deg, ${config.color}, ${config.color}dd)`,
+              fontSize: "32px",
+              border: "3px solid #FFD700"
+            }}
           >
-            <div className="d-flex align-items-center gap-2 mb-2">
-              <span style={{ fontSize: "18px" }}>👨‍💼</span>
-              <span className="small fw-semibold text-muted">
-                Admin Response:
-              </span>
-            </div>
-            <p className="mb-0 small" style={{ color: "#475569" }}>
-              {ticket.adminReply}
-            </p>
+            {config.icon}
           </motion.div>
-        )}
+
+          {/* Content */}
+          <div className="flex-grow-1">
+            <div className="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <h5 className="mb-1 fw-bold" style={{ color: config.color }}>
+                  {ticket.subject}
+                </h5>
+                <div className="text-muted small d-flex align-items-center gap-2">
+                  <FaSnowflake size={12} style={{ color: "#87CEEB" }} />
+                  <span>🕒 {formatTime(ticket.submittedAt)}</span>
+                </div>
+              </div>
+              <motion.span
+                className="badge"
+                style={{ 
+                  background: "linear-gradient(135deg, #C41E3A, #165B33)", 
+                  color: "white",
+                  fontSize: "0.8rem",
+                  padding: "6px 12px",
+                  borderRadius: 12
+                }}
+              >
+                {config.label}
+              </motion.span>
+            </div>
+
+            {/* Message */}
+            <div className="mb-3">
+              <div className="small text-muted mb-1">Your Message:</div>
+              <p className="mb-0" style={{ color: "#475569" }}>
+                {ticket.message}
+              </p>
+            </div>
+
+            {/* Admin Reply */}
+            {ticket.adminReply && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-3 rounded-3"
+                style={{ 
+                  background: "rgba(255, 255, 255, 0.8)", 
+                  border: `2px solid ${config.color}`
+                }}
+              >
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <span style={{ fontSize: "18px" }}>👨‍💼</span>
+                  <span className="small fw-semibold text-muted">
+                    Admin Response:
+                  </span>
+                </div>
+                <p className="mb-0 small" style={{ color: "#475569" }}>
+                  {ticket.adminReply}
+                </p>
+              </motion.div>
+            )}
+          </div>
+        </div>
       </div>
     </motion.div>
   );
@@ -145,9 +202,41 @@ export default function Support() {
   ).length;
   const resolvedCount = tickets.filter((t) => t.status === "RESOLVED").length;
 
+  // Snowflake component
+  const Snowflake = ({ delay }: { delay: number }) => (
+    <motion.div
+      className="position-absolute"
+      style={{
+        left: `${Math.random() * 100}%`,
+        top: -20,
+        fontSize: "20px",
+        pointerEvents: "none",
+        zIndex: 1
+      }}
+      animate={{
+        y: ["0vh", "110vh"],
+        rotate: [0, 360],
+        opacity: [0, 1, 1, 0]
+      }}
+      transition={{
+        duration: 8 + Math.random() * 4,
+        delay,
+        repeat: Infinity,
+        ease: "linear"
+      }}
+    >
+      ❄️
+    </motion.div>
+  );
+
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", padding: "2rem" }}>
-      {/* Header with Back Button */}
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #E0F7FA 0%, #B3E5FC 50%, #FFFAFA 100%)", padding: "2rem", position: "relative", overflow: "hidden" }}>
+      {/* Floating Snowflakes */}
+      {[...Array(15)].map((_, i) => (
+        <Snowflake key={i} delay={i * 0.5} />
+      ))}
+
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -159,17 +248,25 @@ export default function Support() {
               href="/"
               whileHover={{ scale: 1.1, x: -5 }}
               whileTap={{ scale: 0.9 }}
-              className="btn btn-light rounded-circle d-flex align-items-center justify-content-center"
-              style={{ width: 48, height: 48, textDecoration: "none" }}
+              className="btn rounded-circle d-flex align-items-center justify-content-center"
+              style={{ 
+                width: 50, 
+                height: 50, 
+                textDecoration: "none",
+                background: "linear-gradient(135deg, #C41E3A, #165B33)",
+                color: "white",
+                border: "3px solid #FFD700",
+                fontSize: "20px"
+              }}
             >
-              <span style={{ fontSize: "20px" }}>←</span>
+              ←
             </motion.a>
             <div>
-              <h2 className="mb-1 fw-bold" style={{ color: "#1e293b" }}>
-                💬 Support Center
+              <h2 className="mb-1 fw-bold d-flex align-items-center gap-2" style={{ color: "#C41E3A" }}>
+                💬 Christmas Support Center
               </h2>
               <p className="text-muted mb-0">
-                Get help with your air quality monitoring system
+                🎅 Get holiday help with your air quality monitoring system!
               </p>
             </div>
           </div>
@@ -177,12 +274,20 @@ export default function Support() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="btn btn-primary d-flex align-items-center gap-2"
-            style={{ borderRadius: 12 }}
+            className="btn d-flex align-items-center gap-2"
+            style={{
+              background: "linear-gradient(135deg, #165B33, #50C878)",
+              color: "white",
+              border: "none",
+              borderRadius: 12,
+              padding: "12px 24px",
+              fontWeight: "bold",
+              boxShadow: "0 4px 16px rgba(22, 91, 51, 0.3)"
+            }}
             onClick={() => setShowForm(!showForm)}
           >
             <span>{showForm ? "❌" : "➕"}</span>
-            <span>{showForm ? "Cancel" : "New Ticket"}</span>
+            <span>{showForm ? "Cancel" : "New Ticket 🎁"}</span>
           </motion.button>
         </div>
 
@@ -191,7 +296,7 @@ export default function Support() {
           <div className="col-md-4">
             <div
               className="card border-0 shadow-sm"
-              style={{ borderRadius: 16 }}
+              style={{ borderRadius: 16, border: "3px solid #FFD700" }}
             >
               <div className="card-body p-3 d-flex align-items-center gap-3">
                 <div
@@ -199,14 +304,15 @@ export default function Support() {
                   style={{
                     width: 48,
                     height: 48,
-                    background: "#eff6ff",
+                    background: "linear-gradient(135deg, #C41E3A, #165B33)",
                     fontSize: "24px",
+                    color: "white"
                   }}
                 >
-                  🆕
+                  🎁
                 </div>
                 <div>
-                  <div className="h4 mb-0 fw-bold" style={{ color: "#3b82f6" }}>
+                  <div className="h4 mb-0 fw-bold" style={{ color: "#C41E3A" }}>
                     {openCount}
                   </div>
                   <div className="small text-muted">Open Tickets</div>
@@ -218,7 +324,7 @@ export default function Support() {
           <div className="col-md-4">
             <div
               className="card border-0 shadow-sm"
-              style={{ borderRadius: 16 }}
+              style={{ borderRadius: 16, border: "3px solid #FFD700" }}
             >
               <div className="card-body p-3 d-flex align-items-center gap-3">
                 <div
@@ -226,14 +332,15 @@ export default function Support() {
                   style={{
                     width: 48,
                     height: 48,
-                    background: "#fffbeb",
+                    background: "linear-gradient(135deg, #FFD700, #FFA500)",
                     fontSize: "24px",
+                    color: "#165B33"
                   }}
                 >
-                  ⏳
+                  ⛄
                 </div>
                 <div>
-                  <div className="h4 mb-0 fw-bold" style={{ color: "#f59e0b" }}>
+                  <div className="h4 mb-0 fw-bold" style={{ color: "#FFD700" }}>
                     {inProgressCount}
                   </div>
                   <div className="small text-muted">In Progress</div>
@@ -245,7 +352,7 @@ export default function Support() {
           <div className="col-md-4">
             <div
               className="card border-0 shadow-sm"
-              style={{ borderRadius: 16 }}
+              style={{ borderRadius: 16, border: "3px solid #FFD700" }}
             >
               <div className="card-body p-3 d-flex align-items-center gap-3">
                 <div
@@ -253,14 +360,15 @@ export default function Support() {
                   style={{
                     width: 48,
                     height: 48,
-                    background: "#f0fdf4",
+                    background: "linear-gradient(135deg, #165B33, #50C878)",
                     fontSize: "24px",
+                    color: "white"
                   }}
                 >
-                  ✅
+                  🎄
                 </div>
                 <div>
-                  <div className="h4 mb-0 fw-bold" style={{ color: "#10b981" }}>
+                  <div className="h4 mb-0 fw-bold" style={{ color: "#165B33" }}>
                     {resolvedCount}
                   </div>
                   <div className="small text-muted">Resolved</div>
@@ -279,24 +387,24 @@ export default function Support() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="card border-0 shadow-sm mb-4"
-            style={{ borderRadius: 16, overflow: "hidden" }}
+            style={{ borderRadius: 16, overflow: "hidden", border: "3px solid #FFD700" }}
           >
             <div
               className="p-3 text-white"
               style={{
-                background: "linear-gradient(135deg, #667eea, #764ba2)",
+                background: "linear-gradient(135deg, #C41E3A, #165B33)",
               }}
             >
-              <h5 className="mb-0 fw-bold">📝 Submit New Ticket</h5>
+              <h5 className="mb-0 fw-bold">📝 Submit New Holiday Ticket 🎅</h5>
             </div>
-            <div className="card-body p-4">
+            <div className="card-body p-4" style={{ background: "white" }}>
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Subject</label>
+                  <label className="form-label fw-semibold" style={{ color: "#C41E3A" }}>Subject</label>
                   <input
                     type="text"
                     className="form-control"
-                    style={{ borderRadius: 12 }}
+                    style={{ borderRadius: 12, border: "2px solid #165B33" }}
                     placeholder="Brief description of your issue"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
@@ -306,10 +414,10 @@ export default function Support() {
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Message</label>
+                  <label className="form-label fw-semibold" style={{ color: "#C41E3A" }}>Message</label>
                   <textarea
                     className="form-control"
-                    style={{ borderRadius: 12, minHeight: 120 }}
+                    style={{ borderRadius: 12, minHeight: 120, border: "2px solid #165B33" }}
                     placeholder="Provide detailed information about your issue..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
@@ -323,10 +431,15 @@ export default function Support() {
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   className="btn btn-primary"
-                  style={{ borderRadius: 12 }}
+                  style={{ 
+                    borderRadius: 12,
+                    background: "linear-gradient(135deg, #C41E3A, #165B33)",
+                    border: "none",
+                    color: "white"
+                  }}
                   disabled={submitting}
                 >
-                  {submitting ? "⏳ Submitting..." : "🚀 Submit Ticket"}
+                  {submitting ? "⏳ Submitting..." : "🚀 Submit Ticket 🎁"}
                 </motion.button>
               </form>
             </div>
@@ -338,51 +451,66 @@ export default function Support() {
       {loading && (
         <div className="text-center py-5">
           <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             className="d-inline-block mb-3"
-            style={{ fontSize: "3rem" }}
+            style={{ fontSize: "4rem" }}
           >
-            💬
+            🎅
           </motion.div>
-          <div className="text-muted">Loading your tickets...</div>
+          <div style={{ color: "#C41E3A", fontSize: "1.2rem", fontWeight: "bold" }}>
+            Santa is checking your tickets...
+          </div>
         </div>
       )}
 
-      {/* Tickets List */}
+      {/* Empty State */}
       {!loading && tickets.length === 0 && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="card border-0 shadow-sm text-center py-5"
-          style={{ borderRadius: 20 }}
+          style={{ borderRadius: 20, border: "3px solid #FFD700", background: "white" }}
         >
-          <div style={{ fontSize: "5rem" }} className="mb-3">
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{ fontSize: "6rem" }}
+            className="mb-3"
+          >
             💬
-          </div>
-          <h5 className="mb-2">No Support Tickets Yet</h5>
+          </motion.div>
+          <h5 className="mb-2" style={{ color: "#165B33", fontWeight: "bold" }}>
+            No Support Tickets Yet 🎄
+          </h5>
           <p className="text-muted mb-4">
-            Click "New Ticket" to submit your first support request
+            Click "New Ticket" to submit your first holiday request
           </p>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="btn btn-primary"
-            style={{ borderRadius: 12 }}
+            style={{ 
+              borderRadius: 12,
+              background: "linear-gradient(135deg, #C41E3A, #165B33)",
+              border: "none",
+              color: "white"
+            }}
             onClick={() => setShowForm(true)}
           >
-            ➕ Create First Ticket
+            ➕ Create First Ticket 🎁
           </motion.button>
         </motion.div>
       )}
 
+      {/* Tickets List */}
       {!loading && tickets.length > 0 && (
         <div>
-          <h5 className="mb-3 fw-semibold" style={{ color: "#475569" }}>
-            Your Tickets ({tickets.length})
+          <h5 className="mb-3 fw-semibold d-flex align-items-center gap-2" style={{ color: "#C41E3A" }}>
+            Your Holiday Tickets ({tickets.length}) 🎅
           </h5>
           {tickets.map((ticket) => (
-            <TicketCard key={ticket.id} ticket={ticket} />
+            <ChristmasTicketCard key={ticket.id} ticket={ticket} />
           ))}
         </div>
       )}
@@ -393,16 +521,16 @@ export default function Support() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
         className="card border-0 shadow-sm mt-4"
-        style={{ borderRadius: 16 }}
+        style={{ borderRadius: 16, border: "3px solid #FFD700", background: "white" }}
       >
         <div className="card-body p-4">
-          <h5 className="mb-3 fw-semibold">📚 Quick Help</h5>
+          <h5 className="mb-3 fw-semibold" style={{ color: "#C41E3A" }}>📚 Quick Holiday Help 🎄</h5>
           <div className="row g-3">
             <div className="col-md-4">
               <div className="d-flex gap-3">
                 <span style={{ fontSize: "24px" }}>📖</span>
                 <div>
-                  <div className="fw-semibold mb-1">Documentation</div>
+                  <div className="fw-semibold mb-1" style={{ color: "#165B33" }}>Documentation</div>
                   <p className="small text-muted mb-0">
                     Learn how to use all features
                   </p>
@@ -413,7 +541,7 @@ export default function Support() {
               <div className="d-flex gap-3">
                 <span style={{ fontSize: "24px" }}>❓</span>
                 <div>
-                  <div className="fw-semibold mb-1">FAQ</div>
+                  <div className="fw-semibold mb-1" style={{ color: "#165B33" }}>FAQ</div>
                   <p className="small text-muted mb-0">
                     Common questions answered
                   </p>
@@ -424,13 +552,28 @@ export default function Support() {
               <div className="d-flex gap-3">
                 <span style={{ fontSize: "24px" }}>📧</span>
                 <div>
-                  <div className="fw-semibold mb-1">Email Support</div>
+                  <div className="fw-semibold mb-1" style={{ color: "#165B33" }}>Email Support</div>
                   <p className="small text-muted mb-0">support@aqm.system</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </motion.div>
+
+      {/* Christmas Footer */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="text-center mt-5 py-4"
+      >
+        <h4 style={{ color: "#C41E3A", fontWeight: "bold" }}>
+          🎅 Merry Christmas Support! 🎄
+        </h4>
+        <p style={{ color: "#165B33" }}>
+          May your issues be resolved as quickly as Santa delivers gifts! ❄️⛄
+        </p>
       </motion.div>
     </div>
   );

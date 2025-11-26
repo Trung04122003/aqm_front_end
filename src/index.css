@@ -1,52 +1,252 @@
-/* src/index.css */
-:root{
+/* =========================================================
+   🎄 CHRISTMAS THEME 2025 — CLEAN, SAFE, RUNS PERFECTLY
+   Cooked by Lucien for Cupidon ❤️
+   ========================================================= */
+
+/* Root variables — Christmas palette + fallback system */
+:root {
+  /* Christmas Colors */
+  --christmas-red: #C41E3A;
+  --christmas-green: #165B33;
+  --christmas-gold: #FFD700;
+  --christmas-white: #FFFAFA;
+  --christmas-dark-green: #0B3D26;
+  --christmas-light-green: #50C878;
+  --christmas-silver: #C0C0C0;
+  --christmas-blue: #4169E1;
+
+  /* Winter theme */
+  --snow-white: #FFFFFF;
+  --ice-blue: #E0F7FA;
+  --frost-blue: #B3E5FC;
+  --winter-sky: #87CEEB;
+
+  /* Gradients */
+  --gradient-christmas: linear-gradient(135deg, #C41E3A 0%, #165B33 100%);
+  --gradient-winter: linear-gradient(135deg, #E0F7FA 0%, #B3E5FC 100%);
+  --gradient-gold: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+
+  /* Shadows */
+  --shadow-festive: 0 8px 32px rgba(196, 30, 58, 0.2);
+  --shadow-snow: 0 4px 20px rgba(255, 255, 255, 0.5);
+  --glow-gold: 0 0 20px rgba(255, 215, 0, 0.5);
+
+  /* Legacy support */
   --bg: #f6fbff;
   --card-bg: #ffffff;
   --muted: #6c757d;
-  --primary: #0ea5b7; /* teal-ish like IQAir */
-  --primary-dark: #0b7285;
+  --primary: var(--christmas-green);
+  --primary-dark: var(--christmas-dark-green);
+  --radius: 16px;
+
   --aqi-good: #4caf50;
   --aqi-moderate: #ffb300;
   --aqi-unhealthy: #f44336;
-  --glass: rgba(255,255,255,0.75);
-  --shadow: 0 6px 18px rgba(11,21,29,0.08);
-  --radius: 12px;
 }
+
+/* ========================================================= */
+/* Body Background — Winter Sky + Snowfall */
+/* ========================================================= */
 
 body {
-  background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg,
+    var(--ice-blue) 0%,
+    var(--frost-blue) 50%,
+    var(--christmas-white) 100%
+  );
+  font-family: "Quicksand", Inter, system-ui, sans-serif;
   color: #0f172a;
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* Card base */
+/* ❄️ Animated Snow */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  opacity: 0.6;
+  z-index: 1;
+
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, white, transparent),
+    radial-gradient(2px 2px at 60% 70%, white, transparent),
+    radial-gradient(1px 1px at 50% 50%, white, transparent),
+    radial-gradient(1px 1px at 80% 10%, white, transparent),
+    radial-gradient(2px 2px at 90% 60%, white, transparent),
+    radial-gradient(1px 1px at 33% 80%, white, transparent);
+  background-size: 200% 200%;
+  animation: snowfall 20s linear infinite;
+}
+
+@keyframes snowfall {
+  100% { background-position: 0% 200%; }
+}
+
+/* ========================================================= */
+/* Cards */
+/* ========================================================= */
+
 .card-aqm {
-  background: var(--card-bg);
-  border: none;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  background: var(--snow-white);
+  border: 2px solid var(--christmas-gold);
+  border-radius: 20px;
+  box-shadow:
+    var(--shadow-festive),
+    inset 0 0 20px rgba(255, 215, 0, 0.1);
+  position: relative;
+  transition: 0.3s ease;
 }
 
-/* AQI big headline */
-.aqi-head {
-  font-size: 2.6rem;
-  font-weight: 700;
-  letter-spacing: -1px;
+.card-aqm::before {
+  content: "🎄";
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  font-size: 100px;
+  opacity: 0.05;
+  pointer-events: none;
 }
 
-/* small stat */
-.stat-value { font-weight: 700; font-size: 1.4rem; }
-.stat-label { color: var(--muted); font-size: 0.9rem; }
+.card-aqm:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 40px rgba(196, 30, 58, 0.3),
+    var(--glow-gold);
+  border-color: var(--christmas-red);
+}
 
-/* sidebar */
+/* ========================================================= */
+/* Buttons */
+/* ========================================================= */
+
+.btn-primary {
+  background: var(--gradient-christmas) !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 600;
+  border-radius: 12px;
+  box-shadow: var(--shadow-festive);
+  transition: 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: scale(1.05);
+}
+
+/* ========================================================= */
+/* Navbar */
+/* ========================================================= */
+
+.navbar {
+  background: linear-gradient(90deg,
+    var(--christmas-red),
+    var(--christmas-green)
+  ) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.navbar-brand {
+  color: var(--snow-white) !important;
+  font-weight: 800;
+}
+
+/* ========================================================= */
+/* Sidebar */
+/* ========================================================= */
+
 .app-sidebar {
-  background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.8));
-  height: 100vh;
-  border-right: 1px solid rgba(15,23,42,0.04);
-  padding: 1rem;
+  background: linear-gradient(180deg,
+    rgba(255,250,250,0.95),
+    rgba(224,247,250,0.95)
+  );
+  border-right: 3px solid var(--christmas-gold);
+  box-shadow: 4px 0 20px rgba(196,30,58,0.1);
 }
 
-/* responsive hide sidebar on small screens */
+/* Nav links */
+.nav-link {
+  color: var(--christmas-green) !important;
+  font-weight: 600;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  transition: 0.3s ease;
+}
+
+.nav-link:hover {
+  background: var(--gradient-winter) !important;
+  color: var(--christmas-red) !important;
+  transform: translateX(8px);
+  box-shadow: var(--shadow-snow);
+}
+
+.nav-link.active {
+  background: var(--gradient-christmas) !important;
+  color: white !important;
+  box-shadow: var(--shadow-festive);
+}
+
+/* ========================================================= */
+/* AQI Typography */
+/* ========================================================= */
+
+.aqi-head {
+  font-size: 3.4rem;
+  font-weight: 800;
+  background: var(--gradient-gold);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Stats */
+.stat-value {
+  font-weight: 800;
+  font-size: 1.6rem;
+  background: var(--gradient-christmas);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.stat-label {
+  color: var(--christmas-green);
+  font-weight: 600;
+}
+
+/* ========================================================= */
+/* Inputs */
+/* ========================================================= */
+
+.form-control,
+.form-select {
+  border: 2px solid var(--christmas-light-green) !important;
+  border-radius: 12px !important;
+  transition: 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--christmas-red) !important;
+  box-shadow: 0 0 0 0.2rem rgba(196,30,58,0.25) !important;
+}
+
+/* ========================================================= */
+/* Scrollbar */
+/* ========================================================= */
+
+::-webkit-scrollbar { width: 12px; }
+::-webkit-scrollbar-track { background: var(--ice-blue); }
+::-webkit-scrollbar-thumb {
+  background: var(--gradient-christmas);
+  border-radius: 6px;
+  border: 2px solid var(--ice-blue);
+}
+
+/* ========================================================= */
+/* Responsive */
+/* ========================================================= */
+
 @media (max-width: 991px) {
   .app-sidebar { display: none; }
 }

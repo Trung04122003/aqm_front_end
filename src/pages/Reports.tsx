@@ -1,4 +1,5 @@
-// src/pages/Reports.tsx (ENHANCED - PHASE 4)
+// src/pages/Reports.tsx - CHRISTMAS 2025 EDITION 🎄
+
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,7 +23,8 @@ type Report = {
   generatedAt?: string;
 };
 
-const StatCard = ({
+// Christmas Stat Card Component
+const ChristmasStatCard = ({
   icon,
   label,
   value,
@@ -38,9 +40,9 @@ const StatCard = ({
   <motion.div
     initial={{ opacity: 0, scale: 0.9 }}
     animate={{ opacity: 1, scale: 1 }}
-    whileHover={{ y: -5, boxShadow: "0 12px 40px rgba(0,0,0,0.15)" }}
+    whileHover={{ y: -5, boxShadow: "0 12px 40px rgba(196, 30, 58, 0.3)" }}
     className="card border-0 shadow-sm h-100"
-    style={{ borderRadius: 16 }}
+    style={{ borderRadius: 16, border: "3px solid #FFD700" }}
   >
     <div className="card-body p-4">
       <div className="d-flex justify-content-between align-items-start mb-3">
@@ -49,8 +51,9 @@ const StatCard = ({
           style={{
             width: 48,
             height: 48,
-            background: `${color}15`,
+            background: `linear-gradient(135deg, ${color}, ${color}dd)`,
             fontSize: "24px",
+            border: "2px solid #FFD700"
           }}
         >
           {icon}
@@ -126,9 +129,41 @@ export default function Reports() {
     ? report.goodDays + report.moderateDays + report.unhealthyDays
     : 0;
 
+  // Snowflake component
+  const Snowflake = ({ delay }: { delay: number }) => (
+    <motion.div
+      className="position-absolute"
+      style={{
+        left: `${Math.random() * 100}%`,
+        top: -20,
+        fontSize: "20px",
+        pointerEvents: "none",
+        zIndex: 1
+      }}
+      animate={{
+        y: ["0vh", "110vh"],
+        rotate: [0, 360],
+        opacity: [0, 1, 1, 0]
+      }}
+      transition={{
+        duration: 8 + Math.random() * 4,
+        delay,
+        repeat: Infinity,
+        ease: "linear"
+      }}
+    >
+      ❄️
+    </motion.div>
+  );
+
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", padding: "2rem" }}>
-      {/* Header with Back Button */}
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #E0F7FA 0%, #B3E5FC 50%, #FFFAFA 100%)", padding: "2rem", position: "relative", overflow: "hidden" }}>
+      {/* Floating Snowflakes */}
+      {[...Array(15)].map((_, i) => (
+        <Snowflake key={i} delay={i * 0.5} />
+      ))}
+
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -140,174 +175,32 @@ export default function Reports() {
               href="/"
               whileHover={{ scale: 1.1, x: -5 }}
               whileTap={{ scale: 0.9 }}
-              className="btn btn-light rounded-circle d-flex align-items-center justify-content-center"
-              style={{ width: 48, height: 48, textDecoration: "none" }}
+              className="btn rounded-circle d-flex align-items-center justify-content-center"
+              style={{ 
+                width: 50, 
+                height: 50, 
+                textDecoration: "none",
+                background: "linear-gradient(135deg, #C41E3A, #165B33)",
+                color: "white",
+                border: "3px solid #FFD700",
+                fontSize: "20px"
+              }}
             >
-              <span style={{ fontSize: "20px" }}>←</span>
+              ←
             </motion.a>
             <div>
-              <h2 className="mb-1 fw-bold" style={{ color: "#1e293b" }}>
-                📊 Air Quality Reports
+              <h2 className="mb-1 fw-bold" style={{ color: "#C41E3A" }}>
+                📊 Christmas Air Quality Reports 🎅
               </h2>
               <p className="text-muted mb-0">
-                Generate comprehensive air quality analysis
+                Generate festive air quality analysis ❄️
               </p>
             </div>
           </div>
-
-          {report && (
-            <>
-              {/* Air Quality Distribution */}
-              <div
-                className="card border-0 shadow-sm mb-4"
-                style={{ borderRadius: 16 }}
-              >
-                <div className="card-body p-4">
-                  <h5 className="mb-4">📊 Air Quality Distribution</h5>
-                  <div className="row g-4">
-                    <div className="col-md-4">
-                      <div className="text-center">
-                        <div
-                          className="h2 fw-bold mb-0"
-                          style={{ color: "#10b981" }}
-                        >
-                          {report.goodDays}
-                        </div>
-                        <div className="small text-muted">Good Days</div>
-                        <div
-                          className="text-muted"
-                          style={{ fontSize: "0.75rem" }}
-                        >
-                          {totalDays > 0
-                            ? `${((report.goodDays / totalDays) * 100).toFixed(0)}% of period`
-                            : "N/A"}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="col-md-4">
-                      <div className="text-center">
-                        <div
-                          className="h2 fw-bold mb-0"
-                          style={{ color: "#f59e0b" }}
-                        >
-                          {report.moderateDays}
-                        </div>
-                        <div className="small text-muted">Moderate Days</div>
-                        <div
-                          className="text-muted"
-                          style={{ fontSize: "0.75rem" }}
-                        >
-                          {totalDays > 0
-                            ? `${((report.moderateDays / totalDays) * 100).toFixed(0)}% of period`
-                            : "N/A"}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="col-md-4">
-                      <div className="text-center">
-                        <div
-                          className="h2 fw-bold mb-0"
-                          style={{ color: "#ef4444" }}
-                        >
-                          {report.unhealthyDays}
-                        </div>
-                        <div className="small text-muted">Unhealthy Days</div>
-                        <div
-                          className="text-muted"
-                          style={{ fontSize: "0.75rem" }}
-                        >
-                          {totalDays > 0
-                            ? `${((report.unhealthyDays / totalDays) * 100).toFixed(0)}% of period`
-                            : "N/A"}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="mt-4">
-                    <div
-                      className="d-flex"
-                      style={{
-                        height: 24,
-                        borderRadius: 12,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: `${(report.goodDays / totalDays) * 100}%`,
-                          background: "#10b981",
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: `${(report.moderateDays / totalDays) * 100}%`,
-                          background: "#f59e0b",
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: `${(report.unhealthyDays / totalDays) * 100}%`,
-                          background: "#ef4444",
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Summary with ALL stats */}
-              <div
-                className="card border-0 shadow-sm"
-                style={{ borderRadius: 16 }}
-              >
-                <div className="card-body p-4">
-                  <h5 className="mb-3">📝 Summary</h5>
-                  <p className="text-muted mb-2">
-                    During the period from{" "}
-                    <strong>
-                      {new Date(report.fromDate).toLocaleDateString()}
-                    </strong>{" "}
-                    to{" "}
-                    <strong>
-                      {new Date(report.toDate).toLocaleDateString()}
-                    </strong>
-                    , the air quality in <strong>{report.locationName}</strong>{" "}
-                    averaged an AQI of{" "}
-                    <strong>{report.avgAqi.toFixed(0)}</strong>, which is
-                    considered{" "}
-                    <strong>
-                      {report.avgAqi > 100
-                        ? "Moderate to Unhealthy"
-                        : "Good to Moderate"}
-                    </strong>
-                    .
-                  </p>
-                  <p className="text-muted mb-0">
-                    The location experienced{" "}
-                    <strong>{report.goodDays} good days</strong>,
-                    <strong> {report.moderateDays} moderate days</strong>, and
-                    <strong> {report.unhealthyDays} unhealthy days</strong>.
-                    Peak pollution reached an AQI of{" "}
-                    <strong>{report.maxAqi}</strong>, with a minimum of{" "}
-                    <strong>{report.minAqi}</strong>.
-                  </p>
-                  <p className="text-muted small mt-2 mb-0">
-                    <em>
-                      Analysis based on {report.totalDataPoints} data points
-                    </em>
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
         </div>
 
         {/* Report Generator Form */}
-        <div className="card border-0 shadow-sm" style={{ borderRadius: 16 }}>
+        <div className="card border-0 shadow-sm" style={{ borderRadius: 16, border: "3px solid #FFD700" }}>
           <div className="card-body p-4">
             <div className="row g-3 align-items-end">
               <div className="col-md-3">
@@ -316,7 +209,7 @@ export default function Reports() {
                 </label>
                 <select
                   className="form-select"
-                  style={{ borderRadius: 12 }}
+                  style={{ borderRadius: 12, border: "2px solid #165B33" }}
                   value={selectedLocation ?? ""}
                   onChange={(e) => setSelectedLocation(Number(e.target.value))}
                 >
@@ -335,7 +228,7 @@ export default function Reports() {
                 <input
                   type="date"
                   className="form-control"
-                  style={{ borderRadius: 12 }}
+                  style={{ borderRadius: 12, border: "2px solid #165B33" }}
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
                 />
@@ -348,7 +241,7 @@ export default function Reports() {
                 <input
                   type="date"
                   className="form-control"
-                  style={{ borderRadius: 12 }}
+                  style={{ borderRadius: 12, border: "2px solid #165B33" }}
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
                 />
@@ -359,14 +252,20 @@ export default function Reports() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   className="btn btn-primary w-100"
-                  style={{ borderRadius: 12, padding: "12px" }}
+                  style={{ 
+                    borderRadius: 12, 
+                    padding: "12px",
+                    background: "linear-gradient(135deg, #C41E3A, #165B33)",
+                    border: "none",
+                    color: "white"
+                  }}
                   onClick={handleGenerate}
                   disabled={loading}
                 >
                   {loading ? (
                     <span>⏳ Generating...</span>
                   ) : (
-                    <span>🔍 Generate Report</span>
+                    <span>🔍 Generate Report 🎁</span>
                   )}
                 </motion.button>
               </div>
@@ -382,10 +281,16 @@ export default function Reports() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="alert alert-danger"
-            style={{ borderRadius: 12 }}
+            className="alert d-flex align-items-center gap-3 mb-4"
+            style={{ 
+              background: "rgba(196, 30, 58, 0.1)", 
+              border: "2px solid #C41E3A",
+              borderRadius: 16,
+              color: "#C41E3A"
+            }}
           >
-            ⚠️ {error}
+            <span style={{ fontSize: "24px" }}>⚠️</span>
+            <div>{error}</div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -394,14 +299,16 @@ export default function Reports() {
       {loading && (
         <div className="text-center py-5">
           <motion.div
-            animate={{ rotate: 360 }}
+            animate={{ rotate: 360, scale: [1, 1.2, 1] }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             className="d-inline-block mb-3"
             style={{ fontSize: "4rem" }}
           >
-            📊
+            🎅
           </motion.div>
-          <div className="text-muted">Generating your report...</div>
+          <div style={{ color: "#C41E3A", fontSize: "1.2rem", fontWeight: "bold" }}>
+            Santa is generating your report...
+          </div>
         </div>
       )}
 
@@ -414,15 +321,15 @@ export default function Reports() {
           {/* Report Header */}
           <div
             className="card border-0 shadow-sm mb-4"
-            style={{ borderRadius: 16 }}
+            style={{ borderRadius: 16, border: "3px solid #FFD700" }}
           >
             <div
               className="card-body p-4 text-white"
               style={{
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                background: "linear-gradient(135deg, #C41E3A, #165B33)",
               }}
             >
-              <h4 className="mb-2 fw-bold">Air Quality Report</h4>
+              <h4 className="mb-2 fw-bold">🎅 Christmas Air Quality Report</h4>
               <div className="d-flex align-items-center gap-3 flex-wrap">
                 <span>📍 {report.locationName}</span>
                 <span>•</span>
@@ -439,7 +346,7 @@ export default function Reports() {
           {/* Key Metrics */}
           <div className="row g-3 mb-4">
             <div className="col-md-3">
-              <StatCard
+              <ChristmasStatCard
                 icon="🌫️"
                 label="Average PM2.5"
                 value={report.avgPm25.toFixed(1)}
@@ -448,7 +355,7 @@ export default function Reports() {
               />
             </div>
             <div className="col-md-3">
-              <StatCard
+              <ChristmasStatCard
                 icon="💨"
                 label="Average PM10"
                 value={report.avgPm10.toFixed(1)}
@@ -457,7 +364,7 @@ export default function Reports() {
               />
             </div>
             <div className="col-md-3">
-              <StatCard
+              <ChristmasStatCard
                 icon="📈"
                 label="Average AQI"
                 value={report.avgAqi}
@@ -465,7 +372,7 @@ export default function Reports() {
               />
             </div>
             <div className="col-md-3">
-              <StatCard
+              <ChristmasStatCard
                 icon="⚠️"
                 label="Max AQI Recorded"
                 value={report.maxAqi}
@@ -477,10 +384,10 @@ export default function Reports() {
           {/* Air Quality Distribution */}
           <div
             className="card border-0 shadow-sm mb-4"
-            style={{ borderRadius: 16 }}
+            style={{ borderRadius: 16, border: "3px solid #FFD700" }}
           >
             <div className="card-body p-4">
-              <h5 className="mb-4">📊 Air Quality Distribution</h5>
+              <h5 className="mb-4" style={{ color: "#C41E3A" }}>📊 Holiday Air Quality Distribution 🎄</h5>
 
               <div className="row g-4">
                 <div className="col-md-4">
@@ -492,6 +399,7 @@ export default function Reports() {
                         height: 100,
                         background: "linear-gradient(135deg, #10b981, #059669)",
                         boxShadow: "0 8px 24px rgba(16, 185, 129, 0.3)",
+                        border: "3px solid #FFD700"
                       }}
                     >
                       <div className="text-white">
@@ -500,7 +408,7 @@ export default function Reports() {
                       </div>
                     </div>
                     <div className="fw-semibold" style={{ color: "#10b981" }}>
-                      😊 Good
+                      😊 Good 🎅
                     </div>
                     <div className="text-muted small">
                       {((report.goodDays / totalDays) * 100).toFixed(0)}% of
@@ -518,6 +426,7 @@ export default function Reports() {
                         height: 100,
                         background: "linear-gradient(135deg, #f59e0b, #d97706)",
                         boxShadow: "0 8px 24px rgba(245, 158, 11, 0.3)",
+                        border: "3px solid #FFD700"
                       }}
                     >
                       <div className="text-white">
@@ -528,7 +437,7 @@ export default function Reports() {
                       </div>
                     </div>
                     <div className="fw-semibold" style={{ color: "#f59e0b" }}>
-                      😐 Moderate
+                      😐 Moderate ⛄
                     </div>
                     <div className="text-muted small">
                       {((report.moderateDays / totalDays) * 100).toFixed(0)}% of
@@ -546,6 +455,7 @@ export default function Reports() {
                         height: 100,
                         background: "linear-gradient(135deg, #ef4444, #dc2626)",
                         boxShadow: "0 8px 24px rgba(239, 68, 68, 0.3)",
+                        border: "3px solid #FFD700"
                       }}
                     >
                       <div className="text-white">
@@ -556,7 +466,7 @@ export default function Reports() {
                       </div>
                     </div>
                     <div className="fw-semibold" style={{ color: "#ef4444" }}>
-                      😷 Unhealthy
+                      😷 Unhealthy 🦌
                     </div>
                     <div className="text-muted small">
                       {((report.unhealthyDays / totalDays) * 100).toFixed(0)}%
@@ -570,7 +480,7 @@ export default function Reports() {
               <div className="mt-4">
                 <div
                   className="d-flex"
-                  style={{ height: 24, borderRadius: 12, overflow: "hidden" }}
+                  style={{ height: 24, borderRadius: 12, overflow: "hidden", border: "2px solid #FFD700" }}
                 >
                   <div
                     style={{
@@ -596,11 +506,11 @@ export default function Reports() {
           </div>
 
           {/* Summary */}
-          <div className="card border-0 shadow-sm" style={{ borderRadius: 16 }}>
+          <div className="card border-0 shadow-sm" style={{ borderRadius: 16, border: "3px solid #FFD700" }}>
             <div className="card-body p-4">
-              <h5 className="mb-3">📝 Summary</h5>
+              <h5 className="mb-3" style={{ color: "#C41E3A" }}>📝 Holiday Summary 🎅</h5>
               <p className="text-muted mb-2">
-                During the period from{" "}
+                During the festive period from{" "}
                 <strong>
                   {new Date(report.fromDate).toLocaleDateString()}
                 </strong>{" "}
@@ -634,17 +544,39 @@ export default function Reports() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="card border-0 shadow-sm text-center py-5"
-          style={{ borderRadius: 20 }}
+          style={{ borderRadius: 20, border: "3px solid #FFD700", background: "white" }}
         >
-          <div style={{ fontSize: "5rem" }} className="mb-3">
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{ fontSize: "6rem" }}
+            className="mb-3"
+          >
             📊
-          </div>
-          <h5 className="mb-2">No Report Generated Yet</h5>
+          </motion.div>
+          <h5 className="mb-2" style={{ color: "#165B33", fontWeight: "bold" }}>
+            No Report Generated Yet 🎄
+          </h5>
           <p className="text-muted">
-            Select a location and date range, then click "Generate Report"
+            Select a location and date range, then click "Generate Report" ❄️
           </p>
         </motion.div>
       )}
+
+      {/* Christmas Footer */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="text-center mt-5 py-4"
+      >
+        <h4 style={{ color: "#C41E3A", fontWeight: "bold" }}>
+          🎅 Merry Reporting! 🎄
+        </h4>
+        <p style={{ color: "#165B33" }}>
+          May your air be as fresh as Christmas morning! ❄️⛄
+        </p>
+      </motion.div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
-// src/components/Navbar.tsx (UPDATED with AlertBadge & SearchBar)
+// src/components/Navbar.tsx - CHRISTMAS 2025 EDITION 🎄
+
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useState, useEffect } from "react";
@@ -8,16 +9,27 @@ import AlertBadge from "./AlertBadge";
 import SearchBar from "./SearchBar";
 import api from "../api/axios";
 
-export default function Navbar() {
+export default function ChristmasNavbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [snowflakes, setSnowflakes] = useState<Array<{ id: number; left: number; delay: number; duration: number }>>([]);
 
-  // Fetch unread alerts count
+  // Generate snowflakes
+  useEffect(() => {
+    const flakes = Array.from({ length: 15 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 5,
+      duration: 5 + Math.random() * 5
+    }));
+    setSnowflakes(flakes);
+  }, []);
+
+  // Fetch unread alerts
   useEffect(() => {
     if (!user) return;
-
     const fetchUnreadCount = async () => {
       try {
         const res = await api.get("/alerts/unread");
@@ -26,16 +38,12 @@ export default function Navbar() {
         console.error("Failed to fetch unread alerts", err);
       }
     };
-
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30s
-
+    const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, [user]);
 
   const handleSearch = (query: string) => {
-    console.log("Search query:", query);
-    // Implement search logic - navigate to search results page or filter dashboard
     if (query) {
       navigate(`/?search=${encodeURIComponent(query)}`);
     }
@@ -47,35 +55,73 @@ export default function Navbar() {
   };
 
   return (
-    <nav 
-      className="navbar navbar-expand-lg bg-white shadow-sm sticky-top"
-      style={{ 
-        borderBottom: "1px solid rgba(15,23,42,0.06)",
+    <nav
+      className="navbar navbar-expand-lg sticky-top position-relative overflow-hidden"
+      style={{
+        background: "linear-gradient(90deg, #C41E3A 0%, #165B33 50%, #C41E3A 100%)",
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
+        borderBottom: "3px solid #FFD700",
         zIndex: 1000
       }}
     >
+      {/* Falling Snowflakes */}
+      {snowflakes.map((flake) => (
+        <motion.div
+          key={flake.id}
+          className="position-absolute"
+          style={{
+            left: `${flake.left}%`,
+            top: -20,
+            color: "white",
+            fontSize: "20px",
+            pointerEvents: "none"
+          }}
+          animate={{
+            y: ["0vh", "110vh"],
+            rotate: [0, 360],
+            opacity: [0, 1, 1, 0]
+          }}
+          transition={{
+            duration: flake.duration,
+            delay: flake.delay,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+        >
+          ❄️
+        </motion.div>
+      ))}
+
       <div className="container-fluid px-4">
-        {/* Logo */}
-        <Link 
-          to="/" 
+        {/* Logo with Christmas Tree */}
+        <Link
+          to="/"
           className="navbar-brand fw-bold d-flex align-items-center gap-2"
-          style={{ color: "#0ea5b7", fontSize: "1.4rem" }}
+          style={{ color: "#FFFAFA", fontSize: "1.6rem", textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)" }}
         >
           <motion.span
-            whileHover={{ rotate: 15 }}
-            transition={{ type: "spring", stiffness: 300 }}
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{ fontSize: "2rem" }}
           >
-            🌍
+            🎄
           </motion.span>
-          AQM
+          AQM Winter
+          <motion.span
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            style={{ fontSize: "1.2rem" }}
+          >
+            ⛄
+          </motion.span>
         </Link>
 
         {/* Search Bar (Desktop) */}
         <div className="d-none d-lg-block mx-auto" style={{ maxWidth: 400 }}>
-          <SearchBar 
-            placeholder="Search locations, sensors..." 
+          <SearchBar
+            placeholder="🔎 Search locations, sensors..."
             onSearch={handleSearch}
-            suggestions={["Hanoi", "Ho Chi Minh City", "Da Nang"]}
+            suggestions={["Hanoi 🎅", "Ho Chi Minh City 🎄", "Da Nang ❄️"]}
           />
         </div>
 
@@ -83,20 +129,30 @@ export default function Navbar() {
         <div className="d-flex align-items-center gap-3">
           {user ? (
             <>
-              {/* Alerts Icon with Badge */}
+              {/* Christmas Gift Icon */}
               <motion.div
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.2, rotate: 15 }}
+                whileTap={{ scale: 0.9 }}
+                style={{ cursor: "pointer", color: "#FFD700", fontSize: "24px" }}
+              >
+                🎁
+              </motion.div>
+
+              {/* Alerts Bell with Snow */}
+              <motion.div
+                whileHover={{ scale: 1.1, rotate: [-5, 5, -5, 0] }}
+                whileTap={{ scale: 0.9 }}
                 className="position-relative"
                 style={{ cursor: "pointer" }}
                 onClick={() => navigate("/alerts")}
               >
-                <FaBell size={20} className="text-muted" />
+                <FaBell size={22} style={{ color: "#FFD700" }} />
                 <div className="position-absolute top-0 start-100 translate-middle">
-                  <AlertBadge count={unreadCount} size="sm" />
+                  <AlertBadge count={unreadCount} size="sm" variant="danger" />
                 </div>
               </motion.div>
 
-              {/* User Dropdown */}
+              {/* User Dropdown with Santa Hat */}
               <div className="position-relative">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
@@ -104,18 +160,32 @@ export default function Navbar() {
                   style={{ cursor: "pointer" }}
                   onClick={() => setShowDropdown(!showDropdown)}
                 >
-                  <div 
-                    className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
-                    style={{ width: 36, height: 36, fontSize: "0.9rem" }}
+                  <div
+                    className="rounded-circle text-white d-flex align-items-center justify-content-center position-relative"
+                    style={{
+                      width: 40,
+                      height: 40,
+                      background: "linear-gradient(135deg, #FFD700, #FFA500)",
+                      boxShadow: "0 4px 12px rgba(255, 215, 0, 0.5)",
+                      border: "2px solid white"
+                    }}
                   >
-                    {user.username?.charAt(0).toUpperCase() || "U"}
+                    <span style={{ fontSize: "1.2rem" }}>🎅</span>
+                    <motion.div
+                      className="position-absolute"
+                      style={{ top: -10, right: -10, fontSize: "20px" }}
+                      animate={{ rotate: [-10, 10, -10] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      🎄
+                    </motion.div>
                   </div>
                   <div className="d-none d-md-block">
-                    <div className="small fw-semibold" style={{ lineHeight: 1.2 }}>
+                    <div className="small fw-bold" style={{ lineHeight: 1.2, color: "#FFFAFA" }}>
                       {user.username || "User"}
                     </div>
-                    <div className="text-muted" style={{ fontSize: "0.7rem" }}>
-                      {user.email || ""}
+                    <div style={{ fontSize: "0.7rem", color: "#FFD700" }}>
+                      🔔 Merry Christmas!
                     </div>
                   </div>
                 </motion.div>
@@ -127,10 +197,12 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     className="position-absolute end-0 mt-2 card border-0 shadow-lg"
-                    style={{ 
-                      minWidth: 200,
-                      borderRadius: 12,
-                      zIndex: 1050
+                    style={{
+                      minWidth: 220,
+                      borderRadius: 16,
+                      zIndex: 1050,
+                      background: "linear-gradient(135deg, #FFFAFA, #E0F7FA)",
+                      border: "2px solid #FFD700"
                     }}
                     onMouseLeave={() => setShowDropdown(false)}
                   >
@@ -139,19 +211,19 @@ export default function Navbar() {
                         to="/profile"
                         className="dropdown-item rounded py-2 px-3 d-flex align-items-center gap-2"
                         onClick={() => setShowDropdown(false)}
+                        style={{ color: "#165B33" }}
                       >
                         <FaUser size={14} />
-                        Profile
+                        🎁 Profile
                       </Link>
-                      
-                      <hr className="my-2" />
-                      
+                      <hr className="my-2" style={{ borderColor: "#FFD700" }} />
                       <button
-                        className="dropdown-item rounded py-2 px-3 d-flex align-items-center gap-2 text-danger"
+                        className="dropdown-item rounded py-2 px-3 d-flex align-items-center gap-2"
                         onClick={handleLogout}
+                        style={{ color: "#C41E3A", fontWeight: "600" }}
                       >
                         <FaSignOutAlt size={14} />
-                        Logout
+                        🎅 Logout
                       </button>
                     </div>
                   </motion.div>
@@ -159,20 +231,43 @@ export default function Navbar() {
               </div>
             </>
           ) : (
-            <Link className="btn btn-primary btn-sm" to="/login">
-              Sign in
-            </Link>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                className="btn btn-light fw-bold px-4"
+                to="/login"
+                style={{
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, #FFD700, #FFA500)",
+                  color: "#165B33",
+                  border: "2px solid white",
+                  boxShadow: "0 4px 12px rgba(255, 215, 0, 0.5)"
+                }}
+              >
+                🎄 Sign in
+              </Link>
+            </motion.div>
           )}
         </div>
       </div>
 
       {/* Mobile Search Bar */}
       <div className="d-lg-none w-100 px-4 pb-3">
-        <SearchBar 
-          placeholder="Search..." 
-          onSearch={handleSearch}
-        />
+        <SearchBar placeholder="🔎 Search..." onSearch={handleSearch} />
       </div>
+
+      {/* Twinkling Lights Border */}
+      <motion.div
+        className="position-absolute bottom-0 w-100"
+        style={{ height: "3px", background: "linear-gradient(90deg, #FFD700, #C41E3A, #165B33, #FFD700, #C41E3A)" }}
+        animate={{
+          backgroundPosition: ["0% 0%", "200% 0%"]
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: "linear"
+        }}
+      />
     </nav>
   );
 }
