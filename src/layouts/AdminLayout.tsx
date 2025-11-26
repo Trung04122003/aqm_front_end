@@ -13,14 +13,27 @@ import {
   FaSignOutAlt,
   FaBars,
   FaTimes,
-  FaUserShield
-} from "react-icons/fa";
+  FaGift} from "react-icons/fa";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // ⭐ Santa Voice state
+  const [santaVoice] = useState(
+    localStorage.getItem("santaVoice") !== "off"
+  );
+
+  // 2️⃣ ⭐⭐ DÁN ĐÚNG ĐOẠN NÀY Ở ĐÂY
+  React.useEffect(() => {
+  if (santaVoice) {
+    const audio = new Audio("/audio/santa.mp3");
+    audio.volume = 0.7;
+    audio.play().catch(() => {});
+  }
+}, [santaVoice]);
 
   const handleLogout = () => {
     logout();
@@ -36,78 +49,130 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { path: "/admin/reports", icon: <FaChartBar />, label: "Reports" }
   ];
 
+  // ❄️ Little sparkle effect on sidebar
+  const SnowSparkle = () => (
+    <motion.div
+      className="position-absolute"
+      style={{
+        top: Math.random() * 100 + "%",
+        left: Math.random() * 100 + "%",
+        width: 4,
+        height: 4,
+        borderRadius: "50%",
+        background: "rgba(255,255,255,0.8)"
+      }}
+      animate={{ opacity: [0, 1, 0], scale: [0.4, 1.2, 0.4] }}
+      transition={{ duration: 2.5, repeat: Infinity }}
+    />
+  );
+
   return (
-    <div className="d-flex min-vh-100" style={{ background: "#f8fafc" }}>
-      {/* Sidebar */}
+    <div className="d-flex min-vh-100" style={{ background: "#0a1524" }}>
+      {/* SIDEBAR */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.aside
             initial={{ x: -280 }}
             animate={{ x: 0 }}
             exit={{ x: -280 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="position-fixed h-100 shadow-sm"
+            transition={{ type: "spring", stiffness: 280, damping: 28 }}
+            className="position-fixed h-100 shadow-lg"
             style={{
               width: 280,
-              background: "linear-gradient(180deg, #1e1b4b 0%, #312e81 100%)",
+              background: "linear-gradient(180deg, #0c1a33 0%, #13294b 100%)",
+              borderRight: "1px solid rgba(255,255,255,0.08)",
               zIndex: 1000,
-              overflowY: "auto"
+              overflowY: "auto",
+              position: "relative"
             }}
           >
-            {/* Logo */}
+            {/* Sparkles */}
+            {[...Array(10)].map((_, i) => (
+              <SnowSparkle key={i} />
+            ))}
+
+            {/* LOGO */}
             <div className="p-4 border-bottom border-white border-opacity-10">
-              <Link 
-                to="/admin" 
+              <Link
+                to="/admin"
                 className="text-decoration-none d-flex align-items-center gap-2"
               >
-                <div
+                <motion.div
                   className="rounded-circle d-flex align-items-center justify-content-center"
+                  whileHover={{ rotate: 10, scale: 1.05 }}
                   style={{
-                    width: 40,
-                    height: 40,
-                    background: "rgba(255,255,255,0.1)"
+                    width: 48,
+                    height: 48,
+                    background: "rgba(255,255,255,0.12)",
+                    backdropFilter: "blur(4px)"
                   }}
                 >
-                  <FaUserShield className="text-white" size={20} />
-                </div>
+                  <FaGift className="text-warning" size={22} />
+                </motion.div>
+
                 <div>
-                  <div className="text-white fw-bold" style={{ fontSize: "1.2rem" }}>
-                    AQM Admin
+                  <div
+                    className="fw-bold"
+                    style={{ fontSize: "1.25rem", color: "#FFD700" }}
+                  >
+                    North Pole HQ
                   </div>
-                  <div className="text-white-50 small">Control Panel</div>
+                  <div className="text-light small opacity-75">
+                    Control Center
+                  </div>
                 </div>
               </Link>
             </div>
 
-            {/* Navigation */}
-            <nav className="p-3">
+            {/* NAVIGATION */}
+            <nav className="p-3 mt-2">
               {menuItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
                   end={item.path === "/admin"}
                   className={({ isActive }) =>
-                    `d-flex align-items-center gap-3 text-decoration-none px-3 py-3 rounded mb-1 ${
+                    `d-flex align-items-center gap-3 text-decoration-none px-3 py-3 rounded position-relative mb-1 ${
                       isActive
-                        ? "bg-white bg-opacity-10 text-white"
+                        ? "text-white"
                         : "text-white text-opacity-75"
                     }`
                   }
-                  style={{ transition: "all 0.2s" }}
+                  style={{
+                    transition: "0.2s",
+                    fontWeight: 500
+                  }}
                 >
                   {({ isActive }) => (
                     <>
-                      <span style={{ fontSize: "1.2rem" }}>{item.icon}</span>
-                      <span className="fw-medium">{item.label}</span>
+                      <span
+                        style={{
+                          fontSize: "1.2rem",
+                          color: isActive ? "#FFD700" : "#ffffff"
+                        }}
+                      >
+                        {item.icon}
+                      </span>
+
+                      <span
+                        style={{
+                          color: isActive ? "#FFD700" : "#ffffffc4"
+                        }}
+                      >
+                        {item.label}
+                      </span>
+
+                      {/* Candy Cane Active Indicator */}
                       {isActive && (
                         <motion.div
                           layoutId="activeTab"
-                          className="position-absolute end-0 me-3"
+                          className="position-absolute end-0 me-2"
                           style={{
-                            width: 4,
-                            height: 24,
-                            borderRadius: 2,
-                            background: "white"
+                            width: 6,
+                            height: 26,
+                            borderRadius: 4,
+                            background:
+                              "repeating-linear-gradient(45deg, #ff0000, #ff0000 5px, #ffffff 5px, #ffffff 10px)"
                           }}
                         />
                       )}
@@ -117,89 +182,110 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               ))}
             </nav>
 
-            {/* Footer */}
+            {/* FOOTER */}
             <div className="position-absolute bottom-0 w-100 p-3 border-top border-white border-opacity-10">
               <button
-                className="btn btn-outline-light w-100 d-flex align-items-center justify-content-center gap-2"
+                className="btn btn-outline-warning w-100 d-flex align-items-center justify-content-center gap-2"
                 onClick={handleLogout}
+                style={{
+                  borderRadius: 10,
+                  fontWeight: 600
+                }}
               >
                 <FaSignOutAlt />
-                Logout
+                Return to Village
               </button>
             </div>
           </motion.aside>
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
+      {/* MAIN CONTENT AREA */}
       <div
         className="flex-grow-1"
         style={{
           marginLeft: sidebarOpen ? 280 : 0,
-          transition: "margin-left 0.3s"
+          transition: "margin-left 0.3s ease"
         }}
       >
-        {/* Top Bar */}
+        {/* TOP BAR */}
         <header
-          className="bg-white border-bottom sticky-top d-flex align-items-center justify-content-between px-4 py-3 shadow-sm"
-          style={{ zIndex: 999 }}
+          className="border-bottom sticky-top d-flex align-items-center justify-content-between px-4 py-3 shadow-sm"
+          style={{
+            zIndex: 999,
+            background: "rgba(255, 255, 255, 0.12)",
+            backdropFilter: "blur(12px)"
+          }}
         >
           <button
-            className="btn btn-link text-dark p-0"
+            className="btn btn-link p-0"
             onClick={() => setSidebarOpen(!sidebarOpen)}
+            style={{ color: "white" }}
           >
             {sidebarOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
           </button>
 
-          {/* User Menu */}
+          {/* USER MENU */}
           <div className="position-relative">
             <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="d-flex align-items-center gap-2"
+              whileHover={{ scale: 1.08 }}
+              className="d-flex align-items-center gap-2 text-white"
               style={{ cursor: "pointer" }}
               onClick={() => setShowUserMenu(!showUserMenu)}
             >
               <div
-                className="rounded-circle bg-gradient d-flex align-items-center justify-content-center text-white"
+                className="rounded-circle d-flex align-items-center justify-content-center"
                 style={{
-                  width: 40,
-                  height: 40,
-                  background: "linear-gradient(135deg, #667eea, #764ba2)"
+                  width: 42,
+                  height: 42,
+                  background: "linear-gradient(135deg, #FFD700, #ff9f1c)",
+                  color: "#000",
+                  fontWeight: 700
                 }}
               >
                 {user?.username?.charAt(0).toUpperCase() || "A"}
               </div>
+
               <div className="d-none d-md-block">
-                <div className="fw-semibold small">{user?.username || "Admin"}</div>
-                <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                  Administrator
+                <div className="fw-semibold small text-warning">
+                  {user?.username || "Admin"}
                 </div>
+                <div className="text-light small">Santa Operator</div>
               </div>
             </motion.div>
 
+            {/* DROPDOWN */}
             {showUserMenu && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="position-absolute end-0 mt-2 card border-0 shadow-lg"
-                style={{ minWidth: 200, borderRadius: 12, zIndex: 1050 }}
+                style={{
+                  minWidth: 200,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  background: "#13294b",
+                  color: "white"
+                }}
                 onMouseLeave={() => setShowUserMenu(false)}
               >
                 <div className="card-body p-2">
                   <Link
                     to="/admin/profile"
-                    className="dropdown-item rounded py-2"
+                    className="dropdown-item text-white rounded py-2"
                     onClick={() => setShowUserMenu(false)}
                   >
                     Profile Settings
                   </Link>
-                  <hr className="my-1" />
+
+                  <hr className="my-1 text-white opacity-25" />
+
                   <button
-                    className="dropdown-item rounded py-2 text-danger"
+                    className="dropdown-item py-2 text-danger fw-bold"
                     onClick={handleLogout}
                   >
                     <FaSignOutAlt className="me-2" />
-                    Logout
+                    Return to Village
                   </button>
                 </div>
               </motion.div>
@@ -207,8 +293,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="p-4" style={{ minHeight: "calc(100vh - 72px)" }}>
+        {/* PAGE CONTENT */}
+        <main className="p-4 text-white" style={{ minHeight: "calc(100vh - 72px)" }}>
           {children}
         </main>
       </div>
