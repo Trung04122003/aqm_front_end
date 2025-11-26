@@ -10,7 +10,8 @@ import {
   FaMapMarkerAlt,
   FaSnowflake,
   FaGift,
-  FaMoon} from "react-icons/fa";
+  FaMoon,
+} from "react-icons/fa";
 import api from "../../api/axios";
 import AdminLayout from "../../layouts/AdminLayout";
 import { Line } from "react-chartjs-2";
@@ -22,8 +23,9 @@ import {
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 } from "chart.js";
+import React from "react";
 
 ChartJS.register(
   CategoryScale,
@@ -55,18 +57,18 @@ const Snowflake = ({ delay }: { delay: number }) => (
       opacity: 0.7,
       color: "#E6F7FF",
       pointerEvents: "none",
-      zIndex: 1
+      zIndex: 1,
     }}
     animate={{
       y: ["0vh", "105vh"],
       rotate: [0, 360],
-      opacity: [0, 1, 1, 0]
+      opacity: [0, 1, 1, 0],
     }}
     transition={{
       duration: 9 + Math.random() * 4,
       delay,
       repeat: Infinity,
-      ease: "linear"
+      ease: "linear",
     }}
   >
     ❄️
@@ -82,8 +84,19 @@ export default function AdminDashboard() {
     totalAlerts: 0,
     activeLocations: 0,
     todayAlerts: 0,
-    systemHealth: "good"
+    systemHealth: "good",
   });
+  // ⭐ Santa Voice state
+  const [santaVoice] = useState(localStorage.getItem("santaVoice") !== "off");
+
+  // 2️⃣ ⭐⭐ DÁN ĐÚNG ĐOẠN NÀY Ở ĐÂY
+  React.useEffect(() => {
+    if (santaVoice) {
+      const audio = new Audio("/audio/santa.mp3");
+      audio.volume = 0.7;
+      audio.play().catch(() => {});
+    }
+  }, [santaVoice]);
 
   const [loading, setLoading] = useState(true);
 
@@ -97,7 +110,7 @@ export default function AdminDashboard() {
         api.get("/admin/users/count").catch(() => ({ data: 42 })),
         api.get("/admin/sensors").catch(() => ({ data: [] })),
         api.get("/admin/alerts/count").catch(() => ({ data: 156 })),
-        api.get("/locations").catch(() => ({ data: [] }))
+        api.get("/locations").catch(() => ({ data: [] })),
       ]);
 
       setStats({
@@ -106,7 +119,7 @@ export default function AdminDashboard() {
         totalAlerts: alerts.data?.count || alerts.data,
         activeLocations: locations.data?.length || 0,
         todayAlerts: 12,
-        systemHealth: "good"
+        systemHealth: "good",
       });
     } catch (err) {
       console.error("Failed to load stats", err);
@@ -139,16 +152,16 @@ export default function AdminDashboard() {
           theme === "xmas"
             ? "rgba(255, 215, 0, 0.15)"
             : "rgba(103, 232, 249, 0.15)",
-        tension: 0.4
-      }
-    ]
+        tension: 0.4,
+      },
+    ],
   };
 
   const StatCard = ({
     icon,
     label,
     value,
-    color
+    color,
   }: {
     icon: React.ReactNode;
     label: string;
@@ -170,7 +183,7 @@ export default function AdminDashboard() {
           background:
             theme === "dark"
               ? `linear-gradient(135deg, ${color}22, ${color}08)`
-              : `linear-gradient(135deg, ${themedColor}33, ${themedColor}11)`
+              : `linear-gradient(135deg, ${themedColor}33, ${themedColor}11)`,
         }}
       >
         <div className="card-body p-4">
@@ -181,7 +194,7 @@ export default function AdminDashboard() {
                 width: 56,
                 height: 56,
                 background: `${themedColor}20`,
-                border: `1.5px solid ${themedColor}`
+                border: `1.5px solid ${themedColor}`,
               }}
             >
               <span style={{ color: themedColor, fontSize: "1.5rem" }}>
@@ -214,14 +227,12 @@ export default function AdminDashboard() {
         style={{
           background: backgroundStyle,
           transition: "0.4s ease",
-          padding: "1px"
+          padding: "1px",
         }}
       >
         {/* Snow only in Xmas */}
         {theme === "xmas" &&
-          [...Array(20)].map((_, i) => (
-            <Snowflake key={i} delay={i * 0.3} />
-          ))}
+          [...Array(20)].map((_, i) => <Snowflake key={i} delay={i * 0.3} />)}
 
         <div
           className="container-fluid p-4 position-relative"
@@ -237,21 +248,29 @@ export default function AdminDashboard() {
               <h2
                 className="fw-bold mb-1"
                 style={{
+                  background:
+                    theme === "dark"
+                      ? "linear-gradient(90deg, #b3eaff, #e0f7ff)"
+                      : "none",
+                  WebkitBackgroundClip: theme === "dark" ? "text" : "unset",
+                  WebkitTextFillColor:
+                    theme === "dark" ? "transparent" : "inherit",
                   color: theme === "xmas" ? "#FFD700" : "#ffffff",
                   textShadow:
                     theme === "xmas"
                       ? "0 0 18px rgba(255,215,0,0.4)"
-                      : "none"
+                      : "0 0 14px rgba(180,230,255,0.3)",
                 }}
               >
                 {theme === "xmas"
                   ? "🎅 North Pole Control Center"
-                  : "Admin Dashboard"}
+                  : "🧊 Frostbyte Admin Station"}
               </h2>
+
               <p className="text-muted">
                 {theme === "xmas"
                   ? "Real-time Air Quality Monitoring from Santa’s HQ ❄️"
-                  : "System overview and statistics"}
+                  : "Centralized system analytics & diagnostics"}
               </p>
             </div>
 
@@ -263,7 +282,14 @@ export default function AdminDashboard() {
               }
               style={{
                 borderRadius: 14,
-                boxShadow: theme === "xmas" ? glow : "none"
+                boxShadow:
+                  theme === "xmas"
+                    ? "0 0 20px rgba(255,215,0,0.4)"
+                    : "0 0 14px rgba(180,230,255,0.2)",
+                border:
+                  theme === "dark"
+                    ? "1px solid rgba(180,230,255,0.4)"
+                    : "1px solid #FFD700",
               }}
             >
               {theme === "dark" ? (
@@ -325,15 +351,15 @@ export default function AdminDashboard() {
                 style={{
                   borderRadius: 18,
                   background:
-                    theme === "dark"
-                      ? "#ffffff"
-                      : "rgba(255, 215, 0, 0.15)",
-                  boxShadow: glow
+                    theme === "dark" ? "#ffffff" : "rgba(255, 215, 0, 0.15)",
+                  boxShadow: glow,
                 }}
               >
                 <div className="card-body p-4">
                   <h5 className="fw-semibold mb-3">
-                    {theme === "xmas" ? "🎄 Weekly Activity" : "Weekly Activity"}
+                    {theme === "xmas"
+                      ? "🎄 Weekly Activity"
+                      : "Weekly Activity"}
                   </h5>
                   <Line data={chartData} />
                 </div>
@@ -350,7 +376,7 @@ export default function AdminDashboard() {
                       ? "linear-gradient(135deg,#1e293b,#0f172a)"
                       : "linear-gradient(135deg,#4a3100,#6d4a00)",
                   color: "white",
-                  boxShadow: glow
+                  boxShadow: glow,
                 }}
               >
                 <div className="card-body p-4">
@@ -366,7 +392,7 @@ export default function AdminDashboard() {
                       style={{
                         width: 14,
                         height: 14,
-                        backgroundColor: "#10b981"
+                        backgroundColor: "#10b981",
                       }}
                     />
                     All Systems Operational
@@ -400,7 +426,7 @@ export default function AdminDashboard() {
                           ? "rgba(251, 191, 36, 0.15)"
                           : "rgba(255, 215, 0, 0.25)",
                       color: "#fbbf24",
-                      border: "1px solid #fbbf24"
+                      border: "1px solid #fbbf24",
                     }}
                   >
                     <FaExclamationTriangle className="me-2" />
@@ -417,19 +443,29 @@ export default function AdminDashboard() {
             style={{
               borderRadius: 18,
               background:
-                theme === "dark"
-                  ? "#ffffff"
-                  : "rgba(255, 215, 0, 0.15)",
-              boxShadow: glow
+                theme === "dark" ? "#ffffff" : "rgba(255, 215, 0, 0.15)",
+              boxShadow: glow,
             }}
           >
             <div className="card-body p-4">
               <h5 className="fw-semibold mb-3">Recent Activity</h5>
 
               {[
-                { user: "john_doe", action: "triggered alert", time: "2 min ago" },
-                { user: "admin", action: "added new sensor", time: "15 min ago" },
-                { user: "jane_smith", action: "registered", time: "1 hour ago" }
+                {
+                  user: "john_doe",
+                  action: "triggered alert",
+                  time: "2 min ago",
+                },
+                {
+                  user: "admin",
+                  action: "added new sensor",
+                  time: "15 min ago",
+                },
+                {
+                  user: "jane_smith",
+                  action: "registered",
+                  time: "1 hour ago",
+                },
               ].map((a, i) => (
                 <div
                   key={i}
@@ -440,7 +476,7 @@ export default function AdminDashboard() {
                     style={{
                       width: 40,
                       height: 40,
-                      background: "#f1f5f9"
+                      background: "#f1f5f9",
                     }}
                   >
                     <FaChartLine className="text-muted" size={16} />

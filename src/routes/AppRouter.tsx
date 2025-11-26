@@ -17,6 +17,7 @@ import SensorsAdmin from "../pages/admin/SensorsAdmin";
 import ThresholdsAdmin from "../pages/admin/ThresholdsAdmin";
 import AlertsAdmin from "../pages/admin/AlertsAdmin";
 import ReportsAdmin from "../pages/admin/ReportsAdmin";
+import SystemLogs from "../pages/admin/SystemLogs";
 
 export default function AppRouter() {
   return (
@@ -44,6 +45,7 @@ export default function AppRouter() {
         <Route path="/admin/thresholds" element={<ThresholdsAdmin />} />
         <Route path="/admin/alerts" element={<AlertsAdmin />} />
         <Route path="/admin/reports" element={<ReportsAdmin />} />
+        <Route path="/admin/logs" element={<SystemLogs />} />
       </Route>
 
       {/* ==================== FALLBACK ==================== */}

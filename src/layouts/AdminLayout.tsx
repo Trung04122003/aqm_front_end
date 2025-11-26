@@ -13,27 +13,14 @@ import {
   FaSignOutAlt,
   FaBars,
   FaTimes,
-  FaGift} from "react-icons/fa";
+  FaGift,
+  FaShieldAlt} from "react-icons/fa";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
-
-  // ⭐ Santa Voice state
-  const [santaVoice] = useState(
-    localStorage.getItem("santaVoice") !== "off"
-  );
-
-  // 2️⃣ ⭐⭐ DÁN ĐÚNG ĐOẠN NÀY Ở ĐÂY
-  React.useEffect(() => {
-  if (santaVoice) {
-    const audio = new Audio("/audio/santa.mp3");
-    audio.volume = 0.7;
-    audio.play().catch(() => {});
-  }
-}, [santaVoice]);
 
   const handleLogout = () => {
     logout();
@@ -46,7 +33,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { path: "/admin/sensors", icon: <FaServer />, label: "Sensors" },
     { path: "/admin/alerts", icon: <FaBell />, label: "Alert Management" },
     { path: "/admin/thresholds", icon: <FaCog />, label: "Thresholds" },
-    { path: "/admin/reports", icon: <FaChartBar />, label: "Reports" }
+    { path: "/admin/reports", icon: <FaChartBar />, label: "Reports" },
+    { path: "/admin/logs", icon: <FaShieldAlt />, label: "Security Logs" }
   ];
 
   // ❄️ Little sparkle effect on sidebar

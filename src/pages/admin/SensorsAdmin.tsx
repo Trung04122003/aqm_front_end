@@ -1,16 +1,19 @@
-// src/pages/admin/SensorsAdmin.tsx (ULTRA BEAUTIFUL)
+// src/pages/admin/SensorsAdmin.tsx  
+// 🌟 RUDOLF'S SENSOR NETWORK — Candy Cane Engineering Edition 🌟
+
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  FaEdit, 
-  FaTrash, 
-  FaPlus, 
-  FaSearch, 
+import {
+  FaEdit,
+  FaTrash,
+  FaPlus,
+  FaSearch,
   FaServer,
   FaMapMarkerAlt,
   FaCheckCircle,
   FaExclamationTriangle,
-  FaTools
+  FaTools,
+  FaCandyCane,
 } from "react-icons/fa";
 import { Modal, Form, Button, Badge } from "react-bootstrap";
 import AdminLayout from "../../layouts/AdminLayout";
@@ -31,6 +34,34 @@ type Location = {
   id: number;
   name: string;
 };
+
+// ❄️ Snowflake
+const Snowflake = ({ delay }: { delay: number }) => (
+  <motion.div
+    className="position-absolute"
+    style={{
+      left: `${Math.random() * 100}%`,
+      top: -20,
+      fontSize: "14px",
+      pointerEvents: "none",
+      zIndex: 1,
+      color: "#e0f7fa",
+    }}
+    animate={{
+      y: ["0vh", "110vh"],
+      opacity: [0, 1, 1, 0],
+      rotate: [0, 360],
+    }}
+    transition={{
+      duration: 12 + Math.random() * 6,
+      delay,
+      repeat: Infinity,
+      ease: "linear",
+    }}
+  >
+    ❄️
+  </motion.div>
+);
 
 export default function SensorsAdmin() {
   const [sensors, setSensors] = useState<Sensor[]>([]);
@@ -73,7 +104,7 @@ export default function SensorsAdmin() {
       sensorType: "",
       model: "",
       locationId: locations[0]?.id || 1,
-      status: "ACTIVE"
+      status: "ACTIVE",
     });
     setShowModal(true);
   };
@@ -116,420 +147,482 @@ export default function SensorsAdmin() {
     }
   };
 
-  const filteredSensors = sensors.filter(
-    (s) =>
-      s.serialNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.sensorType?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredSensors = sensors.filter((s) =>
+    [s.serialNumber, s.model, s.sensorType]
+      .join(" ")
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase()),
   );
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "ACTIVE":
-        return <FaCheckCircle className="text-success" />;
+        return <FaCheckCircle style={{ color: "#10b981" }} />;
       case "INACTIVE":
-        return <FaExclamationTriangle className="text-danger" />;
+        return <FaExclamationTriangle style={{ color: "#ef4444" }} />;
       case "MAINTENANCE":
-        return <FaTools className="text-warning" />;
+        return <FaTools style={{ color: "#f59e0b" }} />;
       default:
         return null;
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const variants: any = {
-      ACTIVE: "success",
-      INACTIVE: "danger",
-      MAINTENANCE: "warning"
-    };
-    return <Badge bg={variants[status] || "secondary"}>{status}</Badge>;
+  const getStatusCandyBorder = (status: string) => {
+    if (status === "ACTIVE")
+      return "2px solid rgba(16,185,129,0.4)"; // xanh mint
+    if (status === "MAINTENANCE")
+      return "2px solid rgba(245,158,11,0.4)"; // caramel
+    return "2px solid rgba(100,116,139,0.4)"; // iced grey
   };
 
-  const getLocationName = (locationId: number) => {
-    return locations.find(l => l.id === locationId)?.name || "Unknown";
+  const getCardGradient = (status: string) => {
+    if (status === "ACTIVE")
+      return "linear-gradient(135deg, #0f766e, #10b981)"; // mint candy green
+    if (status === "MAINTENANCE")
+      return "linear-gradient(135deg, #d97706, #f59e0b)"; // caramel
+    return "linear-gradient(135deg, #64748b, #475569)"; // frosty grey
   };
+
+  const getLocationName = (locationId: number) =>
+    locations.find((l) => l.id === locationId)?.name || "Unknown";
 
   return (
     <AdminLayout>
-      {/* Header */}
-      <div className="mb-4">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h2 className="mb-1 d-flex align-items-center gap-2">
-            <FaServer className="text-primary" />
-            Sensor Management
-          </h2>
-          <p className="text-muted">Monitor and manage air quality sensors</p>
-        </motion.div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-3">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="card border-0 shadow-sm"
-            style={{ borderRadius: 16, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
-          >
-            <div className="card-body p-4 text-white">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <div className="h3 fw-bold mb-1">{sensors.length}</div>
-                  <div className="small opacity-75">Total Sensors</div>
-                </div>
-                <FaServer size={32} className="opacity-50" />
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="col-md-3">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="card border-0 shadow-sm"
-            style={{ borderRadius: 16, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }}
-          >
-            <div className="card-body p-4 text-white">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <div className="h3 fw-bold mb-1">
-                    {sensors.filter(s => s.status === "ACTIVE").length}
-                  </div>
-                  <div className="small opacity-75">Active</div>
-                </div>
-                <FaCheckCircle size={32} className="opacity-50" />
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="col-md-3">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="card border-0 shadow-sm"
-            style={{ borderRadius: 16, background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }}
-          >
-            <div className="card-body p-4 text-white">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <div className="h3 fw-bold mb-1">
-                    {sensors.filter(s => s.status === "MAINTENANCE").length}
-                  </div>
-                  <div className="small opacity-75">Maintenance</div>
-                </div>
-                <FaTools size={32} className="opacity-50" />
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="col-md-3">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="card border-0 shadow-sm"
-            style={{ borderRadius: 16, background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" }}
-          >
-            <div className="card-body p-4 text-white">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <div className="h3 fw-bold mb-1">
-                    {sensors.filter(s => s.status === "INACTIVE").length}
-                  </div>
-                  <div className="small opacity-75">Inactive</div>
-                </div>
-                <FaExclamationTriangle size={32} className="opacity-50" />
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Actions Bar */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="card border-0 shadow-sm mb-4"
-        style={{ borderRadius: 16 }}
+      <div
+        className="position-relative"
+        style={{
+          background: "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)",
+          borderRadius: 20,
+          paddingBottom: 40,
+        }}
       >
-        <div className="card-body p-3">
-          <div className="row g-3 align-items-center">
-            <div className="col-12 col-md-6">
-              <div className="input-group" style={{ borderRadius: 12, overflow: "hidden" }}>
-                <span className="input-group-text bg-light border-0">
-                  <FaSearch className="text-muted" />
-                </span>
-                <input
-                  type="text"
-                  className="form-control bg-light border-0"
-                  placeholder="Search sensors..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="col-12 col-md-6 text-end">
-              <Button
-                variant="primary"
-                onClick={handleCreate}
-                className="d-inline-flex align-items-center gap-2 px-4"
-                style={{ borderRadius: 12 }}
+        {Array.from({ length: 20 }).map((_, i) => (
+          <Snowflake key={i} delay={i * 0.4} />
+        ))}
+
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 position-relative"
+          style={{ zIndex: 3 }}
+        >
+          <h1
+            className="fw-bold d-flex align-items-center gap-3"
+            style={{
+              color: "#FFD700",
+              textShadow: "0 0 20px rgba(255,215,0,0.5)",
+            }}
+          >
+            <FaCandyCane /> RUDOLF'S SENSOR NETWORK ⚡
+          </h1>
+          <p style={{ color: "#94a3b8" }}>
+            🎅 Candy Cane Engineering Division — Monitoring Santa’s air quality
+            infrastructure
+          </p>
+        </motion.div>
+
+        {/* Stats */}
+        <div className="row g-3 mb-4 position-relative" style={{ zIndex: 3 }}>
+          {[
+            {
+              label: "Total Sensors",
+              value: sensors.length,
+              color: "#f87171",
+              icon: "📡",
+            },
+            {
+              label: "Active",
+              value: sensors.filter((s) => s.status === "ACTIVE").length,
+              color: "#10b981",
+              icon: "🟢",
+            },
+            {
+              label: "Maintenance",
+              value: sensors.filter((s) => s.status === "MAINTENANCE").length,
+              color: "#f59e0b",
+              icon: "🛠️",
+            },
+            {
+              label: "Inactive",
+              value: sensors.filter((s) => s.status === "INACTIVE").length,
+              color: "#94a3b8",
+              icon: "⚪",
+            },
+          ].map((stat, i) => (
+            <motion.div
+              key={i}
+              className="col-md-3"
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <div
+                className="p-4 text-center"
+                style={{
+                  borderRadius: 18,
+                  border: `2px dashed ${stat.color}`,
+                  background: `${stat.color}15`,
+                  backdropFilter: "blur(6px)",
+                }}
               >
-                <FaPlus /> Create Sensor
-              </Button>
+                <div style={{ fontSize: "2rem" }}>{stat.icon}</div>
+                <div
+                  className="fw-bold"
+                  style={{
+                    color: stat.color,
+                    fontSize: "2rem",
+                    marginTop: 6,
+                  }}
+                >
+                  {stat.value}
+                </div>
+                <div style={{ color: "#cbd5e1" }}>{stat.label}</div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Search + Create */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card border-0 shadow-sm mb-4"
+          style={{
+            borderRadius: 16,
+            background: "rgba(255,255,255,0.04)",
+            backdropFilter: "blur(12px)",
+            zIndex: 3,
+            position: "relative",
+          }}
+        >
+          <div className="card-body p-3">
+            <div className="row g-3 align-items-center">
+              <div className="col-12 col-md-6">
+                <div
+                  className="input-group"
+                  style={{
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    background: "rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <span
+                    className="input-group-text border-0"
+                    style={{ background: "transparent", color: "#FFD700" }}
+                  >
+                    <FaSearch />
+                  </span>
+                  <input
+                    type="text"
+                    className="form-control border-0 text-light"
+                    style={{
+                      background: "transparent",
+                      outline: "none",
+                    }}
+                    placeholder="Search sensors..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="col-12 col-md-6 text-end">
+                <Button
+                  onClick={handleCreate}
+                  className="d-inline-flex align-items-center gap-2 px-4"
+                  style={{
+                    borderRadius: 12,
+                    background:
+                      "linear-gradient(135deg, #ef4444, #dc2626)", // candy red
+                    border: "none",
+                  }}
+                >
+                  <FaPlus /> Add Sensor
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      {/* Sensors Grid */}
-      <div className="row g-4">
-        <AnimatePresence>
-          {loading ? (
-            <div className="col-12 text-center py-5">
-              <div className="spinner-border text-primary" style={{ width: 60, height: 60 }} />
-            </div>
-          ) : filteredSensors.length === 0 ? (
-            <div className="col-12 text-center py-5">
-              <div style={{ fontSize: "4rem" }}>📡</div>
-              <h5 className="text-muted mt-3">No sensors found</h5>
-            </div>
-          ) : (
-            filteredSensors.map((sensor, index) => (
-              <motion.div
-                key={sensor.id}
-                className="col-12 col-md-6 col-xl-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ y: -5 }}
-              >
-                <div 
-                  className="card border-0 shadow-sm h-100"
-                  style={{ borderRadius: 16, overflow: "hidden" }}
+        {/* Sensor Grid */}
+        <div className="row g-4 position-relative" style={{ zIndex: 3 }}>
+          <AnimatePresence>
+            {loading ? (
+              <div className="col-12 text-center py-5">
+                <div
+                  className="spinner-border"
+                  style={{ width: 60, height: 60, color: "#FFD700" }}
+                />
+              </div>
+            ) : filteredSensors.length === 0 ? (
+              <div className="col-12 text-center py-5">
+                <div style={{ fontSize: "4rem" }}>📡</div>
+                <h5 className="text-muted mt-3">No sensors found</h5>
+              </div>
+            ) : (
+              filteredSensors.map((sensor, index) => (
+                <motion.div
+                  key={sensor.id}
+                  className="col-12 col-md-6 col-xl-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ y: -5 }}
                 >
-                  {/* Card Header */}
-                  <div 
-                    className="p-3 text-white"
+                  <div
+                    className="card h-100 text-light"
                     style={{
-                      background: sensor.status === "ACTIVE" 
-                        ? "linear-gradient(135deg, #10b981, #059669)"
-                        : sensor.status === "MAINTENANCE"
-                        ? "linear-gradient(135deg, #f59e0b, #d97706)"
-                        : "linear-gradient(135deg, #6b7280, #4b5563)"
+                      borderRadius: 18,
+                      overflow: "hidden",
+                      background: "rgba(255,255,255,0.05)",
+                      backdropFilter: "blur(6px)",
+                      border: getStatusCandyBorder(sensor.status),
                     }}
                   >
-                    <div className="d-flex justify-content-between align-items-start">
-                      <div>
-                        <div className="small opacity-75 mb-1">Serial Number</div>
-                        <div className="h5 fw-bold mb-0">{sensor.serialNumber}</div>
-                      </div>
-                      {getStatusIcon(sensor.status)}
-                    </div>
-                  </div>
-
-                  {/* Card Body */}
-                  <div className="card-body p-4">
-                    <div className="mb-3">
-                      <div className="d-flex align-items-center gap-2 mb-2">
-                        <FaServer className="text-muted" />
+                    {/* Header */}
+                    <div
+                      className="p-3 text-white"
+                      style={{
+                        background: getCardGradient(sensor.status),
+                      }}
+                    >
+                      <div className="d-flex justify-content-between align-items-start">
                         <div>
-                          <div className="small text-muted">Model</div>
-                          <div className="fw-semibold">{sensor.model || "N/A"}</div>
+                          <div className="small opacity-75">Serial Number</div>
+                          <div className="h5 fw-bold">
+                            {sensor.serialNumber}
+                          </div>
+                        </div>
+                        {getStatusIcon(sensor.status)}
+                      </div>
+                    </div>
+
+                    {/* Body */}
+                    <div className="card-body p-4">
+                      <div className="mb-3">
+                        <div className="d-flex align-items-center gap-2 mb-2">
+                          <FaServer className="text-secondary" />
+                          <div>
+                            <div className="small text-muted">Model</div>
+                            <div className="fw-semibold">
+                              {sensor.model || "N/A"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="d-flex align-items-center gap-2 mb-2">
+                          <FaMapMarkerAlt className="text-secondary" />
+                          <div>
+                            <div className="small text-muted">Location</div>
+                            <div className="fw-semibold">
+                              {getLocationName(sensor.locationId)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="d-flex align-items-center gap-2">
+                          <div className="small text-muted">Type:</div>
+                          <Badge bg="info">{sensor.sensorType}</Badge>
                         </div>
                       </div>
 
-                      <div className="d-flex align-items-center gap-2 mb-2">
-                        <FaMapMarkerAlt className="text-muted" />
-                        <div>
-                          <div className="small text-muted">Location</div>
-                          <div className="fw-semibold">{getLocationName(sensor.locationId)}</div>
+                      {sensor.installationDate && (
+                        <div className="small text-muted mb-3">
+                          Installed:{" "}
+                          {new Date(sensor.installationDate).toLocaleDateString(
+                            "vi-VN",
+                          )}
                         </div>
+                      )}
+
+                      <div className="d-flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline-light"
+                          className="flex-fill"
+                          onClick={() => handleEdit(sensor)}
+                          style={{ borderRadius: 10 }}
+                        >
+                          <FaEdit className="me-1" /> Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline-danger"
+                          style={{ borderRadius: 10 }}
+                          onClick={() => handleDelete(sensor.id)}
+                        >
+                          <FaTrash />
+                        </Button>
                       </div>
-
-                      <div className="d-flex align-items-center gap-2">
-                        <div className="small text-muted">Type:</div>
-                        <Badge bg="info">{sensor.sensorType}</Badge>
-                      </div>
-                    </div>
-
-                    <div className="mb-3">
-                      {getStatusBadge(sensor.status)}
-                    </div>
-
-                    {sensor.installationDate && (
-                      <div className="small text-muted mb-3">
-                        Installed: {new Date(sensor.installationDate).toLocaleDateString("vi-VN")}
-                      </div>
-                    )}
-
-                    <div className="d-flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline-primary"
-                        className="flex-fill"
-                        onClick={() => handleEdit(sensor)}
-                      >
-                        <FaEdit className="me-1" /> Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline-danger"
-                        onClick={() => handleDelete(sensor.id)}
-                      >
-                        <FaTrash />
-                      </Button>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))
-          )}
-        </AnimatePresence>
-      </div>
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        </div>
 
-      {/* Create/Edit Modal */}
-      <Modal 
-        show={showModal} 
-        onHide={() => setShowModal(false)} 
-        centered
-        size="lg"
-      >
-        <Modal.Header 
-          closeButton 
-          className="border-0 pb-0"
-          style={{ background: "linear-gradient(135deg, #667eea, #764ba2)" }}
+        {/* Modal */}
+        <Modal
+          show={showModal}
+          onHide={() => setShowModal(false)}
+          centered
+          size="lg"
         >
-          <Modal.Title className="text-white">
-            <FaServer className="me-2" />
-            {editing?.id ? "Edit Sensor" : "Create New Sensor"}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="p-4">
-          <Form>
-            <div className="row g-3">
-              <div className="col-md-6">
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Serial Number</Form.Label>
-                  <Form.Control
-                    value={editing?.serialNumber || ""}
-                    onChange={(e) =>
-                      setEditing({ ...editing!, serialNumber: e.target.value })
-                    }
-                    placeholder="SN-001"
-                    style={{ borderRadius: 12 }}
-                  />
-                </Form.Group>
-              </div>
-
-              <div className="col-md-6">
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Sensor Type</Form.Label>
-                  <Form.Control
-                    value={editing?.sensorType || ""}
-                    onChange={(e) =>
-                      setEditing({ ...editing!, sensorType: e.target.value })
-                    }
-                    placeholder="AirQuality"
-                    style={{ borderRadius: 12 }}
-                  />
-                </Form.Group>
-              </div>
-
-              <div className="col-md-6">
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Model</Form.Label>
-                  <Form.Control
-                    value={editing?.model || ""}
-                    onChange={(e) =>
-                      setEditing({ ...editing!, model: e.target.value })
-                    }
-                    placeholder="AQM-Pro"
-                    style={{ borderRadius: 12 }}
-                  />
-                </Form.Group>
-              </div>
-
-              <div className="col-md-6">
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Location</Form.Label>
-                  <Form.Select
-                    value={editing?.locationId || ""}
-                    onChange={(e) =>
-                      setEditing({ ...editing!, locationId: Number(e.target.value) })
-                    }
-                    style={{ borderRadius: 12 }}
-                  >
-                    {locations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        {loc.name}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </div>
-
-              <div className="col-md-6">
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Status</Form.Label>
-                  <Form.Select
-                    value={editing?.status || "ACTIVE"}
-                    onChange={(e) =>
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      setEditing({ ...editing!, status: e.target.value as any })
-                    }
-                    style={{ borderRadius: 12 }}
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
-                    <option value="MAINTENANCE">Maintenance</option>
-                  </Form.Select>
-                </Form.Group>
-              </div>
-
-              <div className="col-md-6">
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Installation Date</Form.Label>
-                  <Form.Control
-                    type="date"
-                    value={editing?.installationDate || ""}
-                    onChange={(e) =>
-                      setEditing({ ...editing!, installationDate: e.target.value })
-                    }
-                    style={{ borderRadius: 12 }}
-                  />
-                </Form.Group>
-              </div>
-            </div>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer className="border-0">
-          <Button 
-            variant="secondary" 
-            onClick={() => setShowModal(false)}
-            style={{ borderRadius: 12 }}
+          <Modal.Header
+            closeButton
+            className="border-0"
+            style={{
+              background: "linear-gradient(135deg, #ef4444, #b91c1c)",
+            }}
           >
-            Cancel
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={handleSave}
-            style={{ borderRadius: 12 }}
-          >
-            {editing?.id ? "Update Sensor" : "Create Sensor"}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+            <Modal.Title className="text-white">
+              🎄 {editing?.id ? "Edit Sensor" : "Create New Sensor"}
+            </Modal.Title>
+          </Modal.Header>
+
+          <Modal.Body className="p-4">
+            <Form>
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <Form.Group>
+                    <Form.Label className="fw-semibold">
+                      Serial Number
+                    </Form.Label>
+                    <Form.Control
+                      value={editing?.serialNumber || ""}
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing!,
+                          serialNumber: e.target.value,
+                        })
+                      }
+                      placeholder="SN-001"
+                      style={{ borderRadius: 12 }}
+                    />
+                  </Form.Group>
+                </div>
+
+                <div className="col-md-6">
+                  <Form.Group>
+                    <Form.Label className="fw-semibold">
+                      Sensor Type
+                    </Form.Label>
+                    <Form.Control
+                      value={editing?.sensorType || ""}
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing!,
+                          sensorType: e.target.value,
+                        })
+                      }
+                      placeholder="AirQuality"
+                      style={{ borderRadius: 12 }}
+                    />
+                  </Form.Group>
+                </div>
+
+                <div className="col-md-6">
+                  <Form.Group>
+                    <Form.Label className="fw-semibold">Model</Form.Label>
+                    <Form.Control
+                      value={editing?.model || ""}
+                      onChange={(e) =>
+                        setEditing({ ...editing!, model: e.target.value })
+                      }
+                      placeholder="AQM-Pro"
+                      style={{ borderRadius: 12 }}
+                    />
+                  </Form.Group>
+                </div>
+
+                <div className="col-md-6">
+                  <Form.Group>
+                    <Form.Label className="fw-semibold">Location</Form.Label>
+                    <Form.Select
+                      value={editing?.locationId || ""}
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing!,
+                          locationId: Number(e.target.value),
+                        })
+                      }
+                      style={{ borderRadius: 12 }}
+                    >
+                      {locations.map((loc) => (
+                        <option key={loc.id} value={loc.id}>
+                          {loc.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                </div>
+
+                <div className="col-md-6">
+                  <Form.Group>
+                    <Form.Label className="fw-semibold">Status</Form.Label>
+                    <Form.Select
+                      value={editing?.status || "ACTIVE"}
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing!,
+                          status: e.target.value as Sensor["status"],
+                        })
+                      }
+                      style={{ borderRadius: 12 }}
+                    >
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
+                      <option value="MAINTENANCE">Maintenance</option>
+                    </Form.Select>
+                  </Form.Group>
+                </div>
+
+                <div className="col-md-6">
+                  <Form.Group>
+                    <Form.Label className="fw-semibold">
+                      Installation Date
+                    </Form.Label>
+                    <Form.Control
+                      type="date"
+                      value={editing?.installationDate || ""}
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing!,
+                          installationDate: e.target.value,
+                        })
+                      }
+                      style={{ borderRadius: 12 }}
+                    />
+                  </Form.Group>
+                </div>
+              </div>
+            </Form>
+          </Modal.Body>
+
+          <Modal.Footer className="border-0">
+            <Button
+              variant="secondary"
+              onClick={() => setShowModal(false)}
+              style={{ borderRadius: 12 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleSave}
+              style={{
+                borderRadius: 12,
+                background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                border: "none",
+              }}
+            >
+              {editing?.id ? "Update Sensor" : "Create Sensor"}
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </div>
     </AdminLayout>
   );
 }
