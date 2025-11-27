@@ -1,19 +1,19 @@
-// src/pages/admin/ThresholdsAdmin.tsx (ULTRA BEAUTIFUL)
+// src/pages/admin/ThresholdsAdmin.tsx — NORTH POLE CALIBRATION LAB ❄️⚙️
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  FaEdit, 
-  FaTrash, 
-  FaPlus, 
-  FaBell,
-  FaExclamationTriangle,
-  FaUser,
-  FaChartLine
+import {
+  FaEdit,
+  FaTrash,
+  FaPlus,
+  FaSlidersH,
+  FaUserAstronaut,
+  FaThermometerHalf
 } from "react-icons/fa";
 import { Modal, Form, Button, Badge } from "react-bootstrap";
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
+import { FaGaugeHigh } from "react-icons/fa6";
 
 type Threshold = {
   id?: number;
@@ -39,9 +39,8 @@ export default function ThresholdsAdmin() {
     try {
       const res = await api.get("/admin/thresholds");
       setThresholds(res.data || []);
-    } catch (err) {
-      console.error("Failed to load thresholds", err);
-      toast.error("Failed to load thresholds");
+    } catch {
+      toast.error("Failed to load calibration values");
     } finally {
       setLoading(false);
     }
@@ -67,151 +66,151 @@ export default function ThresholdsAdmin() {
     try {
       if (editing.id) {
         await api.put(`/admin/thresholds/${editing.id}`, editing);
-        toast.success("Threshold updated successfully");
+        toast.success("Calibration updated");
       } else {
         await api.post("/admin/thresholds", editing);
-        toast.success("Threshold created successfully");
+        toast.success("Calibration created");
       }
       setShowModal(false);
       loadThresholds();
-    } catch (err) {
-      toast.error("Failed to save threshold");
-      console.error(err);
+    } catch {
+      toast.error("Failed to save calibration");
     }
   };
 
   const handleDelete = async (id?: number) => {
     if (!id) return;
-    if (!confirm("Are you sure you want to delete this threshold?")) return;
+    if (!confirm("Delete this calibration profile?")) return;
 
     try {
       await api.delete(`/admin/thresholds/${id}`);
-      toast.success("Threshold deleted successfully");
+      toast.success("Calibration deleted");
       loadThresholds();
-    } catch (err) {
-      toast.error("Failed to delete threshold");
-      console.error(err);
+    } catch {
+      toast.error("Failed to delete");
     }
   };
 
-  const getThresholdLevel = ({ value, type }: { value?: number; type: "pm25" | "pm10" | "aqi"; }) => {
-    if (!value) return { level: "low", color: "#10b981" };
-    
+  const getLevel = (value?: number, type?: "pm25" | "pm10" | "aqi") => {
+    if (!value) return { color: "#10b981", label: "Low" };
     const limits = {
       pm25: { moderate: 35, high: 55 },
       pm10: { moderate: 50, high: 150 },
       aqi: { moderate: 100, high: 150 }
     };
+    if (!type) return { color: "#10b981", label: "Low" };
 
-    if (value >= limits[type].high) return { level: "high", color: "#ef4444" };
-    if (value >= limits[type].moderate) return { level: "moderate", color: "#f59e0b" };
-    return { level: "low", color: "#10b981" };
+    if (value >= limits[type].high) return { color: "#ef4444", label: "High" };
+    if (value >= limits[type].moderate) return { color: "#f59e0b", label: "Moderate" };
+    return { color: "#10b981", label: "Low" };
   };
 
   return (
     <AdminLayout>
-      {/* Header */}
-      <div className="mb-4">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
+      {/* HEADER */}
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+        <h2
+          className="mb-1 d-flex align-items-center gap-2"
+          style={{ color: "#0ea5e9", fontWeight: 700 }}
         >
-          <h2 className="mb-1 d-flex align-items-center gap-2">
-            <FaBell className="text-warning" />
-            Alert Thresholds Management
-          </h2>
-          <p className="text-muted">Configure alert thresholds for users</p>
-        </motion.div>
-      </div>
+          ❄️ North Pole Calibration Lab
+        </h2>
+        <p className="text-light text-opacity-75">Configure sensor thresholds for alert generation</p>
+      </motion.div>
 
-      {/* Stats Cards */}
+      {/* STATS */}
       <div className="row g-3 mb-4">
+        {/* TOTAL */}
         <div className="col-md-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div
             className="card border-0 shadow-sm"
-            style={{ borderRadius: 16, background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }}
+            style={{
+              borderRadius: 16,
+              background: "linear-gradient(135deg,#0ea5e9 0%,#0284c7 100%)"
+            }}
           >
-            <div className="card-body p-4 text-white">
+            <div className="card-body text-white p-4">
               <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <div className="h3 fw-bold mb-1">{thresholds.length}</div>
-                  <div className="small opacity-75">Total Thresholds</div>
+                  <div className="h3 fw-bold">{thresholds.length}</div>
+                  <small className="opacity-75">Calibration Profiles</small>
                 </div>
-                <FaBell size={32} className="opacity-50" />
+                <FaSlidersH size={32} className="opacity-50" />
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
 
+        {/* HIGH SENSITIVITY */}
         <div className="col-md-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
+          <div
             className="card border-0 shadow-sm"
-            style={{ borderRadius: 16, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
+            style={{
+              borderRadius: 16,
+              background: "linear-gradient(135deg,#f43f5e 0%,#be123c 100%)"
+            }}
           >
-            <div className="card-body p-4 text-white">
+            <div className="card-body text-white p-4">
               <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <div className="h3 fw-bold mb-1">
-                    {thresholds.filter(t => (t.aqiThreshold || 0) > 100).length}
+                  <div className="h3 fw-bold">
+                    {thresholds.filter((t) => (t.aqiThreshold || 0) > 120).length}
                   </div>
-                  <div className="small opacity-75">High Sensitivity</div>
+                  <small className="opacity-75">High-Risk Sensors</small>
                 </div>
-                <FaExclamationTriangle size={32} className="opacity-50" />
+                <FaGaugeHigh size={32} className="opacity-50" />
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
 
+        {/* AVERAGE AQI */}
         <div className="col-md-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
+          <div
             className="card border-0 shadow-sm"
-            style={{ borderRadius: 16, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }}
+            style={{
+              borderRadius: 16,
+              background: "linear-gradient(135deg,#22c55e 0%,#15803d 100%)"
+            }}
           >
-            <div className="card-body p-4 text-white">
+            <div className="card-body text-white p-4">
               <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <div className="h3 fw-bold mb-1">
-                    {Math.round(thresholds.reduce((acc, t) => acc + (t.aqiThreshold || 0), 0) / (thresholds.length || 1))}
+                  <div className="h3 fw-bold">
+                    {Math.round(
+                      thresholds.reduce((acc, t) => acc + (t.aqiThreshold || 0), 0) /
+                        (thresholds.length || 1)
+                    )}
                   </div>
-                  <div className="small opacity-75">Avg AQI Threshold</div>
+                  <small className="opacity-75">Average AQI Threshold</small>
                 </div>
-                <FaChartLine size={32} className="opacity-50" />
+                <FaThermometerHalf size={32} className="opacity-50" />
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
-      {/* Actions Bar */}
+      {/* ACTION BAR */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="card border-0 shadow-sm mb-4"
         style={{ borderRadius: 16 }}
       >
-        <div className="card-body p-3">
-          <div className="d-flex justify-content-end">
-            <Button
-              variant="primary"
-              onClick={handleCreate}
-              className="d-inline-flex align-items-center gap-2 px-4"
-              style={{ borderRadius: 12 }}
-            >
-              <FaPlus /> Create Threshold
-            </Button>
-          </div>
+        <div className="card-body p-3 d-flex justify-content-end">
+          <Button
+            variant="primary"
+            onClick={handleCreate}
+            className="d-inline-flex align-items-center gap-2 px-4"
+            style={{ borderRadius: 12 }}
+          >
+            <FaPlus /> New Calibration
+          </Button>
         </div>
       </motion.div>
 
-      {/* Thresholds Grid */}
+      {/* GRID */}
       <div className="row g-4">
         <AnimatePresence>
           {loading ? (
@@ -220,21 +219,12 @@ export default function ThresholdsAdmin() {
             </div>
           ) : thresholds.length === 0 ? (
             <div className="col-12 text-center py-5">
-              <div style={{ fontSize: "4rem" }}>🔔</div>
-              <h5 className="text-muted mt-3">No thresholds configured</h5>
-              <Button 
-                variant="primary" 
-                className="mt-3"
-                onClick={handleCreate}
-              >
-                Create First Threshold
-              </Button>
+              <div style={{ fontSize: "4rem" }}>❄️</div>
+              <h5 className="text-muted mt-3">No calibration profiles available</h5>
             </div>
           ) : (
             thresholds.map((threshold, index) => {
-              const pm25Level = getThresholdLevel({ value: threshold.pm25Threshold, type: "pm25" });
-              const pm10Level = getThresholdLevel({ value: threshold.pm10Threshold, type: "pm10" });
-              const aqiLevel = getThresholdLevel({ value: threshold.aqiThreshold, type: "aqi" });
+              const levelAqi = getLevel(threshold.aqiThreshold, "aqi");
 
               return (
                 <motion.div
@@ -243,118 +233,82 @@ export default function ThresholdsAdmin() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ y: -5 }}
+                  transition={{ delay: index * 0.06 }}
+                  whileHover={{ y: -4 }}
                 >
-                  <div 
+                  <div
                     className="card border-0 shadow-sm h-100"
-                    style={{ borderRadius: 16, overflow: "hidden" }}
+                    style={{
+                      borderRadius: 18,
+                      overflow: "hidden",
+                      background: "linear-gradient(180deg,#f8fafc,#ffffff)"
+                    }}
                   >
-                    {/* Card Header */}
-                    <div 
+                    {/* HEADER */}
+                    <div
                       className="p-3 text-white"
                       style={{
-                        background: "linear-gradient(135deg, #f59e0b, #d97706)"
+                        background: "linear-gradient(135deg,#0ea5e9,#0369a1)"
                       }}
                     >
                       <div className="d-flex justify-content-between align-items-center">
                         <div className="d-flex align-items-center gap-2">
-                          <FaUser />
+                          <FaUserAstronaut />
                           <div>
-                            <div className="small opacity-75">User</div>
+                            <small className="opacity-75">User</small>
                             <div className="fw-bold">
-                              {threshold.user?.username || `ID: ${threshold.userId}`}
+                              {threshold.user?.username || `User ID: ${threshold.userId}`}
                             </div>
                           </div>
                         </div>
-                        <FaBell size={24} className="opacity-50" />
+                        <FaSlidersH size={24} className="opacity-50" />
                       </div>
                     </div>
 
-                    {/* Card Body */}
+                    {/* BODY */}
                     <div className="card-body p-4">
+                      {/* PM2.5 */}
                       <div className="mb-4">
-                        <h6 className="text-muted mb-3">Alert Thresholds</h6>
-                        
-                        {/* PM2.5 */}
-                        <div className="mb-3 p-3 rounded-3" style={{ background: "#f8f9fa" }}>
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <span className="fw-semibold">PM2.5</span>
-                            <Badge 
-                              style={{ 
-                                background: pm25Level.color,
-                                fontSize: "0.9rem"
-                              }}
-                            >
-                              {threshold.pm25Threshold?.toFixed(1) || "N/A"} µg/m³
-                            </Badge>
-                          </div>
-                          <div 
-                            className="progress" 
-                            style={{ height: 6, borderRadius: 3 }}
+                        <h6 className="text-muted mb-2">PM 2.5</h6>
+                        <div className="d-flex justify-content-between mb-1">
+                          <span className="fw-semibold">
+                            {threshold.pm25Threshold?.toFixed(1) ?? "N/A"} µg/m³
+                          </span>
+                          <Badge
+                            style={{
+                              background: getLevel(threshold.pm25Threshold, "pm25").color
+                            }}
                           >
-                            <div 
-                              className="progress-bar" 
-                              style={{ 
-                                width: `${Math.min((threshold.pm25Threshold || 0) / 100 * 100, 100)}%`,
-                                background: pm25Level.color
-                              }}
-                            />
-                          </div>
+                            {getLevel(threshold.pm25Threshold, "pm25").label}
+                          </Badge>
                         </div>
+                      </div>
 
-                        {/* PM10 */}
-                        <div className="mb-3 p-3 rounded-3" style={{ background: "#f8f9fa" }}>
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <span className="fw-semibold">PM10</span>
-                            <Badge 
-                              style={{ 
-                                background: pm10Level.color,
-                                fontSize: "0.9rem"
-                              }}
-                            >
-                              {threshold.pm10Threshold?.toFixed(1) || "N/A"} µg/m³
-                            </Badge>
-                          </div>
-                          <div 
-                            className="progress" 
-                            style={{ height: 6, borderRadius: 3 }}
+                      {/* PM10 */}
+                      <div className="mb-4">
+                        <h6 className="text-muted mb-2">PM 10</h6>
+                        <div className="d-flex justify-content-between mb-1">
+                          <span className="fw-semibold">
+                            {threshold.pm10Threshold?.toFixed(1) ?? "N/A"} µg/m³
+                          </span>
+                          <Badge
+                            style={{
+                              background: getLevel(threshold.pm10Threshold, "pm10").color
+                            }}
                           >
-                            <div 
-                              className="progress-bar" 
-                              style={{ 
-                                width: `${Math.min((threshold.pm10Threshold || 0) / 200 * 100, 100)}%`,
-                                background: pm10Level.color
-                              }}
-                            />
-                          </div>
+                            {getLevel(threshold.pm10Threshold, "pm10").label}
+                          </Badge>
                         </div>
+                      </div>
 
-                        {/* AQI */}
-                        <div className="p-3 rounded-3" style={{ background: "#f8f9fa" }}>
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <span className="fw-semibold">AQI</span>
-                            <Badge 
-                              style={{ 
-                                background: aqiLevel.color,
-                                fontSize: "0.9rem"
-                              }}
-                            >
-                              {threshold.aqiThreshold?.toFixed(0) || "N/A"}
-                            </Badge>
-                          </div>
-                          <div 
-                            className="progress" 
-                            style={{ height: 6, borderRadius: 3 }}
-                          >
-                            <div 
-                              className="progress-bar" 
-                              style={{ 
-                                width: `${Math.min((threshold.aqiThreshold || 0) / 300 * 100, 100)}%`,
-                                background: aqiLevel.color
-                              }}
-                            />
-                          </div>
+                      {/* AQI */}
+                      <div className="mb-4">
+                        <h6 className="text-muted mb-2">AQI</h6>
+                        <div className="d-flex justify-content-between mb-1">
+                          <span className="fw-bold">{threshold.aqiThreshold}</span>
+                          <Badge style={{ background: levelAqi.color }}>
+                            {levelAqi.label}
+                          </Badge>
                         </div>
                       </div>
 
@@ -367,6 +321,7 @@ export default function ThresholdsAdmin() {
                         >
                           <FaEdit className="me-1" /> Edit
                         </Button>
+
                         <Button
                           size="sm"
                           variant="outline-danger"
@@ -384,67 +339,50 @@ export default function ThresholdsAdmin() {
         </AnimatePresence>
       </div>
 
-      {/* Create/Edit Modal */}
-      <Modal 
-        show={showModal} 
-        onHide={() => setShowModal(false)} 
-        centered
-      >
-        <Modal.Header 
-          closeButton 
-          className="border-0 pb-0"
-          style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}
+      {/* MODAL */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal.Header
+          closeButton
+          style={{ background: "linear-gradient(135deg,#0ea5e9,#0369a1)" }}
         >
           <Modal.Title className="text-white">
-            <FaBell className="me-2" />
-            {editing?.id ? "Edit Threshold" : "Create New Threshold"}
+            {editing?.id ? "Recalibrate Threshold" : "Create Calibration"}
           </Modal.Title>
         </Modal.Header>
+
         <Modal.Body className="p-4">
           <Form>
+            {/* PM2.5 */}
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold d-flex align-items-center gap-2">
-                PM2.5 Threshold
-                <Badge bg="info" className="small">µg/m³</Badge>
-              </Form.Label>
+              <Form.Label>PM 2.5 Threshold</Form.Label>
               <Form.Control
                 type="number"
                 value={editing?.pm25Threshold || ""}
                 onChange={(e) =>
                   setEditing({ ...editing!, pm25Threshold: Number(e.target.value) })
                 }
-                placeholder="35.0"
+                placeholder="35"
                 style={{ borderRadius: 12 }}
               />
-              <Form.Text className="text-muted">
-                WHO guideline: 15 µg/m³, EPA standard: 35 µg/m³
-              </Form.Text>
             </Form.Group>
 
+            {/* PM10 */}
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold d-flex align-items-center gap-2">
-                PM10 Threshold
-                <Badge bg="info" className="small">µg/m³</Badge>
-              </Form.Label>
+              <Form.Label>PM 10 Threshold</Form.Label>
               <Form.Control
                 type="number"
                 value={editing?.pm10Threshold || ""}
                 onChange={(e) =>
                   setEditing({ ...editing!, pm10Threshold: Number(e.target.value) })
                 }
-                placeholder="50.0"
+                placeholder="50"
                 style={{ borderRadius: 12 }}
               />
-              <Form.Text className="text-muted">
-                WHO guideline: 45 µg/m³, EPA standard: 150 µg/m³
-              </Form.Text>
             </Form.Group>
 
+            {/* AQI */}
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold d-flex align-items-center gap-2">
-                AQI Threshold
-                <Badge bg="info" className="small">Index</Badge>
-              </Form.Label>
+              <Form.Label>AQI Threshold</Form.Label>
               <Form.Control
                 type="number"
                 value={editing?.aqiThreshold || ""}
@@ -454,26 +392,25 @@ export default function ThresholdsAdmin() {
                 placeholder="100"
                 style={{ borderRadius: 12 }}
               />
-              <Form.Text className="text-muted">
-                0-50: Good, 51-100: Moderate, 101-150: Unhealthy for Sensitive
-              </Form.Text>
             </Form.Group>
           </Form>
         </Modal.Body>
-        <Modal.Footer className="border-0">
-          <Button 
-            variant="secondary" 
+
+        <Modal.Footer>
+          <Button
+            variant="secondary"
             onClick={() => setShowModal(false)}
             style={{ borderRadius: 12 }}
           >
             Cancel
           </Button>
-          <Button 
-            variant="primary" 
+
+          <Button
+            variant="primary"
             onClick={handleSave}
             style={{ borderRadius: 12 }}
           >
-            {editing?.id ? "Update Threshold" : "Create Threshold"}
+            {editing?.id ? "Save Changes" : "Create Calibration"}
           </Button>
         </Modal.Footer>
       </Modal>

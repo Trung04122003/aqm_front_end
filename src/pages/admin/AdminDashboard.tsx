@@ -267,7 +267,7 @@ export default function AdminDashboard() {
                   : "🧊 Frostbyte Admin Station"}
               </h2>
 
-              <p className="text-muted">
+              <p className="text-light text-opacity-75">
                 {theme === "xmas"
                   ? "Real-time Air Quality Monitoring from Santa’s HQ ❄️"
                   : "Centralized system analytics & diagnostics"}

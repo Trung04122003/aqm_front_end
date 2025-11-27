@@ -1,11 +1,56 @@
 // src/pages/admin/ReportsAdmin.tsx
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FaFileAlt, FaDownload, FaTrash, FaCalendarAlt } from "react-icons/fa";
+import {
+  FaDownload,
+  FaTrash,
+  FaCalendarAlt,
+  FaGift
+} from "react-icons/fa";
 import { Badge, Button, Modal, Form } from "react-bootstrap";
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
+
+// ❄️ Snow animation
+const Snowflake = ({ delay }: { delay: number }) => (
+  <motion.div
+    className="position-absolute"
+    style={{
+      left: `${Math.random() * 100}%`,
+      top: -20,
+      fontSize: Math.random() * 14 + 10,
+      opacity: 0.75,
+      color: "#E6F7FF",
+      pointerEvents: "none",
+      zIndex: 1
+    }}
+    animate={{
+      y: ["0vh", "110vh"],
+      opacity: [0, 1, 1, 0],
+      rotate: [0, 360]
+    }}
+    transition={{
+      duration: 9 + Math.random() * 4,
+      delay,
+      repeat: Infinity,
+      ease: "linear"
+    }}
+  >
+    ❄️
+  </motion.div>
+);
+
+// 🎁 Gift bounce animation for fun
+const GiftBounce = () => (
+  <motion.div
+    animate={{ y: [0, -6, 0] }}
+    transition={{ repeat: Infinity, duration: 2 }}
+    className="d-inline-block"
+  >
+    <FaGift className="text-warning" size={20} />
+  </motion.div>
+);
 
 type Report = {
   id: number;
@@ -41,8 +86,8 @@ export default function ReportsAdmin() {
     try {
       const res = await api.get("/admin/reports");
       setReports(res.data || []);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
-      console.error(err);
       toast.error("Failed to load reports");
     } finally {
       setLoading(false);
@@ -53,9 +98,7 @@ export default function ReportsAdmin() {
     try {
       const res = await api.get("/locations");
       setLocations(res.data || []);
-    } catch (err) {
-      console.error(err);
-    }
+    } catch { /* empty */ }
   };
 
   const handleGenerate = async () => {
@@ -66,210 +109,287 @@ export default function ReportsAdmin() {
 
     try {
       await api.post("/admin/reports/generate", newReport);
-      toast.success("Report generated successfully");
+      toast.success("Report generated");
       setShowModal(false);
       loadReports();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
+    } catch {
       toast.error("Failed to generate report");
     }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("Delete this report?")) return;
-    
+
     try {
       await api.delete(`/admin/reports/${id}`);
       toast.success("Report deleted");
       loadReports();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      toast.error("Failed to delete report");
+    } catch {
+      toast.error("Failed to delete");
     }
   };
 
   const handleDownload = async (id: number) => {
     try {
-      const res = await api.get(`/admin/reports/${id}/download`, { 
-        responseType: 'blob' 
+      const res = await api.get(`/admin/reports/${id}/download`, {
+        responseType: "blob"
       });
-      
+
       const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', `report_${id}.pdf`);
+      link.setAttribute("download", `report_${id}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       toast.success("Report downloaded");
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      toast.error("Failed to download report");
+    } catch {
+      toast.error("Download failed");
     }
   };
 
   return (
     <AdminLayout>
-      <div className="mb-4">
-        <h2 className="mb-1">Reports Management</h2>
-        <p className="text-muted">Generate and manage air quality reports</p>
-      </div>
-
-      {/* Action Bar */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="card border-0 shadow-sm mb-4"
-        style={{ borderRadius: 16 }}
+      <div
+        className="min-vh-100 position-relative"
+        style={{
+          background: "linear-gradient(180deg,#0a1929 0%, #102540 100%)",
+          padding: "1px"
+        }}
       >
-        <div className="card-body p-3 d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-3">
-            <FaFileAlt size={24} className="text-primary" />
-            <div>
-              <div className="fw-semibold">Total Reports</div>
-              <div className="text-muted small">{reports.length} reports generated</div>
-            </div>
-          </div>
-          <Button
-            variant="primary"
-            onClick={() => setShowModal(true)}
-            className="d-inline-flex align-items-center gap-2"
+        {/* Snowfall */}
+        {[...Array(22)].map((_, i) => (
+          <Snowflake key={i} delay={i * 0.25} />
+        ))}
+
+        <div
+          className="container-fluid p-4 position-relative"
+          style={{ zIndex: 2 }}
+        >
+          {/* ⭐ HEADER */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4"
           >
-            <FaCalendarAlt /> Generate Report
-          </Button>
-        </div>
-      </motion.div>
+            <h2
+              className="fw-bold mb-1"
+              style={{
+                color: "#FFD700",
+                textShadow: "0 0 10px rgba(255,215,0,0.4)"
+              }}
+            >
+              📊 Workshop Analytics 🎁
+            </h2>
+            <p className="text-light text-opacity-75">
+              Santa’s official air-quality analysis reports
+            </p>
+          </motion.div>
 
-      {/* Reports Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="card border-0 shadow-sm"
-        style={{ borderRadius: 16 }}
-      >
-        <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="table table-hover mb-0">
-              <thead className="bg-light">
-                <tr>
-                  <th className="border-0 py-3 px-4">ID</th>
-                  <th className="border-0 py-3">User</th>
-                  <th className="border-0 py-3">Location</th>
-                  <th className="border-0 py-3">Period</th>
-                  <th className="border-0 py-3">Avg AQI</th>
-                  <th className="border-0 py-3">Generated At</th>
-                  <th className="border-0 py-3 text-end px-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-5">
-                      <div className="spinner-border text-primary" />
-                    </td>
-                  </tr>
-                ) : reports.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-5 text-muted">
-                      No reports found
-                    </td>
-                  </tr>
-                ) : (
-                  reports.map((report) => (
-                    <motion.tr
-                      key={report.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      whileHover={{ backgroundColor: "#f8f9fa" }}
-                    >
-                      <td className="px-4">{report.id}</td>
-                      <td className="fw-semibold">{report.user.username}</td>
-                      <td>{report.location.name}</td>
-                      <td className="text-muted small">
-                        {new Date(report.fromDate).toLocaleDateString('vi-VN')} - {new Date(report.toDate).toLocaleDateString('vi-VN')}
-                      </td>
-                      <td>
-                        <Badge bg="info">{report.avgAqi.toFixed(0)}</Badge>
-                      </td>
-                      <td className="text-muted small">
-                        {new Date(report.generatedAt).toLocaleString('vi-VN')}
-                      </td>
-                      <td className="text-end px-4">
-                        <Button
-                          size="sm"
-                          variant="outline-success"
-                          className="me-2"
-                          onClick={() => handleDownload(report.id)}
-                        >
-                          <FaDownload />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline-danger"
-                          onClick={() => handleDelete(report.id)}
-                        >
-                          <FaTrash />
-                        </Button>
-                      </td>
-                    </motion.tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </motion.div>
+          {/* ⭐ ACTION BAR */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card border-0 shadow-sm mb-4"
+            style={{
+              borderRadius: 16,
+              background: "rgba(255,255,255,0.07)",
+              backdropFilter: "blur(6px)"
+            }}
+          >
+            <div className="card-body p-3 d-flex justify-content-between align-items-center">
+              <div className="d-flex align-items-center gap-3">
+                <GiftBounce />
+                <div>
+                  <div className="fw-semibold text-warning">Total Reports</div>
+                  <div className="text-light small opacity-75">
+                    {reports.length} generated
+                  </div>
+                </div>
+              </div>
 
-      {/* Generate Report Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Generate New Report</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Location</Form.Label>
-              <Form.Select
-                value={newReport.locationId}
-                onChange={(e) => setNewReport({...newReport, locationId: e.target.value})}
+              <Button
+                variant="warning"
+                onClick={() => setShowModal(true)}
+                className="d-inline-flex align-items-center gap-2"
+                style={{ fontWeight: 600 }}
               >
-                <option value="">Select location</option>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {locations.map((loc: any) => (
-                  <option key={loc.id} value={loc.id}>{loc.name}</option>
-                ))}
-              </Form.Select>
-            </Form.Group>
+                <FaCalendarAlt /> Generate Report
+              </Button>
+            </div>
+          </motion.div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>From Date</Form.Label>
-              <Form.Control
-                type="date"
-                value={newReport.fromDate}
-                onChange={(e) => setNewReport({...newReport, fromDate: e.target.value})}
-              />
-            </Form.Group>
+          {/* ⭐ REPORTS TABLE */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card border-0 shadow-sm"
+            style={{
+              borderRadius: 16,
+              background: "rgba(255,255,255,0.08)",
+              backdropFilter: "blur(4px)"
+            }}
+          >
+            <div className="table-responsive">
+              <table className="table table-hover mb-0 text-light">
+                <thead
+                  style={{
+                    background: "rgba(255,255,255,0.14)",
+                    color: "#E6F7FF"
+                  }}
+                >
+                  <tr>
+                    <th className="border-0 py-3 px-4">ID</th>
+                    <th className="border-0 py-3">User</th>
+                    <th className="border-0 py-3">Location</th>
+                    <th className="border-0 py-3">Period</th>
+                    <th className="border-0 py-3">Avg AQI</th>
+                    <th className="border-0 py-3">Generated</th>
+                    <th className="border-0 py-3 text-end px-4">Actions</th>
+                  </tr>
+                </thead>
 
-            <Form.Group className="mb-3">
-              <Form.Label>To Date</Form.Label>
-              <Form.Control
-                type="date"
-                value={newReport.toDate}
-                onChange={(e) => setNewReport({...newReport, toDate: e.target.value})}
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleGenerate}>
-            Generate
-          </Button>
-        </Modal.Footer>
-      </Modal>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-5">
+                        <div className="spinner-border text-warning" />
+                      </td>
+                    </tr>
+                  ) : reports.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="text-center py-5 text-light opacity-75"
+                      >
+                        No reports available
+                      </td>
+                    </tr>
+                  ) : (
+                    reports.map((report) => (
+                      <motion.tr
+                        key={report.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        whileHover={{
+                          backgroundColor: "rgba(255,255,255,0.12)"
+                        }}
+                      >
+                        <td className="px-4">{report.id}</td>
+                        <td className="fw-semibold">{report.user.username}</td>
+                        <td>{report.location.name}</td>
+
+                        <td className="text-light small opacity-75">
+                          {new Date(report.fromDate).toLocaleDateString("vi-VN")}{" "}
+                          -{" "}
+                          {new Date(report.toDate).toLocaleDateString("vi-VN")}
+                        </td>
+
+                        <td>
+                          <Badge bg="warning" text="dark">
+                            {report.avgAqi.toFixed(0)}
+                          </Badge>
+                        </td>
+
+                        <td className="text-light small opacity-75">
+                          {new Date(report.generatedAt).toLocaleString("vi-VN")}
+                        </td>
+
+                        <td className="text-end px-4">
+                          <Button
+                            size="sm"
+                            variant="outline-success"
+                            className="me-2"
+                            onClick={() => handleDownload(report.id)}
+                          >
+                            <FaDownload />
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline-danger"
+                            onClick={() => handleDelete(report.id)}
+                          >
+                            <FaTrash />
+                          </Button>
+                        </td>
+                      </motion.tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+
+          {/* ⭐ MODAL */}
+          <Modal
+            show={showModal}
+            onHide={() => setShowModal(false)}
+            centered
+          >
+            <Modal.Header closeButton>
+              <Modal.Title>Generate Report</Modal.Title>
+            </Modal.Header>
+
+            <Modal.Body>
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Location</Form.Label>
+                  <Form.Select
+                    value={newReport.locationId}
+                    onChange={(e) =>
+                      setNewReport({ ...newReport, locationId: e.target.value })
+                    }
+                  >
+                    <option value="">Select location</option>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {locations.map((loc: any) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>From Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    value={newReport.fromDate}
+                    onChange={(e) =>
+                      setNewReport({ ...newReport, fromDate: e.target.value })
+                    }
+                  />
+                </Form.Group>
+
+                <Form.Group>
+                  <Form.Label>To Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    value={newReport.toDate}
+                    onChange={(e) =>
+                      setNewReport({ ...newReport, toDate: e.target.value })
+                    }
+                  />
+                </Form.Group>
+              </Form>
+            </Modal.Body>
+
+            <Modal.Footer>
+              <Button
+                variant="secondary"
+                onClick={() => setShowModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button variant="warning" onClick={handleGenerate}>
+                Generate
+              </Button>
+            </Modal.Footer>
+          </Modal>
+        </div>
+      </div>
     </AdminLayout>
   );
 }
