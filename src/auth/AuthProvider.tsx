@@ -1,7 +1,12 @@
 // src/auth/AuthProvider.tsx (FIXED - No reload bug)
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginRequest, registerRequest, getCurrentUser, registerAdminRequest } from "../api/auth";
+import {
+  loginRequest,
+  registerRequest,
+  getCurrentUser,
+  registerAdminRequest,
+} from "../api/auth";
 import api from "../api/axios";
 import { toast } from "react-toastify";
 
@@ -47,10 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const restoreSession = () => {
       const token = localStorage.getItem("token");
       const userRaw = localStorage.getItem("user");
-      
+
       if (token) {
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        
+
         if (userRaw) {
           try {
             const userData = JSON.parse(userRaw);
@@ -62,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         }
       }
-      
+
       setLoading(false); // ✅ IMPORTANT: Set loading to false after restore
     };
 
@@ -81,11 +86,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       const res = await loginRequest({ usernameOrEmail, password });
       const token = res?.data?.token || res?.data?.data?.token;
-      
+
       if (!token) throw new Error("No token returned from server");
 
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      
+
       let userObj = null;
       try {
         const me = await getCurrentUser();
@@ -93,51 +98,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch {
         userObj = { username: usernameOrEmail };
       }
-      
+
       setSession(token, userObj);
       toast.success("Login successful!");
       navigate("/");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("Login error:", err);
-      toast.error(err?.response?.data?.message || err?.message || "Login failed");
+      toast.error(
+        err?.response?.data?.message || err?.message || "Login failed"
+      );
       throw err;
     }
   };
+
+  // src/auth/AuthProvider.tsx - loginAdmin function
 
   const loginAdmin = async (usernameOrEmail: string, password: string) => {
     try {
       const res = await loginRequest({ usernameOrEmail, password });
       const token = res?.data?.token || res?.data?.data?.token;
-      
+
       if (!token) throw new Error("No token returned from server");
 
+      // ✅ Set token in axios
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      
+
+      // ✅ Store token
+      localStorage.setItem("token", token);
+
       let userObj = null;
       try {
         const me = await getCurrentUser();
         userObj = me.data;
+
+        // ✅ DEBUG: Log user data
+        console.log("🔐 User Object:", userObj);
+        console.log("🔐 User Role:", userObj?.role);
       } catch {
-        userObj = null;
+        userObj = { username: usernameOrEmail };
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const role = userObj?.role || userObj?.roles || (userObj as any)?.authorities || null;
-      const isAdmin =
-        (Array.isArray(role) &&
-          role.some((r: string) => r.toUpperCase().includes("ADMIN"))) ||
-        (typeof role === "string" && role.toUpperCase().includes("ADMIN"));
+      // ✅ Check admin role
+      const role = userObj?.role;
+      const isAdmin = role && String(role).toUpperCase().includes("ADMIN");
+
+      console.log("🔐 Is Admin:", isAdmin);
 
       if (!isAdmin) {
         delete api.defaults.headers.common["Authorization"];
         throw new Error("Account does not have ADMIN privileges");
       }
 
-      setSession(token, userObj);
+      // ✅ Store user data
+      localStorage.setItem("user", JSON.stringify(userObj));
+      setUser(userObj);
+
       toast.success("Admin login successful!");
       navigate("/admin");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("Admin login error:", err);
       toast.error(err?.message || "Admin login failed");
@@ -156,7 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await registerRequest(payload);
       toast.success("✅ User registration successful. Please login.");
       navigate("/login");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("Register error:", err);
       toast.error(err?.response?.data?.message || "Registration failed");
@@ -175,7 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await registerAdminRequest(payload); // ✅ Call admin endpoint
       toast.success("🎅 Admin registration successful. Please login.");
       navigate("/admin-login");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("Admin register error:", err);
       toast.error(err?.response?.data?.message || "Admin registration failed");
@@ -193,7 +213,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginAdmin, register, registerAdmin, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        loginAdmin,
+        register,
+        registerAdmin,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -25,10 +25,16 @@ export default function AdminRoute() {
   // Check if user has ADMIN role
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const role = (user as any)?.role || (user as any)?.roles || (user as any)?.authorities;
+
+  // ✅ DEBUG: Log role
+  console.log("🔐 Admin Route - User Role:", role)
+
   const isAdmin =
     (Array.isArray(role) && role.some((r: string) => String(r).toUpperCase().includes("ADMIN"))) ||
     (typeof role === "string" && String(role).toUpperCase().includes("ADMIN"));
 
+  console.log("🔐 Is Admin:", isAdmin);
+  
   if (!isAdmin) {
     return <Navigate to="/" replace />; // Redirect to user dashboard
   }
