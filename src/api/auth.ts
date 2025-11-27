@@ -1,11 +1,36 @@
 // src/api/auth.ts
+
 import api from "./axios";
 
-export const loginRequest = (payload: { usernameOrEmail: string; password: string }) =>
-  api.post("/auth/login", payload);
+// ✅ User registration
+export const registerRequest = (payload: { 
+  username: string; 
+  password: string; 
+  email: string; 
+  fullName: string 
+}) => api.post("/auth/register", payload);
 
-export const registerRequest = (payload: { username: string; password: string; email: string; fullName: string }) =>
-  api.post("/auth/register", payload);
+// ✅ Admin registration (PUBLIC - Development)
+export const registerAdminRequest = (payload: { 
+  username: string; 
+  password: string; 
+  email: string; 
+  fullName: string 
+}) => api.post("/auth/register-admin", payload);
 
-// Optional: /api/auth/me — BE có chưa thì ok, nếu chưa, this call may 404
+// ✅ Admin creation (PROTECTED - Production)
+export const createAdminRequest = (payload: { 
+  username: string; 
+  password: string; 
+  email: string; 
+  fullName: string 
+}) => api.post("/auth/create-admin", payload);
+
+// Login
+export const loginRequest = (payload: { 
+  usernameOrEmail: string; 
+  password: string 
+}) => api.post("/auth/login", payload);
+
+// Get current user
 export const getCurrentUser = () => api.get("/user/me");

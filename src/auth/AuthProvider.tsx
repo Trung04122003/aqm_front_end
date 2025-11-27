@@ -1,7 +1,7 @@
 // src/auth/AuthProvider.tsx (FIXED - No reload bug)
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginRequest, registerRequest, getCurrentUser } from "../api/auth";
+import { loginRequest, registerRequest, getCurrentUser, registerAdminRequest } from "../api/auth";
 import api from "../api/axios";
 import { toast } from "react-toastify";
 
@@ -19,6 +19,12 @@ type AuthContextType = {
   login: (usernameOrEmail: string, password: string) => Promise<void>;
   loginAdmin: (usernameOrEmail: string, password: string) => Promise<void>;
   register: (payload: {
+    username: string;
+    password: string;
+    email: string;
+    fullName: string;
+  }) => Promise<void>;
+  registerAdmin: (payload: {
     username: string;
     password: string;
     email: string;
@@ -139,6 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // ✅ User registration
   const register = async (payload: {
     username: string;
     password: string;
@@ -147,12 +154,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }) => {
     try {
       await registerRequest(payload);
-      toast.success("Registration successful. Please login.");
+      toast.success("✅ User registration successful. Please login.");
       navigate("/login");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("Register error:", err);
       toast.error(err?.response?.data?.message || "Registration failed");
+      throw err;
+    }
+  };
+
+  // ✅ Admin registration (NEW)
+  const registerAdmin = async (payload: {
+    username: string;
+    password: string;
+    email: string;
+    fullName: string;
+  }) => {
+    try {
+      await registerAdminRequest(payload); // ✅ Call admin endpoint
+      toast.success("🎅 Admin registration successful. Please login.");
+      navigate("/admin-login");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error("Admin register error:", err);
+      toast.error(err?.response?.data?.message || "Admin registration failed");
       throw err;
     }
   };
@@ -167,7 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginAdmin, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginAdmin, register, registerAdmin, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom"; // ✅ Thêm import
 import { toast } from "react-toastify";
 
 const AdminRegister: React.FC = () => {
-  const { register } = useAuth();
+  const { registerAdmin } = useAuth(); // ✅ Use registerAdmin instead of register
   const navigate = useNavigate(); // ✅ Thêm hook
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
@@ -45,7 +45,7 @@ const AdminRegister: React.FC = () => {
 
     setLoading(true);
     try {
-      await register({ username, password, email, fullName });
+      await registerAdmin({ username, password, email, fullName });
       // ✅ THÊM DÒNG NÀY - Redirect sang Admin Login sau khi đăng ký thành công
       toast.success("🎅 Admin registered successfully! Please login.");
       navigate("/admin-login"); // ✅ FIX: Redirect sang Admin Login
