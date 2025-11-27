@@ -84,10 +84,17 @@ export default function ReportsAdmin() {
   const loadReports = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/admin/reports");
+      // ✅ DEBUG: Check if token exists before making request
+      const token = localStorage.getItem("token");
+      console.log("🔑 Token exists:", !!token);
+      console.log("🔑 Token preview:", token?.substring(0, 30));
+
+      const res = await api.get("/admin/reports"); // ✅ Correct path
+      console.log("✅ Reports loaded:", res.data);
       setReports(res.data || []);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
+      console.error("❌ Failed to load reports:", err);
+      
       toast.error("Failed to load reports");
     } finally {
       setLoading(false);
