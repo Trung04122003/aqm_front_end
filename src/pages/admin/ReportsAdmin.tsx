@@ -1,12 +1,7 @@
 // src/pages/admin/ReportsAdmin.tsx
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  FaDownload,
-  FaTrash,
-  FaCalendarAlt,
-  FaGift
-} from "react-icons/fa";
+import { FaDownload, FaTrash, FaCalendarAlt, FaGift } from "react-icons/fa";
 import { Badge, Button, Modal, Form } from "react-bootstrap";
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
@@ -23,18 +18,18 @@ const Snowflake = ({ delay }: { delay: number }) => (
       opacity: 0.75,
       color: "#E6F7FF",
       pointerEvents: "none",
-      zIndex: 1
+      zIndex: 1,
     }}
     animate={{
       y: ["0vh", "110vh"],
       opacity: [0, 1, 1, 0],
-      rotate: [0, 360]
+      rotate: [0, 360],
     }}
     transition={{
       duration: 9 + Math.random() * 4,
       delay,
       repeat: Infinity,
-      ease: "linear"
+      ease: "linear",
     }}
   >
     ❄️
@@ -52,15 +47,22 @@ const GiftBounce = () => (
   </motion.div>
 );
 
+// ✅ FIXED: Match backend ReportDto structure
 type Report = {
   id: number;
-  user: { username: string };
-  location: { name: string };
+  username: string; // ✅ Direct username string
+  locationName: string; // ✅ Direct location name string
   fromDate: string;
   toDate: string;
+  avgAqi: number;
   avgPm25: number;
   avgPm10: number;
-  avgAqi: number;
+  maxAqi?: number;
+  minAqi?: number;
+  goodDays: number;
+  moderateDays: number;
+  unhealthyDays: number;
+  totalDataPoints: number;
   generatedAt: string;
 };
 
@@ -73,7 +75,7 @@ export default function ReportsAdmin() {
   const [newReport, setNewReport] = useState({
     locationId: "",
     fromDate: "",
-    toDate: ""
+    toDate: "",
   });
 
   useEffect(() => {
@@ -84,17 +86,16 @@ export default function ReportsAdmin() {
   const loadReports = async () => {
     setLoading(true);
     try {
-      // ✅ DEBUG: Check if token exists before making request
       const token = localStorage.getItem("token");
       console.log("🔑 Token exists:", !!token);
-      console.log("🔑 Token preview:", token?.substring(0, 30));
 
-      const res = await api.get("/admin/reports"); // ✅ Correct path
-      console.log("✅ Reports loaded:", res.data);
-      setReports(res.data || []);
+      const res = await api.get("/admin/reports");
+
+      // ✅ FIX: Ensure array format
+      const reportData = Array.isArray(res.data) ? res.data : [];
+      setReports(reportData);
     } catch (err) {
       console.error("❌ Failed to load reports:", err);
-      
       toast.error("Failed to load reports");
     } finally {
       setLoading(false);
@@ -105,7 +106,9 @@ export default function ReportsAdmin() {
     try {
       const res = await api.get("/locations");
       setLocations(res.data || []);
-    } catch { /* empty */ }
+    } catch {
+      /* empty */
+    }
   };
 
   const handleGenerate = async () => {
@@ -115,12 +118,29 @@ export default function ReportsAdmin() {
     }
 
     try {
-      await api.post("/admin/reports/generate", newReport);
-      toast.success("Report generated");
+      console.log("🎅 Generating report with:", newReport);
+
+      // ✅ FIX: Use ADMIN endpoint
+      const res = await api.post("/admin/reports/generate", {
+        locationId: Number(newReport.locationId),
+        fromDate: newReport.fromDate,
+        toDate: newReport.toDate,
+      });
+
+      console.log("✅ Report generated:", res.data);
+      toast.success("🎁 Report generated successfully!");
+
       setShowModal(false);
-      loadReports();
-    } catch {
-      toast.error("Failed to generate report");
+      setNewReport({ locationId: "", fromDate: "", toDate: "" });
+
+      // ✅ Reload reports table
+      await loadReports();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error("❌ Generate error:", err);
+      const errorMsg =
+        err?.response?.data || err?.message || "Failed to generate report";
+      toast.error(errorMsg);
     }
   };
 
@@ -139,7 +159,7 @@ export default function ReportsAdmin() {
   const handleDownload = async (id: number) => {
     try {
       const res = await api.get(`/admin/reports/${id}/download`, {
-        responseType: "blob"
+        responseType: "blob",
       });
 
       const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -162,7 +182,7 @@ export default function ReportsAdmin() {
         className="min-vh-100 position-relative"
         style={{
           background: "linear-gradient(180deg,#0a1929 0%, #102540 100%)",
-          padding: "1px"
+          padding: "1px",
         }}
       >
         {/* Snowfall */}
@@ -184,7 +204,7 @@ export default function ReportsAdmin() {
               className="fw-bold mb-1"
               style={{
                 color: "#FFD700",
-                textShadow: "0 0 10px rgba(255,215,0,0.4)"
+                textShadow: "0 0 10px rgba(255,215,0,0.4)",
               }}
             >
               📊 Workshop Analytics 🎁
@@ -202,7 +222,7 @@ export default function ReportsAdmin() {
             style={{
               borderRadius: 16,
               background: "rgba(255,255,255,0.07)",
-              backdropFilter: "blur(6px)"
+              backdropFilter: "blur(6px)",
             }}
           >
             <div className="card-body p-3 d-flex justify-content-between align-items-center">
@@ -235,7 +255,7 @@ export default function ReportsAdmin() {
             style={{
               borderRadius: 16,
               background: "rgba(255,255,255,0.08)",
-              backdropFilter: "blur(4px)"
+              backdropFilter: "blur(4px)",
             }}
           >
             <div className="table-responsive">
@@ -243,7 +263,7 @@ export default function ReportsAdmin() {
                 <thead
                   style={{
                     background: "rgba(255,255,255,0.14)",
-                    color: "#E6F7FF"
+                    color: "#FFFFFF", // ⭐ FIXED: Thay màu chữ đậm hơn (white full)
                   }}
                 >
                   <tr>
@@ -268,7 +288,7 @@ export default function ReportsAdmin() {
                     <tr>
                       <td
                         colSpan={7}
-                        className="text-center py-5 text-light opacity-75"
+                        className="text-center py-5 text-light"
                       >
                         No reports available
                       </td>
@@ -280,29 +300,27 @@ export default function ReportsAdmin() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         whileHover={{
-                          backgroundColor: "rgba(255,255,255,0.12)"
+                          backgroundColor: "rgba(255,255,255,0.12)",
                         }}
                       >
-                        <td className="px-4">{report.id}</td>
-                        <td className="fw-semibold">{report.user.username}</td>
-                        <td>{report.location.name}</td>
-
-                        <td className="text-light small opacity-75">
-                          {new Date(report.fromDate).toLocaleDateString("vi-VN")}{" "}
+                        <td className="px-4 fw-bold">{report.id}</td> {/* ⭐ FIXED: fw-bold để đậm */}
+                        <td className="fw-bold">{report.username}</td>{" "} {/* ⭐ FIXED: fw-bold để đậm */}
+                        <td className="fw-bold">{report.locationName}</td>{" "} {/* ⭐ FIXED: fw-bold để đậm */}
+                        <td className="fw-bold">
+                          {new Date(report.fromDate).toLocaleDateString(
+                            "vi-VN"
+                          )}{" "}
                           -{" "}
                           {new Date(report.toDate).toLocaleDateString("vi-VN")}
                         </td>
-
                         <td>
                           <Badge bg="warning" text="dark">
                             {report.avgAqi.toFixed(0)}
                           </Badge>
                         </td>
-
-                        <td className="text-light small opacity-75">
+                        <td className="fw-bold">
                           {new Date(report.generatedAt).toLocaleString("vi-VN")}
                         </td>
-
                         <td className="text-end px-4">
                           <Button
                             size="sm"
@@ -330,15 +348,10 @@ export default function ReportsAdmin() {
           </motion.div>
 
           {/* ⭐ MODAL */}
-          <Modal
-            show={showModal}
-            onHide={() => setShowModal(false)}
-            centered
-          >
+          <Modal show={showModal} onHide={() => setShowModal(false)} centered>
             <Modal.Header closeButton>
               <Modal.Title>Generate Report</Modal.Title>
             </Modal.Header>
-
             <Modal.Body>
               <Form>
                 <Form.Group className="mb-3">
@@ -358,7 +371,6 @@ export default function ReportsAdmin() {
                     ))}
                   </Form.Select>
                 </Form.Group>
-
                 <Form.Group className="mb-3">
                   <Form.Label>From Date</Form.Label>
                   <Form.Control
@@ -369,7 +381,6 @@ export default function ReportsAdmin() {
                     }
                   />
                 </Form.Group>
-
                 <Form.Group>
                   <Form.Label>To Date</Form.Label>
                   <Form.Control
@@ -382,16 +393,20 @@ export default function ReportsAdmin() {
                 </Form.Group>
               </Form>
             </Modal.Body>
-
             <Modal.Footer>
-              <Button
-                variant="secondary"
-                onClick={() => setShowModal(false)}
-              >
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
                 Cancel
               </Button>
-              <Button variant="warning" onClick={handleGenerate}>
-                Generate
+              <Button
+                variant="warning"
+                onClick={handleGenerate}
+                disabled={
+                  !newReport.locationId ||
+                  !newReport.fromDate ||
+                  !newReport.toDate
+                }
+              >
+                Generate 🎁
               </Button>
             </Modal.Footer>
           </Modal>
