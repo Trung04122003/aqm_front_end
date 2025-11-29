@@ -1,9 +1,10 @@
 // src/pages/admin/AlertsAdmin.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   FaTrash,
-  FaSearch} from "react-icons/fa";
+  FaSearch
+} from "react-icons/fa";
 import { Badge, Button } from "react-bootstrap";
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
@@ -52,6 +53,7 @@ const Snowflake = ({ delay }: { delay: number }) => (
 export default function AlertsAdmin() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // Thêm state error
   const [filter, setFilter] = useState<"all" | "read" | "unread">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -61,12 +63,21 @@ export default function AlertsAdmin() {
 
   const loadAlerts = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await api.get("/admin/alerts");
-      setAlerts(res.data || []);
-    } catch (err) {
+      const res = await api.get("/admin/alerts"); // Đổi thành /admin/alerts nếu BE dùng /api prefix
+      // Force array: Nếu res.data không array, fallback []
+      const data = Array.isArray(res.data) ? res.data : [];
+      setAlerts(data);
+      if (data.length === 0) {
+        toast.info("No alerts available");
+      }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to load alerts");
+      const msg = err?.response?.data?.message || "Failed to load alerts";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -76,7 +87,7 @@ export default function AlertsAdmin() {
     if (!confirm("Delete this alert?")) return;
 
     try {
-      await api.delete(`/admin/alerts/${id}`);
+      await api.delete(`/admin/alerts/${id}`); // Đổi prefix nếu cần
       toast.success("Alert deleted");
       loadAlerts();
     } catch {
@@ -84,18 +95,24 @@ export default function AlertsAdmin() {
     }
   };
 
-  const filteredAlerts = alerts
-    .filter((a) => {
-      if (filter === "read") return a.isRead;
-      if (filter === "unread") return !a.isRead;
-      return true;
-    })
-    .filter(
-      (a) =>
-        a.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.location.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.pollutant.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  // Use useMemo để optimize filtering
+  const filteredAlerts = useMemo(() => {
+    // Safe guard: Nếu alerts không array (dù khó xảy ra sau fix), return []
+    if (!Array.isArray(alerts)) return [];
+
+    return alerts
+      .filter((a) => {
+        if (filter === "read") return a.isRead;
+        if (filter === "unread") return !a.isRead;
+        return true;
+      })
+      .filter(
+        (a) =>
+          a.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          a.location.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          a.pollutant.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+  }, [alerts, filter, searchQuery]);
 
   // 🎄 Severity Icon
   const getSeverity = (value: number) => {
@@ -213,6 +230,17 @@ export default function AlertsAdmin() {
               </div>
             </div>
           </motion.div>
+
+          {/* Hiển thị error nếu có */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="alert alert-danger mb-4"
+            >
+              ⚠️ {error} <Button variant="link" onClick={loadAlerts}>Retry</Button>
+            </motion.div>
+          )}
 
           {/* Alerts Table */}
           <motion.div
