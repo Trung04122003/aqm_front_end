@@ -1,7 +1,14 @@
 // src/pages/Profile.tsx - CHRISTMAS PROFILE PAGE 🎅
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FaEdit, FaSave, FaTimes, FaUser, FaEnvelope, FaIdCard } from "react-icons/fa";
+import {
+  FaEdit,
+  FaSave,
+  FaTimes,
+  FaUser,
+  FaEnvelope,
+  FaIdCard,
+} from "react-icons/fa";
 import MainLayout from "../layouts/MainLayout";
 import api from "../api/axios";
 import { toast } from "react-toastify";
@@ -16,18 +23,18 @@ const Snowflake = ({ delay }: { delay: number }) => (
       top: -20,
       fontSize: "20px",
       pointerEvents: "none",
-      zIndex: 1
+      zIndex: 1,
     }}
     animate={{
       y: ["0vh", "110vh"],
       rotate: [0, 360],
-      opacity: [0, 1, 1, 0]
+      opacity: [0, 1, 1, 0],
     }}
     transition={{
       duration: 8 + Math.random() * 4,
       delay,
       repeat: Infinity,
-      ease: "linear"
+      ease: "linear",
     }}
   >
     ❄️
@@ -41,7 +48,7 @@ export default function ChristmasProfile() {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
-    username: ""
+    username: "",
   });
 
   useEffect(() => {
@@ -49,7 +56,7 @@ export default function ChristmasProfile() {
       setFormData({
         fullName: user.fullName || "",
         email: user.email || "",
-        username: user.username || ""
+        username: user.username || "",
       });
     }
   }, [user]);
@@ -57,6 +64,7 @@ export default function ChristmasProfile() {
   const handleSave = async () => {
     setLoading(true);
     try {
+      // ✅ Correct endpoint
       await api.put("/user/profile", formData);
       toast.success("🎅 Profile updated successfully!");
       setEditing(false);
@@ -70,7 +78,16 @@ export default function ChristmasProfile() {
 
   return (
     <MainLayout>
-      <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #E0F7FA 0%, #B3E5FC 50%, #FFFAFA 100%)", padding: "2rem", position: "relative", overflow: "hidden" }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          background:
+            "linear-gradient(135deg, #E0F7FA 0%, #B3E5FC 50%, #FFFAFA 100%)",
+          padding: "2rem",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
         {/* Floating Snowflakes */}
         {[...Array(15)].map((_, i) => (
           <Snowflake key={i} delay={i * 0.5} />
@@ -94,7 +111,7 @@ export default function ChristmasProfile() {
                 background: "linear-gradient(135deg, #C41E3A, #165B33)",
                 color: "white",
                 border: "3px solid #FFD700",
-                fontSize: "20px"
+                fontSize: "20px",
               }}
             >
               ←
@@ -103,9 +120,7 @@ export default function ChristmasProfile() {
               <h2 className="mb-1 fw-bold" style={{ color: "#C41E3A" }}>
                 🎅 My Christmas Profile
               </h2>
-              <p className="text-muted mb-0">
-                Manage your account settings
-              </p>
+              <p className="text-muted mb-0">Manage your account settings</p>
             </div>
           </div>
         </motion.div>
@@ -115,7 +130,12 @@ export default function ChristmasProfile() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="card border-0 shadow-lg"
-          style={{ borderRadius: 24, border: "3px solid #FFD700", maxWidth: 600, margin: "0 auto" }}
+          style={{
+            borderRadius: 24,
+            border: "3px solid #FFD700",
+            maxWidth: 600,
+            margin: "0 auto",
+          }}
         >
           {/* Header */}
           <div
@@ -137,7 +157,7 @@ export default function ChristmasProfile() {
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "3rem",
-                border: "4px solid #FFD700"
+                border: "4px solid #FFD700",
               }}
             >
               🎅
@@ -160,7 +180,7 @@ export default function ChristmasProfile() {
                     color: "white",
                     border: "none",
                     borderRadius: 12,
-                    padding: "8px 16px"
+                    padding: "8px 16px",
                   }}
                   onClick={() => setEditing(true)}
                 >
@@ -196,7 +216,10 @@ export default function ChristmasProfile() {
 
             {/* Form Fields */}
             <div className="mb-3">
-              <label className="form-label fw-semibold d-flex align-items-center gap-2" style={{ color: "#C41E3A" }}>
+              <label
+                className="form-label fw-semibold d-flex align-items-center gap-2"
+                style={{ color: "#C41E3A" }}
+              >
                 <FaUser /> Full Name
               </label>
               <input
@@ -204,13 +227,18 @@ export default function ChristmasProfile() {
                 className="form-control"
                 style={{ borderRadius: 12, border: "2px solid #165B33" }}
                 value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, fullName: e.target.value })
+                }
                 disabled={!editing}
               />
             </div>
 
             <div className="mb-3">
-              <label className="form-label fw-semibold d-flex align-items-center gap-2" style={{ color: "#C41E3A" }}>
+              <label
+                className="form-label fw-semibold d-flex align-items-center gap-2"
+                style={{ color: "#C41E3A" }}
+              >
                 <FaEnvelope /> Email
               </label>
               <input
@@ -218,19 +246,28 @@ export default function ChristmasProfile() {
                 className="form-control"
                 style={{ borderRadius: 12, border: "2px solid #165B33" }}
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 disabled={!editing}
               />
             </div>
 
             <div className="mb-3">
-              <label className="form-label fw-semibold d-flex align-items-center gap-2" style={{ color: "#C41E3A" }}>
+              <label
+                className="form-label fw-semibold d-flex align-items-center gap-2"
+                style={{ color: "#C41E3A" }}
+              >
                 <FaIdCard /> Username
               </label>
               <input
                 type="text"
                 className="form-control"
-                style={{ borderRadius: 12, border: "2px solid #165B33", background: "#f8f9fa" }}
+                style={{
+                  borderRadius: 12,
+                  border: "2px solid #165B33",
+                  background: "#f8f9fa",
+                }}
                 value={formData.username}
                 disabled
               />

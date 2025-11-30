@@ -19,6 +19,7 @@ import AlertsAdmin from "../pages/admin/AlertsAdmin";
 import ReportsAdmin from "../pages/admin/ReportsAdmin";
 import SystemLogs from "../pages/admin/SystemLogs";
 import Profile from "../pages/Profile";
+import AdminProfile from "../pages/admin/AdminProfile";
 
 export default function AppRouter() {
   return (
@@ -42,6 +43,7 @@ export default function AppRouter() {
       {/* ==================== ADMIN PROTECTED ROUTES ==================== */}
       <Route element={<AdminRoute />}>
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/profile" element={<AdminProfile />} /> {/* ✅ NEW */}
         <Route path="/admin/users" element={<UsersAdmin />} />
         <Route path="/admin/sensors" element={<SensorsAdmin />} />
         <Route path="/admin/thresholds" element={<ThresholdsAdmin />} />
