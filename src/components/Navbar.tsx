@@ -1,4 +1,4 @@
-// src/components/Navbar.tsx - CHRISTMAS 2025 EDITION 🎄
+// src/components/Navbar.tsx - CHRISTMAS 2025 EDITION 🔔
 
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
@@ -13,8 +13,9 @@ export default function ChristmasNavbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [snowflakes, setSnowflakes] = useState<Array<{ id: number; left: number; delay: number; duration: number }>>([]);
+  const [snowflakes, setSnowflakes] = useState<
+    Array<{ id: number; left: number; delay: number; duration: number }>
+  >([]);
 
   // Generate snowflakes
   useEffect(() => {
@@ -22,7 +23,7 @@ export default function ChristmasNavbar() {
       id: i,
       left: Math.random() * 100,
       delay: Math.random() * 5,
-      duration: 5 + Math.random() * 5
+      duration: 5 + Math.random() * 5,
     }));
     setSnowflakes(flakes);
   }, []);
@@ -58,10 +59,11 @@ export default function ChristmasNavbar() {
     <nav
       className="navbar navbar-expand-lg sticky-top position-relative overflow-hidden"
       style={{
-        background: "linear-gradient(90deg, #C41E3A 0%, #165B33 50%, #C41E3A 100%)",
+        background:
+          "linear-gradient(90deg, #C41E3A 0%, #165B33 50%, #C41E3A 100%)",
         boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
         borderBottom: "3px solid #FFD700",
-        zIndex: 1000
+        zIndex: 1000,
       }}
     >
       {/* Falling Snowflakes */}
@@ -74,18 +76,18 @@ export default function ChristmasNavbar() {
             top: -20,
             color: "white",
             fontSize: "20px",
-            pointerEvents: "none"
+            pointerEvents: "none",
           }}
           animate={{
             y: ["0vh", "110vh"],
             rotate: [0, 360],
-            opacity: [0, 1, 1, 0]
+            opacity: [0, 1, 1, 0],
           }}
           transition={{
             duration: flake.duration,
             delay: flake.delay,
             repeat: Infinity,
-            ease: "linear"
+            ease: "linear",
           }}
         >
           ❄️
@@ -97,7 +99,11 @@ export default function ChristmasNavbar() {
         <Link
           to="/"
           className="navbar-brand fw-bold d-flex align-items-center gap-2"
-          style={{ color: "#FFFAFA", fontSize: "1.6rem", textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)" }}
+          style={{
+            color: "#FFFAFA",
+            fontSize: "1.6rem",
+            textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+          }}
         >
           <motion.span
             animate={{ rotate: [0, 10, -10, 0] }}
@@ -125,7 +131,7 @@ export default function ChristmasNavbar() {
           />
         </div>
 
-        {/* Right Side Actions */}
+        {/* ✅ RIGHT SIDE - FIXED: Profile + Alerts + Logout */}
         <div className="d-flex align-items-center gap-3">
           {user ? (
             <>
@@ -133,7 +139,11 @@ export default function ChristmasNavbar() {
               <motion.div
                 whileHover={{ scale: 1.2, rotate: 15 }}
                 whileTap={{ scale: 0.9 }}
-                style={{ cursor: "pointer", color: "#FFD700", fontSize: "24px" }}
+                style={{
+                  cursor: "pointer",
+                  color: "#FFD700",
+                  fontSize: "24px",
+                }}
               >
                 🎁
               </motion.div>
@@ -152,87 +162,58 @@ export default function ChristmasNavbar() {
                 </div>
               </motion.div>
 
-              {/* User Dropdown with Santa Hat */}
-              <div className="position-relative">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  className="d-flex align-items-center gap-2"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => setShowUserMenu(!showUserMenu)}
+              {/* ✅ PROFILE ICON (No Dropdown) */}
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="d-flex align-items-center gap-2"
+                style={{ cursor: "pointer" }}
+                onClick={() => navigate("/profile")}
+              >
+                <div
+                  className="rounded-circle text-white d-flex align-items-center justify-content-center"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    background: "linear-gradient(135deg, #FFD700, #FFA500)",
+                    boxShadow: "0 4px 12px rgba(255, 215, 0, 0.5)",
+                    border: "2px solid white",
+                  }}
                 >
+                  <FaUser size={18} />
+                </div>
+                <div className="d-none d-md-block">
                   <div
-                    className="rounded-circle text-white d-flex align-items-center justify-content-center position-relative"
-                    style={{
-                      width: 40,
-                      height: 40,
-                      background: "linear-gradient(135deg, #FFD700, #FFA500)",
-                      boxShadow: "0 4px 12px rgba(255, 215, 0, 0.5)",
-                      border: "2px solid white"
-                    }}
+                    className="small fw-bold"
+                    style={{ lineHeight: 1.2, color: "#FFFAFA" }}
                   >
-                    <span style={{ fontSize: "1.2rem" }}>🎅</span>
-                    <motion.div
-                      className="position-absolute"
-                      style={{ top: -10, right: -10, fontSize: "20px" }}
-                      animate={{ rotate: [-10, 10, -10] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      🎄
-                    </motion.div>
+                    {user.username || "User"}
                   </div>
-                  <div className="d-none d-md-block">
-                    <div className="small fw-bold" style={{ lineHeight: 1.2, color: "#FFFAFA" }}>
-                      {user.username || "User"}
-                    </div>
-                    <div style={{ fontSize: "0.7rem", color: "#FFD700" }}>
-                      🔔 Merry Christmas!
-                    </div>
+                  <div style={{ fontSize: "0.7rem", color: "#FFD700" }}>
+                    🎁 Profile
                   </div>
-                </motion.div>
+                </div>
+              </motion.div>
 
-                {/* ✅ FIX: Dropdown Menu với z-index cao */}
-  {showUserMenu && (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="position-absolute end-0 mt-2 card border-0 shadow-lg"
-      style={{
-        minWidth: 220,
-        borderRadius: 16,
-        zIndex: 9999, // ✅ CRITICAL: Cao hơn mọi element khác
-        background: "linear-gradient(135deg, #FFFAFA, #E0F7FA)",
-        border: "2px solid #FFD700"
-      }}
-      onMouseLeave={() => setShowUserMenu(false)}
-    >
-      <div className="card-body p-2">
-        {/* ✅ Profile Link */}
-        <Link
-          to="/profile"
-          className="dropdown-item rounded py-2 px-3 d-flex align-items-center gap-2"
-          onClick={() => setShowUserMenu(false)}
-          style={{ color: "#165B33" }}
-        >
-          <FaUser size={14} />
-          🎁 Profile
-        </Link>
-        
-        <hr className="my-2" style={{ borderColor: "#FFD700" }} />
-        
-        {/* Logout */}
-        <button
-          className="dropdown-item rounded py-2 px-3 d-flex align-items-center gap-2"
-          onClick={handleLogout}
-          style={{ color: "#C41E3A", fontWeight: "600" }}
-        >
-          <FaSignOutAlt size={14} />
-          🎅 Logout
-        </button>
-      </div>
-    </motion.div>
-  )}
-              </div>
+              {/* ✅ LOGOUT BUTTON (No Dropdown) */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="btn btn-sm d-flex align-items-center gap-2"
+                style={{
+                  background: "linear-gradient(135deg, #C41E3A, #165B33)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 12,
+                  padding: "8px 16px",
+                  fontWeight: "600",
+                  boxShadow: "0 4px 12px rgba(196, 30, 58, 0.3)",
+                }}
+                onClick={handleLogout}
+              >
+                <FaSignOutAlt size={14} />
+                <span className="d-none d-md-inline">Logout</span>
+              </motion.button>
             </>
           ) : (
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -244,7 +225,7 @@ export default function ChristmasNavbar() {
                   background: "linear-gradient(135deg, #FFD700, #FFA500)",
                   color: "#165B33",
                   border: "2px solid white",
-                  boxShadow: "0 4px 12px rgba(255, 215, 0, 0.5)"
+                  boxShadow: "0 4px 12px rgba(255, 215, 0, 0.5)",
                 }}
               >
                 🎄 Sign in
@@ -262,14 +243,18 @@ export default function ChristmasNavbar() {
       {/* Twinkling Lights Border */}
       <motion.div
         className="position-absolute bottom-0 w-100"
-        style={{ height: "3px", background: "linear-gradient(90deg, #FFD700, #C41E3A, #165B33, #FFD700, #C41E3A)" }}
+        style={{
+          height: "3px",
+          background:
+            "linear-gradient(90deg, #FFD700, #C41E3A, #165B33, #FFD700, #C41E3A)",
+        }}
         animate={{
-          backgroundPosition: ["0% 0%", "200% 0%"]
+          backgroundPosition: ["0% 0%", "200% 0%"],
         }}
         transition={{
           duration: 3,
           repeat: Infinity,
-          ease: "linear"
+          ease: "linear",
         }}
       />
     </nav>
