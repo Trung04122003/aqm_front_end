@@ -13,7 +13,7 @@ export default function ChristmasNavbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [snowflakes, setSnowflakes] = useState<Array<{ id: number; left: number; delay: number; duration: number }>>([]);
 
   // Generate snowflakes
@@ -158,7 +158,7 @@ export default function ChristmasNavbar() {
                   whileHover={{ scale: 1.05 }}
                   className="d-flex align-items-center gap-2"
                   style={{ cursor: "pointer" }}
-                  onClick={() => setShowDropdown(!showDropdown)}
+                  onClick={() => setShowUserMenu(!showUserMenu)}
                 >
                   <div
                     className="rounded-circle text-white d-flex align-items-center justify-content-center position-relative"
@@ -190,44 +190,48 @@ export default function ChristmasNavbar() {
                   </div>
                 </motion.div>
 
-                {/* Dropdown Menu */}
-                {showDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="position-absolute end-0 mt-2 card border-0 shadow-lg"
-                    style={{
-                      minWidth: 220,
-                      borderRadius: 16,
-                      zIndex: 1050,
-                      background: "linear-gradient(135deg, #FFFAFA, #E0F7FA)",
-                      border: "2px solid #FFD700"
-                    }}
-                    onMouseLeave={() => setShowDropdown(false)}
-                  >
-                    <div className="card-body p-2">
-                      <Link
-                        to="/profile"
-                        className="dropdown-item rounded py-2 px-3 d-flex align-items-center gap-2"
-                        onClick={() => setShowDropdown(false)}
-                        style={{ color: "#165B33" }}
-                      >
-                        <FaUser size={14} />
-                        🎁 Profile
-                      </Link>
-                      <hr className="my-2" style={{ borderColor: "#FFD700" }} />
-                      <button
-                        className="dropdown-item rounded py-2 px-3 d-flex align-items-center gap-2"
-                        onClick={handleLogout}
-                        style={{ color: "#C41E3A", fontWeight: "600" }}
-                      >
-                        <FaSignOutAlt size={14} />
-                        🎅 Logout
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
+                {/* ✅ FIX: Dropdown Menu với z-index cao */}
+  {showUserMenu && (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="position-absolute end-0 mt-2 card border-0 shadow-lg"
+      style={{
+        minWidth: 220,
+        borderRadius: 16,
+        zIndex: 9999, // ✅ CRITICAL: Cao hơn mọi element khác
+        background: "linear-gradient(135deg, #FFFAFA, #E0F7FA)",
+        border: "2px solid #FFD700"
+      }}
+      onMouseLeave={() => setShowUserMenu(false)}
+    >
+      <div className="card-body p-2">
+        {/* ✅ Profile Link */}
+        <Link
+          to="/profile"
+          className="dropdown-item rounded py-2 px-3 d-flex align-items-center gap-2"
+          onClick={() => setShowUserMenu(false)}
+          style={{ color: "#165B33" }}
+        >
+          <FaUser size={14} />
+          🎁 Profile
+        </Link>
+        
+        <hr className="my-2" style={{ borderColor: "#FFD700" }} />
+        
+        {/* Logout */}
+        <button
+          className="dropdown-item rounded py-2 px-3 d-flex align-items-center gap-2"
+          onClick={handleLogout}
+          style={{ color: "#C41E3A", fontWeight: "600" }}
+        >
+          <FaSignOutAlt size={14} />
+          🎅 Logout
+        </button>
+      </div>
+    </motion.div>
+  )}
               </div>
             </>
           ) : (

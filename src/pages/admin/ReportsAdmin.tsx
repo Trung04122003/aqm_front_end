@@ -149,19 +149,24 @@ export default function ReportsAdmin() {
 
     try {
       await api.delete(`/admin/reports/${id}`);
-      toast.success("Report deleted");
-      loadReports();
-    } catch {
-      toast.error("Failed to delete");
+      toast.success("🎁 Report deleted successfully!");
+      await loadReports(); // ✅ Reload table after delete
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error("❌ Delete failed:", err);
+      const errorMsg =
+        err?.response?.data?.message || err?.message || "Failed to delete";
+      toast.error(errorMsg);
     }
   };
 
   const handleDownload = async (id: number) => {
     try {
       const res = await api.get(`/admin/reports/${id}/download`, {
-        responseType: "blob",
+        responseType: "blob", // ✅ CRITICAL: Must be blob
       });
 
+      // Create download link
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -169,10 +174,12 @@ export default function ReportsAdmin() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
 
-      toast.success("Report downloaded");
-    } catch {
-      toast.error("Download failed");
+      toast.success("📄 Report downloaded!");
+    } catch (err) {
+      console.error("❌ Download error:", err);
+      toast.error("Failed to download report");
     }
   };
 
@@ -286,10 +293,7 @@ export default function ReportsAdmin() {
                     </tr>
                   ) : reports.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="text-center py-5 text-light"
-                      >
+                      <td colSpan={7} className="text-center py-5 text-light">
                         No reports available
                       </td>
                     </tr>
@@ -303,9 +307,12 @@ export default function ReportsAdmin() {
                           backgroundColor: "rgba(255,255,255,0.12)",
                         }}
                       >
-                        <td className="px-4 fw-bold">{report.id}</td> {/* ⭐ FIXED: fw-bold để đậm */}
-                        <td className="fw-bold">{report.username}</td>{" "} {/* ⭐ FIXED: fw-bold để đậm */}
-                        <td className="fw-bold">{report.locationName}</td>{" "} {/* ⭐ FIXED: fw-bold để đậm */}
+                        <td className="px-4 fw-bold">{report.id}</td>{" "}
+                        {/* ⭐ FIXED: fw-bold để đậm */}
+                        <td className="fw-bold">{report.username}</td>{" "}
+                        {/* ⭐ FIXED: fw-bold để đậm */}
+                        <td className="fw-bold">{report.locationName}</td>{" "}
+                        {/* ⭐ FIXED: fw-bold để đậm */}
                         <td className="fw-bold">
                           {new Date(report.fromDate).toLocaleDateString(
                             "vi-VN"
