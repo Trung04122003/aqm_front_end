@@ -49,6 +49,7 @@ export default function ChristmasProfile() {
     fullName: "",
     email: "",
     username: "",
+    emailAlertsEnabled: false, // ✅ NEW
   });
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function ChristmasProfile() {
         fullName: user.fullName || "",
         email: user.email || "",
         username: user.username || "",
+        emailAlertsEnabled: false, // ✅ NEW
       });
     }
   }, [user]);

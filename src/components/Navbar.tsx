@@ -1,18 +1,30 @@
-// src/components/Navbar.tsx - CHRISTMAS 2025 EDITION 🔔
+// src/components/Navbar.tsx - CHRISTMAS 2025 EDITION WITH NOTIFICATIONS 🔔
 
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
 import AlertBadge from "./AlertBadge";
 import SearchBar from "./SearchBar";
 import api from "../api/axios";
+import { toast } from "react-toastify";
+
+type Alert = {
+  id: number;
+  pollutant: string;
+  value: number;
+  locationName: string;
+  triggeredAt: string;
+  isRead: boolean;
+};
 
 export default function ChristmasNavbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [recentAlerts, setRecentAlerts] = useState<Alert[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [snowflakes, setSnowflakes] = useState<
     Array<{ id: number; left: number; delay: number; duration: number }>
   >([]);
@@ -31,18 +43,48 @@ export default function ChristmasNavbar() {
   // Fetch unread alerts
   useEffect(() => {
     if (!user) return;
-    const fetchUnreadCount = async () => {
-      try {
-        const res = await api.get("/alerts/unread");
-        setUnreadCount(res.data?.length || 0);
-      } catch (err) {
-        console.error("Failed to fetch unread alerts", err);
-      }
-    };
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
+    fetchAlerts();
+    // Poll every 30 seconds
+    const interval = setInterval(fetchAlerts, 30000);
     return () => clearInterval(interval);
   }, [user]);
+
+  const fetchAlerts = async () => {
+    try {
+      const res = await api.get("/alerts/unread");
+      const alerts = Array.isArray(res.data) ? res.data : [];
+      setRecentAlerts(alerts.slice(0, 3)); // Show only latest 3
+      setUnreadCount(alerts.length);
+    } catch (err) {
+      console.error("Failed to fetch alerts", err);
+    }
+  };
+
+  const handleMarkAsRead = async (id: number) => {
+    try {
+      await api.put(`/alerts/${id}/read`);
+      setRecentAlerts((prev) => prev.filter((a) => a.id !== id));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      toast.success("🎅 Alert marked as read!");
+    } catch (err) {
+      console.error("Failed to mark as read:", err);
+      toast.error("Failed to mark as read");
+    }
+  };
+
+  const formatTime = (ts: string) => {
+    try {
+      const date = new Date(ts);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+      return date.toLocaleDateString("vi-VN");
+    } catch {
+      return ts;
+    }
+  };
 
   const handleSearch = (query: string) => {
     if (query) {
@@ -57,7 +99,7 @@ export default function ChristmasNavbar() {
 
   return (
     <nav
-      className="navbar navbar-expand-lg sticky-top position-relative overflow-hidden"
+      className="navbar navbar-expand-lg sticky-top position-relative"
       style={{
         background:
           "linear-gradient(90deg, #C41E3A 0%, #165B33 50%, #C41E3A 100%)",
@@ -131,7 +173,7 @@ export default function ChristmasNavbar() {
           />
         </div>
 
-        {/* ✅ RIGHT SIDE - FIXED: Profile + Alerts + Logout */}
+        {/* ✅ RIGHT SIDE - Profile + Notifications + Logout */}
         <div className="d-flex align-items-center gap-3">
           {user ? (
             <>
@@ -148,21 +190,134 @@ export default function ChristmasNavbar() {
                 🎁
               </motion.div>
 
-              {/* Alerts Bell with Snow */}
-              <motion.div
-                whileHover={{ scale: 1.1, rotate: [-5, 5, -5, 0] }}
-                whileTap={{ scale: 0.9 }}
-                className="position-relative"
-                style={{ cursor: "pointer" }}
-                onClick={() => navigate("/alerts")}
-              >
-                <FaBell size={22} style={{ color: "#FFD700" }} />
-                <div className="position-absolute top-0 start-100 translate-middle">
-                  <AlertBadge count={unreadCount} size="sm" variant="danger" />
-                </div>
-              </motion.div>
+              {/* ✅ INLINE NOTIFICATION PANEL */}
+              <div className="position-relative">
+                <motion.div
+                  whileHover={{ scale: 1.1, rotate: [-5, 5, -5, 0] }}
+                  whileTap={{ scale: 0.9 }}
+                  className="position-relative"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => setShowNotifications(!showNotifications)}
+                >
+                  <FaBell size={22} style={{ color: "#FFD700" }} />
+                  {unreadCount > 0 && (
+                    <div className="position-absolute top-0 start-100 translate-middle">
+                      <AlertBadge count={unreadCount} size="sm" variant="danger" />
+                    </div>
+                  )}
+                </motion.div>
 
-              {/* ✅ PROFILE ICON (No Dropdown) */}
+                {/* ✅ NOTIFICATION PANEL (Inline, not dropdown) */}
+                <AnimatePresence>
+                  {showNotifications && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      className="position-absolute end-0 mt-2 shadow-lg"
+                      style={{
+                        width: 380,
+                        maxHeight: 500,
+                        background: "white",
+                        borderRadius: 16,
+                        border: "3px solid #FFD700",
+                        zIndex: 2000,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {/* Header */}
+                      <div
+                        className="p-3 text-white d-flex justify-content-between align-items-center"
+                        style={{
+                          background: "linear-gradient(135deg, #C41E3A, #165B33)",
+                        }}
+                      >
+                        <div className="fw-bold">🔔 Notifications</div>
+                        {unreadCount > 0 && (
+                          <span
+                            className="badge rounded-pill"
+                            style={{
+                              background: "#FFD700",
+                              color: "#C41E3A",
+                              padding: "4px 10px",
+                            }}
+                          >
+                            {unreadCount}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Notification List */}
+                      <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                        {recentAlerts.length === 0 ? (
+                          <div className="text-center py-5">
+                            <div style={{ fontSize: "3rem" }}>🎄</div>
+                            <div className="text-muted small">All caught up!</div>
+                          </div>
+                        ) : (
+                          recentAlerts.map((alert) => (
+                            <motion.div
+                              key={alert.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className="p-3 border-bottom"
+                              style={{
+                                background: "white",
+                                borderLeft: "4px solid #C41E3A",
+                              }}
+                            >
+                              <div className="d-flex justify-content-between align-items-start mb-2">
+                                <div className="fw-semibold" style={{ color: "#C41E3A" }}>
+                                  {alert.pollutant} Alert
+                                </div>
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  className="btn btn-sm btn-success"
+                                  style={{
+                                    borderRadius: 8,
+                                    padding: "2px 8px",
+                                    fontSize: "0.75rem",
+                                  }}
+                                  onClick={() => handleMarkAsRead(alert.id)}
+                                >
+                                  ✓
+                                </motion.button>
+                              </div>
+                              <div className="small text-muted mb-1">
+                                📍 {alert.locationName}
+                              </div>
+                              <div className="small">
+                                Value: <strong>{alert.value.toFixed(1)}</strong>
+                              </div>
+                              <div className="small text-muted">
+                                {formatTime(alert.triggeredAt)}
+                              </div>
+                            </motion.div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      <div
+                        className="p-2 text-center border-top"
+                        style={{ background: "#f8f9fa" }}
+                      >
+                        <Link
+                          to="/alerts"
+                          className="text-decoration-none fw-semibold"
+                          style={{ color: "#165B33" }}
+                          onClick={() => setShowNotifications(false)}
+                        >
+                          View All Alerts →
+                        </Link>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* ✅ PROFILE ICON */}
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -195,7 +350,7 @@ export default function ChristmasNavbar() {
                 </div>
               </motion.div>
 
-              {/* ✅ LOGOUT BUTTON (No Dropdown) */}
+              {/* ✅ LOGOUT BUTTON */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

@@ -1,10 +1,10 @@
-// src/components/Sidebar.tsx - CHRISTMAS 2025 ULTIMATE EDITION 🎄 (Grok + Claude Fusion)
+// src/components/Sidebar.tsx - CHRISTMAS 2025 ULTIMATE EDITION 🎄 (Updated)
 
 import { motion } from "framer-motion";
 import { NavLink } from "react-router-dom";
 
 export default function Sidebar() {
-  // Snowflake component (from Grok - JS animated for better control)
+  // Snowflake component
   const Snowflake = ({ delay }: { delay: number }) => (
     <motion.div
       className="position-absolute"
@@ -36,19 +36,19 @@ export default function Sidebar() {
       className="app-sidebar position-relative overflow-hidden"
       style={{ 
         width: 280,
-        height: "100vh", 
+        height: "120vh", 
         padding: "2rem 1rem",
         background: "linear-gradient(180deg, rgba(255, 250, 250, 0.95) 0%, rgba(224, 247, 250, 0.95) 100%)",
         borderRight: "3px solid #FFD700",
         boxShadow: "4px 0 20px rgba(196, 30, 58, 0.15)"
       }}
     >
-      {/* Floating Snowflakes (Grok style) */}
+      {/* Floating Snowflakes */}
       {[...Array(8)].map((_, i) => (
         <Snowflake key={i} delay={i * 0.5} />
       ))}
 
-      {/* Christmas Ornament Background (Claude pseudo-elements) */}
+      {/* Christmas Ornament Background */}
       <div className="position-absolute" style={{ top: -20, right: -20, fontSize: "80px", opacity: 0.1 }}>
         🎄
       </div>
@@ -56,7 +56,7 @@ export default function Sidebar() {
         🎄
       </div>
 
-      {/* Logo Section (Claude enhanced with Grok motion) */}
+      {/* Logo Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -88,12 +88,13 @@ export default function Sidebar() {
         </div>
       </motion.div>
 
-      {/* Navigation (Grok base with Claude hover effects) */}
+      {/* Navigation */}
       <nav className="nav flex-column gap-2 position-relative" style={{ zIndex: 1 }}>
         {[
           { to: "/", label: "Dashboard", icon: "🏠" },
           { to: "/forecast", label: "Forecast", icon: "🔮" },
           { to: "/alerts", label: "Alerts", icon: "🔔" },
+          { to: "/thresholds", label: "Alert Settings", icon: "⚙️" }, // ✅ NEW
           { to: "/reports", label: "Reports", icon: "📊" },
           { to: "/support", label: "Support", icon: "💬" }
         ].map((item, index) => (
@@ -123,7 +124,7 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Christmas Decoration Footer (Claude with Grok motion) */}
+      {/* Christmas Decoration Footer */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
