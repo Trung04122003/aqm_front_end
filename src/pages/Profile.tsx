@@ -1,4 +1,4 @@
-// src/pages/Profile.tsx - CHRISTMAS PROFILE PAGE 🎅
+// src/pages/Profile.tsx - CHRISTMAS PROFILE PAGE WITH EMAIL TOGGLE 🎅
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
@@ -8,6 +8,7 @@ import {
   FaUser,
   FaEnvelope,
   FaIdCard,
+  FaBell,
 } from "react-icons/fa";
 import MainLayout from "../layouts/MainLayout";
 import api from "../api/axios";
@@ -49,7 +50,7 @@ export default function ChristmasProfile() {
     fullName: "",
     email: "",
     username: "",
-    emailAlertsEnabled: false, // ✅ NEW
+    emailAlertsEnabled: false,
   });
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function ChristmasProfile() {
         fullName: user.fullName || "",
         email: user.email || "",
         username: user.username || "",
-        emailAlertsEnabled: false, // ✅ NEW
+        emailAlertsEnabled: user.emailAlertsEnabled,
       });
     }
   }, [user]);
@@ -66,7 +67,6 @@ export default function ChristmasProfile() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // ✅ Correct endpoint
       await api.put("/user/profile", formData);
       toast.success("🎅 Profile updated successfully!");
       setEditing(false);
@@ -275,6 +275,104 @@ export default function ChristmasProfile() {
               />
               <small className="text-muted">Username cannot be changed</small>
             </div>
+
+            {/* ✅ EMAIL ALERTS TOGGLE */}
+            <div
+              className="mb-3 p-3 rounded-3"
+              style={{
+                background: "rgba(22, 91, 51, 0.05)",
+                border: "2px solid #165B33",
+              }}
+            >
+              <div className="d-flex align-items-start gap-3">
+                <div
+                  className="rounded-circle d-flex align-items-center justify-content-center"
+                  style={{
+                    width: 48,
+                    height: 48,
+                    background: formData.emailAlertsEnabled
+                      ? "linear-gradient(135deg, #165B33, #50C878)"
+                      : "linear-gradient(135deg, #6c757d, #495057)",
+                    fontSize: "24px",
+                    flexShrink: 0,
+                  }}
+                >
+                  {formData.emailAlertsEnabled ? "📧" : "🔕"}
+                </div>
+                <div className="flex-grow-1">
+                  <div className="form-check form-switch mb-2">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="emailAlertsToggle"
+                      checked={formData.emailAlertsEnabled}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          emailAlertsEnabled: e.target.checked,
+                        })
+                      }
+                      disabled={!editing}
+                      style={{
+                        cursor: editing ? "pointer" : "not-allowed",
+                        width: "3rem",
+                        height: "1.5rem",
+                      }}
+                    />
+                    <label
+                      className="form-check-label fw-semibold d-flex align-items-center gap-2"
+                      htmlFor="emailAlertsToggle"
+                      style={{
+                        color: "#165B33",
+                        cursor: editing ? "pointer" : "default",
+                      }}
+                    >
+                      <FaBell />
+                      Email Alert Notifications
+                      {formData.emailAlertsEnabled && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="badge bg-success"
+                          style={{ fontSize: "0.7rem" }}
+                        >
+                          Active 🎅
+                        </motion.span>
+                      )}
+                    </label>
+                  </div>
+                  <small className="text-muted">
+                    {formData.emailAlertsEnabled
+                      ? "✅ You will receive email notifications when air quality exceeds your thresholds"
+                      : "🔕 Email notifications are currently disabled"}
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            {/* Info Box */}
+            {formData.emailAlertsEnabled && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="alert d-flex align-items-center gap-2"
+                style={{
+                  background: "rgba(255, 215, 0, 0.1)",
+                  border: "2px solid #FFD700",
+                  borderRadius: 12,
+                  color: "#165B33",
+                }}
+              >
+                <span style={{ fontSize: "1.5rem" }}>💡</span>
+                <div>
+                  <strong>Tip:</strong> Go to{" "}
+                  <a href="/thresholds" style={{ color: "#C41E3A" }}>
+                    Alert Settings
+                  </a>{" "}
+                  to customize your notification thresholds.
+                </div>
+              </motion.div>
+            )}
           </div>
         </motion.div>
 

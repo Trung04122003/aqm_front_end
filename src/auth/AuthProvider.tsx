@@ -11,6 +11,7 @@ import api from "../api/axios";
 import { toast } from "react-toastify";
 
 type User = {
+  emailAlertsEnabled: boolean;
   id?: number;
   username?: string;
   fullName?: string;
