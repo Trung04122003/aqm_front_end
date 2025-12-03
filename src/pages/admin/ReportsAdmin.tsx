@@ -1,8 +1,18 @@
 // src/pages/admin/ReportsAdmin.tsx
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FaDownload, FaTrash, FaCalendarAlt, FaGift } from "react-icons/fa";
-import { Badge, Button, Modal, Form } from "react-bootstrap";
+import {
+  FaDownload,
+  FaTrash,
+  FaCalendarAlt,
+  FaGift,
+  FaFilePdf,
+  FaFileCsv,
+  FaFileExcel,
+  FaFileCode,
+  FaFileAlt,
+  FaChevronDown,
+} from "react-icons/fa";
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
@@ -36,7 +46,7 @@ const Snowflake = ({ delay }: { delay: number }) => (
   </motion.div>
 );
 
-// 🎁 Gift bounce animation for fun
+// 🎁 Gift bounce animation
 const GiftBounce = () => (
   <motion.div
     animate={{ y: [0, -6, 0] }}
@@ -47,11 +57,10 @@ const GiftBounce = () => (
   </motion.div>
 );
 
-// ✅ FIXED: Match backend ReportDto structure
 type Report = {
   id: number;
-  username: string; // ✅ Direct username string
-  locationName: string; // ✅ Direct location name string
+  username: string;
+  locationName: string;
   fromDate: string;
   toDate: string;
   avgAqi: number;
@@ -70,13 +79,14 @@ export default function ReportsAdmin() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [locations, setLocations] = useState([]);
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [locations, setLocations] = useState<any[]>([]);
   const [newReport, setNewReport] = useState({
     locationId: "",
     fromDate: "",
     toDate: "",
   });
+  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
 
   useEffect(() => {
     loadReports();
@@ -86,12 +96,7 @@ export default function ReportsAdmin() {
   const loadReports = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      console.log("🔑 Token exists:", !!token);
-
       const res = await api.get("/admin/reports");
-
-      // ✅ FIX: Ensure array format
       const reportData = Array.isArray(res.data) ? res.data : [];
       setReports(reportData);
     } catch (err) {
@@ -117,23 +122,17 @@ export default function ReportsAdmin() {
       return;
     }
 
+    setLoading(true);
     try {
-      console.log("🎅 Generating report with:", newReport);
-
-      // ✅ FIX: Use ADMIN endpoint
-      const res = await api.post("/admin/reports/generate", {
+      await api.post("/admin/reports/generate", {
         locationId: Number(newReport.locationId),
         fromDate: newReport.fromDate,
         toDate: newReport.toDate,
       });
 
-      console.log("✅ Report generated:", res.data);
       toast.success("🎁 Report generated successfully!");
-
       setShowModal(false);
       setNewReport({ locationId: "", fromDate: "", toDate: "" });
-
-      // ✅ Reload reports table
       await loadReports();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
@@ -141,6 +140,8 @@ export default function ReportsAdmin() {
       const errorMsg =
         err?.response?.data || err?.message || "Failed to generate report";
       toast.error(errorMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -150,7 +151,7 @@ export default function ReportsAdmin() {
     try {
       await api.delete(`/admin/reports/${id}`);
       toast.success("🎁 Report deleted successfully!");
-      await loadReports(); // ✅ Reload table after delete
+      await loadReports();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("❌ Delete failed:", err);
@@ -160,26 +161,77 @@ export default function ReportsAdmin() {
     }
   };
 
-  const handleDownload = async (id: number) => {
+  // ✅ EXPORT FUNCTIONS
+  const handleExport = async (id: number, format: string) => {
     try {
-      const res = await api.get(`/admin/reports/${id}/download`, {
-        responseType: "blob", // ✅ CRITICAL: Must be blob
+      const formatConfig: Record<
+        string,
+        { endpoint: string; filename: string; icon: string }
+      > = {
+        pdf: {
+          endpoint: `/admin/reports/${id}/download`,
+          filename: `report_${id}.pdf`,
+          icon: "📄",
+        },
+        csv: {
+          endpoint: `/admin/reports/${id}/export/csv`,
+          filename: `report_${id}.csv`,
+          icon: "📊",
+        },
+        excel: {
+          endpoint: `/admin/reports/${id}/export/excel`,
+          filename: `report_${id}.xlsx`,
+          icon: "📗",
+        },
+        html: {
+          endpoint: `/admin/reports/${id}/export/html`,
+          filename: `report_${id}.html`,
+          icon: "🌐",
+        },
+        json: {
+          endpoint: `/admin/reports/${id}/export/json`,
+          filename: `report_${id}.json`,
+          icon: "📋",
+        },
+      };
+
+      const config = formatConfig[format];
+      if (!config) {
+        toast.error("Invalid format");
+        return;
+      }
+
+      const res = await api.get(config.endpoint, {
+        responseType: format === "json" ? "json" : "blob",
       });
 
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `report_${id}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      if (format === "json") {
+        const jsonString = JSON.stringify(res.data, null, 2);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", config.filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        const url = window.URL.createObjectURL(new Blob([res.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", config.filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      }
 
-      toast.success("📄 Report downloaded!");
+      toast.success(`${config.icon} ${format.toUpperCase()} downloaded!`);
+      setOpenDropdown(null);
     } catch (err) {
-      console.error("❌ Download error:", err);
-      toast.error("Failed to download report");
+      console.error(`❌ ${format.toUpperCase()} Export error:`, err);
+      toast.error(`Failed to export ${format.toUpperCase()}`);
     }
   };
 
@@ -192,7 +244,6 @@ export default function ReportsAdmin() {
           padding: "1px",
         }}
       >
-        {/* Snowfall */}
         {[...Array(22)].map((_, i) => (
           <Snowflake key={i} delay={i * 0.25} />
         ))}
@@ -201,7 +252,6 @@ export default function ReportsAdmin() {
           className="container-fluid p-4 position-relative"
           style={{ zIndex: 2 }}
         >
-          {/* ⭐ HEADER */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -217,11 +267,10 @@ export default function ReportsAdmin() {
               📊 Workshop Analytics 🎁
             </h2>
             <p className="text-light text-opacity-75">
-              Santa’s official air-quality analysis reports
+              Santa's official air-quality analysis reports
             </p>
           </motion.div>
 
-          {/* ⭐ ACTION BAR */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -242,19 +291,16 @@ export default function ReportsAdmin() {
                   </div>
                 </div>
               </div>
-
-              <Button
-                variant="warning"
-                onClick={() => setShowModal(true)}
-                className="d-inline-flex align-items-center gap-2"
+              <button
+                className="btn btn-warning d-inline-flex align-items-center gap-2"
                 style={{ fontWeight: 600 }}
+                onClick={() => setShowModal(true)}
               >
                 <FaCalendarAlt /> Generate Report
-              </Button>
+              </button>
             </div>
           </motion.div>
 
-          {/* ⭐ REPORTS TABLE */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -270,7 +316,7 @@ export default function ReportsAdmin() {
                 <thead
                   style={{
                     background: "rgba(255,255,255,0.14)",
-                    color: "#FFFFFF", // ⭐ FIXED: Thay màu chữ đậm hơn (white full)
+                    color: "#FFFFFF",
                   }}
                 >
                   <tr>
@@ -283,7 +329,6 @@ export default function ReportsAdmin() {
                     <th className="border-0 py-3 text-end px-4">Actions</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {loading ? (
                     <tr>
@@ -307,12 +352,9 @@ export default function ReportsAdmin() {
                           backgroundColor: "rgba(255,255,255,0.12)",
                         }}
                       >
-                        <td className="px-4 fw-bold">{report.id}</td>{" "}
-                        {/* ⭐ FIXED: fw-bold để đậm */}
-                        <td className="fw-bold">{report.username}</td>{" "}
-                        {/* ⭐ FIXED: fw-bold để đậm */}
-                        <td className="fw-bold">{report.locationName}</td>{" "}
-                        {/* ⭐ FIXED: fw-bold để đậm */}
+                        <td className="px-4 fw-bold">{report.id}</td>
+                        <td className="fw-bold">{report.username}</td>
+                        <td className="fw-bold">{report.locationName}</td>
                         <td className="fw-bold">
                           {new Date(report.fromDate).toLocaleDateString(
                             "vi-VN"
@@ -321,30 +363,109 @@ export default function ReportsAdmin() {
                           {new Date(report.toDate).toLocaleDateString("vi-VN")}
                         </td>
                         <td>
-                          <Badge bg="warning" text="dark">
+                          <span className="badge bg-warning text-dark">
                             {report.avgAqi.toFixed(0)}
-                          </Badge>
+                          </span>
                         </td>
                         <td className="fw-bold">
                           {new Date(report.generatedAt).toLocaleString("vi-VN")}
                         </td>
                         <td className="text-end px-4">
-                          <Button
-                            size="sm"
-                            variant="outline-success"
-                            className="me-2"
-                            onClick={() => handleDownload(report.id)}
-                          >
-                            <FaDownload />
-                          </Button>
+                          <div className="d-inline-block position-relative me-2">
+                            <button
+                              className="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
+                              onClick={() =>
+                                setOpenDropdown(
+                                  openDropdown === report.id ? null : report.id
+                                )
+                              }
+                            >
+                              <FaDownload /> Export <FaChevronDown size={10} />
+                            </button>
 
-                          <Button
-                            size="sm"
-                            variant="outline-danger"
+                            {openDropdown === report.id && (
+                              <div
+                                className="position-absolute top-100 end-0 mt-1"
+                                style={{
+                                  background: "#1a2332",
+                                  borderRadius: 12,
+                                  padding: "0.5rem",
+                                  minWidth: 180,
+                                  zIndex: 1000,
+                                  boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                                }}
+                              >
+                                <button
+                                  className="btn btn-sm w-100 text-start text-light mb-1 d-flex align-items-center gap-2"
+                                  onClick={() => handleExport(report.id, "pdf")}
+                                  style={{
+                                    background: "transparent",
+                                    border: "none",
+                                  }}
+                                >
+                                  <FaFilePdf className="text-danger" /> PDF
+                                  Report
+                                </button>
+                                <button
+                                  className="btn btn-sm w-100 text-start text-light mb-1 d-flex align-items-center gap-2"
+                                  onClick={() => handleExport(report.id, "csv")}
+                                  style={{
+                                    background: "transparent",
+                                    border: "none",
+                                  }}
+                                >
+                                  <FaFileCsv className="text-success" /> CSV
+                                  Data
+                                </button>
+                                <button
+                                  className="btn btn-sm w-100 text-start text-light mb-1 d-flex align-items-center gap-2"
+                                  onClick={() =>
+                                    handleExport(report.id, "excel")
+                                  }
+                                  style={{
+                                    background: "transparent",
+                                    border: "none",
+                                  }}
+                                >
+                                  <FaFileExcel className="text-success" /> Excel
+                                  Workbook
+                                </button>
+                                <button
+                                  className="btn btn-sm w-100 text-start text-light mb-1 d-flex align-items-center gap-2"
+                                  onClick={() =>
+                                    handleExport(report.id, "html")
+                                  }
+                                  style={{
+                                    background: "transparent",
+                                    border: "none",
+                                  }}
+                                >
+                                  <FaFileCode className="text-info" /> HTML
+                                  Interactive
+                                </button>
+                                <button
+                                  className="btn btn-sm w-100 text-start text-light d-flex align-items-center gap-2"
+                                  onClick={() =>
+                                    handleExport(report.id, "json")
+                                  }
+                                  style={{
+                                    background: "transparent",
+                                    border: "none",
+                                  }}
+                                >
+                                  <FaFileAlt className="text-warning" /> JSON
+                                  Data
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          <button
+                            className="btn btn-sm btn-outline-danger"
                             onClick={() => handleDelete(report.id)}
                           >
                             <FaTrash />
-                          </Button>
+                          </button>
                         </td>
                       </motion.tr>
                     ))
@@ -354,69 +475,99 @@ export default function ReportsAdmin() {
             </div>
           </motion.div>
 
-          {/* ⭐ MODAL */}
-          <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-            <Modal.Header closeButton>
-              <Modal.Title>Generate Report</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <Form>
-                <Form.Group className="mb-3">
-                  <Form.Label>Location</Form.Label>
-                  <Form.Select
-                    value={newReport.locationId}
-                    onChange={(e) =>
-                      setNewReport({ ...newReport, locationId: e.target.value })
-                    }
-                  >
-                    <option value="">Select location</option>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {locations.map((loc: any) => (
-                      <option key={loc.id} value={loc.id}>
-                        {loc.name}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Label>From Date</Form.Label>
-                  <Form.Control
-                    type="date"
-                    value={newReport.fromDate}
-                    onChange={(e) =>
-                      setNewReport({ ...newReport, fromDate: e.target.value })
-                    }
-                  />
-                </Form.Group>
-                <Form.Group>
-                  <Form.Label>To Date</Form.Label>
-                  <Form.Control
-                    type="date"
-                    value={newReport.toDate}
-                    onChange={(e) =>
-                      setNewReport({ ...newReport, toDate: e.target.value })
-                    }
-                  />
-                </Form.Group>
-              </Form>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={() => setShowModal(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="warning"
-                onClick={handleGenerate}
-                disabled={
-                  !newReport.locationId ||
-                  !newReport.fromDate ||
-                  !newReport.toDate
-                }
+          {showModal && (
+            <div
+              className="modal d-block"
+              style={{ background: "rgba(0,0,0,0.5)" }}
+              onClick={() => setShowModal(false)}
+            >
+              <div
+                className="modal-dialog modal-dialog-centered"
+                onClick={(e) => e.stopPropagation()}
               >
-                Generate 🎁
-              </Button>
-            </Modal.Footer>
-          </Modal>
+                <div
+                  className="modal-content"
+                  style={{ background: "#1a2332", color: "white" }}
+                >
+                  <div className="modal-header">
+                    <h5 className="modal-title">Generate Report</h5>
+                    <button
+                      type="button"
+                      className="btn-close btn-close-white"
+                      onClick={() => setShowModal(false)}
+                    />
+                  </div>
+                  <div className="modal-body">
+                    <div className="mb-3">
+                      <label className="form-label">Location</label>
+                      <select
+                        className="form-select"
+                        value={newReport.locationId}
+                        onChange={(e) =>
+                          setNewReport({
+                            ...newReport,
+                            locationId: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">Select location</option>
+                        {locations.map((loc) => (
+                          <option key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">From Date</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={newReport.fromDate}
+                        onChange={(e) =>
+                          setNewReport({
+                            ...newReport,
+                            fromDate: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">To Date</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={newReport.toDate}
+                        onChange={(e) =>
+                          setNewReport({ ...newReport, toDate: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => setShowModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="btn btn-warning"
+                      onClick={handleGenerate}
+                      disabled={
+                        !newReport.locationId ||
+                        !newReport.fromDate ||
+                        !newReport.toDate ||
+                        loading
+                      }
+                    >
+                      {loading ? "Generating..." : "Generate 🎁"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </AdminLayout>
