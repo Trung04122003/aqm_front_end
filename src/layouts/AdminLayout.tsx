@@ -1,4 +1,4 @@
-// src/layouts/AdminLayout.tsx
+// src/layouts/AdminLayout.tsx (UPDATED WITH SUPPORTS MENU ITEM)
 import React, { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
@@ -14,7 +14,9 @@ import {
   FaBars,
   FaTimes,
   FaGift,
-  FaShieldAlt} from "react-icons/fa";
+  FaShieldAlt,
+  FaLifeRing // ✅ NEW - Support icon
+} from "react-icons/fa";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -34,6 +36,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { path: "/admin/alerts", icon: <FaBell />, label: "Alert Management" },
     { path: "/admin/thresholds", icon: <FaCog />, label: "Thresholds" },
     { path: "/admin/reports", icon: <FaChartBar />, label: "Reports" },
+    { path: "/admin/supports", icon: <FaLifeRing />, label: "Support Tickets" }, // ✅ NEW
     { path: "/admin/logs", icon: <FaShieldAlt />, label: "Security Logs" }
   ];
 
@@ -97,7 +100,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 >
                   <FaGift className="text-warning" size={22} />
                 </motion.div>
-
                 <div>
                   <div
                     className="fw-bold"
@@ -141,7 +143,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       >
                         {item.icon}
                       </span>
-
                       <span
                         style={{
                           color: isActive ? "#FFD700" : "#ffffffc4"
@@ -149,7 +150,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       >
                         {item.label}
                       </span>
-
                       {/* Candy Cane Active Indicator */}
                       {isActive && (
                         <motion.div
@@ -233,7 +233,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 {user?.username?.charAt(0).toUpperCase() || "A"}
               </div>
-
               <div className="d-none d-md-block">
                 <div className="fw-semibold small text-warning">
                   {user?.username || "Admin"}
@@ -265,9 +264,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   >
                     Profile Settings
                   </Link>
-
                   <hr className="my-1 text-white opacity-25" />
-
                   <button
                     className="dropdown-item py-2 text-danger fw-bold"
                     onClick={handleLogout}

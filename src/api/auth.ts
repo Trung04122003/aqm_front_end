@@ -2,6 +2,8 @@
 
 import api from "./axios";
 
+// ==================== REGISTRATION ====================
+
 // ✅ User registration
 export const registerRequest = (payload: { 
   username: string; 
@@ -26,11 +28,33 @@ export const createAdminRequest = (payload: {
   fullName: string 
 }) => api.post("/auth/create-admin", payload);
 
-// Login
+// ==================== LOGIN ====================
+
+// ✅ Login (accepts both username and email)
 export const loginRequest = (payload: { 
   usernameOrEmail: string; 
   password: string 
 }) => api.post("/auth/login", payload);
 
-// Get current user
+// ==================== USER INFO ====================
+
+// ✅ Get current user
 export const getCurrentUser = () => api.get("/user/me");
+
+// ==================== PASSWORD RESET ====================
+
+// ✅ NEW: Request password reset (send email with reset link)
+export const forgotPasswordRequest = (payload: { 
+  email: string 
+}) => api.post("/auth/forgot-password", payload);
+
+// ✅ NEW: Validate password reset token
+export const validateResetTokenRequest = (payload: { 
+  token: string 
+}) => api.post("/auth/validate-reset-token", payload);
+
+// ✅ NEW: Reset password with token
+export const resetPasswordRequest = (payload: { 
+  token: string; 
+  newPassword: string 
+}) => api.post("/auth/reset-password", payload);
