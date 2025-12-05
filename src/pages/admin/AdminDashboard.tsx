@@ -1,16 +1,16 @@
-// src/pages/admin/AdminDashboard.tsx
+// src/pages/admin/AdminDashboard.tsx - EXTRA FESTIVE EDITION
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FaUsers,
   FaServer,
   FaBell,
   FaExclamationTriangle,
-  FaChartLine,
   FaMapMarkerAlt,
   FaSnowflake,
   FaGift,
   FaMoon,
+  FaSun,
 } from "react-icons/fa";
 import api from "../../api/axios";
 import AdminLayout from "../../layouts/AdminLayout";
@@ -46,26 +46,28 @@ type Stats = {
   systemHealth: "good" | "warning" | "critical";
 };
 
-// ❄️ Snowflake effect (subtle)
-const Snowflake = ({ delay }: { delay: number }) => (
+// ❄️ Enhanced Snowflake with varied sizes
+const Snowflake = ({ delay, size = 18 }: { delay: number; size?: number }) => (
   <motion.div
     className="position-absolute"
     style={{
       left: `${Math.random() * 100}%`,
       top: -20,
-      fontSize: "18px",
-      opacity: 0.7,
+      fontSize: `${size}px`,
+      opacity: 0.8,
       color: "#E6F7FF",
       pointerEvents: "none",
       zIndex: 1,
+      filter: "drop-shadow(0 0 3px rgba(255,255,255,0.8))",
     }}
     animate={{
       y: ["0vh", "105vh"],
       rotate: [0, 360],
       opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 50 - 25],
     }}
     transition={{
-      duration: 9 + Math.random() * 4,
+      duration: 9 + Math.random() * 6,
       delay,
       repeat: Infinity,
       ease: "linear",
@@ -75,9 +77,58 @@ const Snowflake = ({ delay }: { delay: number }) => (
   </motion.div>
 );
 
-export default function AdminDashboard() {
-  const [theme, setTheme] = useState<"dark" | "xmas">("dark");
+// 🎄 Christmas Particles (Gifts, Bells, Stars)
+const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) => (
+  <motion.div
+    className="position-absolute"
+    style={{
+      left: `${Math.random() * 100}%`,
+      top: -30,
+      fontSize: `${20 + Math.random() * 15}px`,
+      opacity: 0.7,
+      pointerEvents: "none",
+      zIndex: 1,
+      filter: "drop-shadow(0 0 5px rgba(255,215,0,0.6))",
+    }}
+    animate={{
+      y: ["0vh", "110vh"],
+      rotate: [0, 360, 720],
+      opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 100 - 50],
+    }}
+    transition={{
+      duration: 15 + Math.random() * 10,
+      delay,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  >
+    {emoji}
+  </motion.div>
+);
 
+// ✨ Sparkle effect for theme toggle
+const Sparkle = ({ x, y }: { x: number; y: number }) => (
+  <motion.div
+    className="position-fixed"
+    style={{
+      left: x,
+      top: y,
+      width: 8,
+      height: 8,
+      borderRadius: "50%",
+      background: "radial-gradient(circle, #FFD700, transparent)",
+      pointerEvents: "none",
+      zIndex: 9999,
+    }}
+    initial={{ scale: 0, opacity: 1 }}
+    animate={{ scale: 3, opacity: 0 }}
+    transition={{ duration: 0.6, ease: "easeOut" }}
+  />
+);
+
+export default function AdminDashboard() {
+  const [theme, setTheme] = useState<"dark" | "xmas">("xmas"); // Default to xmas
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
     totalSensors: 0,
@@ -86,10 +137,12 @@ export default function AdminDashboard() {
     todayAlerts: 0,
     systemHealth: "good",
   });
-  // ⭐ Santa Voice state
-  const [santaVoice] = useState(localStorage.getItem("santaVoice") !== "off");
 
-  // 2️⃣ ⭐⭐ DÁN ĐÚNG ĐOẠN NÀY Ở ĐÂY
+  const [santaVoice] = useState(localStorage.getItem("santaVoice") !== "off");
+  const [loading, setLoading] = useState(true);
+  const [sparkles, setSparkles] = useState<Array<{ x: number; y: number; id: number }>>([]);
+
+  // Santa Voice
   React.useEffect(() => {
     if (santaVoice) {
       const audio = new Audio("/audio/santa.mp3");
@@ -97,8 +150,6 @@ export default function AdminDashboard() {
       audio.play().catch(() => {});
     }
   }, [santaVoice]);
-
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadStats();
@@ -128,18 +179,34 @@ export default function AdminDashboard() {
     }
   };
 
-  // Theme-based background
+  // Theme toggle with sparkle effect
+  const handleThemeToggle = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    // Create sparkles
+    const newSparkles = Array.from({ length: 12 }, (_, i) => ({
+      x: x + (Math.random() - 0.5) * 100,
+      y: y + (Math.random() - 0.5) * 100,
+      id: Date.now() + i,
+    }));
+
+    setSparkles(newSparkles);
+    setTimeout(() => setSparkles([]), 600);
+
+    setTheme((prev) => (prev === "dark" ? "xmas" : "dark"));
+  };
+
   const backgroundStyle =
     theme === "dark"
       ? "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)"
-      : "linear-gradient(180deg, #2c1f00 0%, #4b3400 100%)";
+      : "linear-gradient(180deg, #1a0f00 0%, #4b2600 100%)";
 
-  // Stats card UI per theme
   const getCardColor = (base: string) =>
     theme === "dark" ? `${base}` : "#FFD700";
 
-  // Xmas subtle glow
-  const glow = theme === "xmas" ? "0 0 20px rgba(255,215,0,0.4)" : "none";
+  const glow = theme === "xmas" ? "0 0 25px rgba(255,215,0,0.5)" : "0 0 15px rgba(103,232,249,0.2)";
 
   const chartData = {
     labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
@@ -150,9 +217,13 @@ export default function AdminDashboard() {
         borderColor: theme === "xmas" ? "#FFD700" : "#67e8f9",
         backgroundColor:
           theme === "xmas"
-            ? "rgba(255, 215, 0, 0.15)"
+            ? "rgba(255, 215, 0, 0.2)"
             : "rgba(103, 232, 249, 0.15)",
         tension: 0.4,
+        borderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: theme === "xmas" ? "#FFD700" : "#67e8f9",
       },
     ],
   };
@@ -169,16 +240,14 @@ export default function AdminDashboard() {
     color: string;
   }) => {
     const themedColor = getCardColor(color);
-
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -6 }}
-        className="card border-0 h-100 position-relative"
+        whileHover={{ y: -8, scale: 1.02 }}
+        className="card border-0 h-100 position-relative overflow-hidden"
         style={{
           borderRadius: 18,
-          overflow: "hidden",
           boxShadow: glow,
           background:
             theme === "dark"
@@ -186,67 +255,116 @@ export default function AdminDashboard() {
               : `linear-gradient(135deg, ${themedColor}33, ${themedColor}11)`,
         }}
       >
+        {/* Candy Cane Border */}
+        {theme === "xmas" && (
+          <div
+            className="position-absolute top-0 start-0 w-100"
+            style={{
+              height: 4,
+              background:
+                "repeating-linear-gradient(90deg, #C41E3A 0px, #C41E3A 10px, #fff 10px, #fff 20px)",
+            }}
+          />
+        )}
+
         <div className="card-body p-4">
           <div className="d-flex justify-content-between align-items-start mb-3">
-            <div
+            <motion.div
+              whileHover={{ rotate: 360, scale: 1.2 }}
+              transition={{ duration: 0.6 }}
               className="rounded-circle d-flex align-items-center justify-content-center"
               style={{
-                width: 56,
-                height: 56,
-                background: `${themedColor}20`,
-                border: `1.5px solid ${themedColor}`,
+                width: 64,
+                height: 64,
+                background: `${themedColor}25`,
+                border: `2px solid ${themedColor}`,
+                boxShadow: `0 0 20px ${themedColor}40`,
               }}
             >
-              <span style={{ color: themedColor, fontSize: "1.5rem" }}>
+              <span style={{ color: themedColor, fontSize: "1.8rem" }}>
                 {icon}
               </span>
-            </div>
+            </motion.div>
           </div>
-
-          <h3 className="fw-bold" style={{ color: themedColor }}>
+          <h2 className="fw-bold mb-1" style={{ color: themedColor }}>
             {loading ? "..." : value}
-          </h3>
-          <p className="text-muted small">{label}</p>
+          </h2>
+          <p className="text-light small mb-0">{label}</p>
         </div>
 
-        <div
+        {/* Floating ornament */}
+        <motion.div
           className="position-absolute"
-          style={{ bottom: -6, right: -6, fontSize: 48, opacity: 0.15 }}
+          style={{ bottom: -10, right: -10, fontSize: 60, opacity: 0.15 }}
+          animate={{ rotate: [0, 10, -10, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         >
-          🎄
-        </div>
+          {theme === "xmas" ? "🎁" : "🧊"}
+        </motion.div>
       </motion.div>
     );
   };
 
   return (
     <AdminLayout>
-      {/* Background with theme */}
       <div
         className="min-vh-100 position-relative"
         style={{
           background: backgroundStyle,
-          transition: "0.4s ease",
+          transition: "background 0.5s ease",
           padding: "1px",
         }}
       >
-        {/* Snow only in Xmas */}
-        {theme === "xmas" &&
-          [...Array(20)].map((_, i) => <Snowflake key={i} delay={i * 0.3} />)}
+        {/* Enhanced Snowfall */}
+        {[...Array(35)].map((_, i) => (
+          <Snowflake key={`snow-${i}`} delay={i * 0.2} size={12 + Math.random() * 12} />
+        ))}
 
-        <div
-          className="container-fluid p-4 position-relative"
-          style={{ zIndex: 2 }}
-        >
-          {/* Header */}
+        {/* Christmas Particles (only in xmas mode) */}
+        {theme === "xmas" && (
+          <>
+            {[...Array(8)].map((_, i) => (
+              <ChristmasParticle
+                key={`gift-${i}`}
+                delay={i * 2}
+                emoji={["🎁", "🔔", "⭐", "🎄"][i % 4]}
+              />
+            ))}
+          </>
+        )}
+
+        {/* Sparkle effects on theme toggle */}
+        <AnimatePresence>
+          {sparkles.map((sparkle) => (
+            <Sparkle key={sparkle.id} x={sparkle.x} y={sparkle.y} />
+          ))}
+        </AnimatePresence>
+
+        <div className="container-fluid p-4 position-relative" style={{ zIndex: 2 }}>
+          {/* Header with Enhanced Theme Toggle */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="d-flex justify-content-between align-items-center mb-4"
+            className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"
           >
             <div>
-              <h2
+              <motion.h2
                 className="fw-bold mb-1"
+                animate={{
+                  textShadow:
+                    theme === "xmas"
+                      ? [
+                          "0 0 18px rgba(255,215,0,0.4)",
+                          "0 0 30px rgba(255,215,0,0.6)",
+                          "0 0 18px rgba(255,215,0,0.4)",
+                        ]
+                      : [
+                          "0 0 14px rgba(180,230,255,0.3)",
+                          "0 0 20px rgba(180,230,255,0.5)",
+                          "0 0 14px rgba(180,230,255,0.3)",
+                        ],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
                 style={{
                   background:
                     theme === "dark"
@@ -256,56 +374,56 @@ export default function AdminDashboard() {
                   WebkitTextFillColor:
                     theme === "dark" ? "transparent" : "inherit",
                   color: theme === "xmas" ? "#FFD700" : "#ffffff",
-                  textShadow:
-                    theme === "xmas"
-                      ? "0 0 18px rgba(255,215,0,0.4)"
-                      : "0 0 14px rgba(180,230,255,0.3)",
                 }}
               >
                 {theme === "xmas"
                   ? "🎅 North Pole Control Center"
                   : "🧊 Frostbyte Admin Station"}
-              </h2>
-
-              <p className="text-light text-opacity-75">
+              </motion.h2>
+              <p className="text-light text-opacity-75 mb-0">
                 {theme === "xmas"
-                  ? "Real-time Air Quality Monitoring from Santa’s HQ ❄️"
+                  ? "Real-time Air Quality Monitoring from Santa's HQ ❄️"
                   : "Centralized system analytics & diagnostics"}
               </p>
             </div>
 
-            {/* THEME SWITCH */}
-            <button
-              className="btn btn-outline-light px-3 py-2 d-flex align-items-center gap-2"
-              onClick={() =>
-                setTheme((prev) => (prev === "dark" ? "xmas" : "dark"))
-              }
+            {/* Enhanced Theme Toggle Button */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="btn px-4 py-3 d-flex align-items-center gap-3"
+              onClick={handleThemeToggle}
               style={{
-                borderRadius: 14,
-                boxShadow:
+                borderRadius: 50,
+                background:
                   theme === "xmas"
-                    ? "0 0 20px rgba(255,215,0,0.4)"
-                    : "0 0 14px rgba(180,230,255,0.2)",
-                border:
-                  theme === "dark"
-                    ? "1px solid rgba(180,230,255,0.4)"
-                    : "1px solid #FFD700",
+                    ? "linear-gradient(135deg, #C41E3A, #8B0000)"
+                    : "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                border: "none",
+                boxShadow: glow,
+                color: "white",
+                fontWeight: 600,
+                fontSize: "1rem",
               }}
             >
-              {theme === "dark" ? (
-                <>
-                  <FaGift /> Xmas Mode
-                </>
-              ) : (
-                <>
-                  <FaMoon /> Dark Mode
-                </>
-              )}
-            </button>
+              <motion.div
+                animate={{ rotate: theme === "xmas" ? 360 : 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                {theme === "dark" ? <FaGift size={22} /> : <FaSnowflake size={22} />}
+              </motion.div>
+              <span>{theme === "dark" ? "Christmas Mode" : "Arctic Mode"}</span>
+              <motion.div
+                animate={{ rotate: theme === "xmas" ? 0 : 360 }}
+                transition={{ duration: 0.6 }}
+              >
+                {theme === "dark" ? <FaSun size={18} /> : <FaMoon size={18} />}
+              </motion.div>
+            </motion.button>
           </motion.div>
 
-          {/* Stats */}
-          <div className="row g-3 mb-4">
+          {/* Stats Cards */}
+          <div className="row g-4 mb-4">
             <div className="col-12 col-md-6 col-xl-3">
               <StatCard
                 icon={<FaUsers />}
@@ -314,7 +432,6 @@ export default function AdminDashboard() {
                 color="#67e8f9"
               />
             </div>
-
             <div className="col-12 col-md-6 col-xl-3">
               <StatCard
                 icon={<FaServer />}
@@ -323,7 +440,6 @@ export default function AdminDashboard() {
                 color="#0ea5b7"
               />
             </div>
-
             <div className="col-12 col-md-6 col-xl-3">
               <StatCard
                 icon={<FaBell />}
@@ -332,7 +448,6 @@ export default function AdminDashboard() {
                 color="#fbbf24"
               />
             </div>
-
             <div className="col-12 col-md-6 col-xl-3">
               <StatCard
                 icon={<FaMapMarkerAlt />}
@@ -344,30 +459,56 @@ export default function AdminDashboard() {
           </div>
 
           {/* Charts & Health */}
-          <div className="row g-3 mb-4">
+          <div className="row g-4 mb-4">
+            {/* Chart */}
             <div className="col-12 col-lg-8">
-              <div
-                className="card border-0 shadow-sm"
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="card border-0 shadow-sm h-100"
                 style={{
                   borderRadius: 18,
                   background:
-                    theme === "dark" ? "#ffffff" : "rgba(255, 215, 0, 0.15)",
+                    theme === "dark"
+                      ? "rgba(255, 255, 255, 0.05)"
+                      : "rgba(255, 215, 0, 0.08)",
                   boxShadow: glow,
+                  backdropFilter: "blur(10px)",
                 }}
               >
                 <div className="card-body p-4">
-                  <h5 className="fw-semibold mb-3">
-                    {theme === "xmas"
-                      ? "🎄 Weekly Activity"
-                      : "Weekly Activity"}
+                  <h5 className="fw-semibold mb-4 d-flex align-items-center gap-2" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                    {theme === "xmas" ? "🎄" : "📊"} Weekly Activity
                   </h5>
-                  <Line data={chartData} />
+                  <Line data={chartData} options={{ 
+                    responsive: true,
+                    plugins: {
+                      legend: {
+                        labels: {
+                          color: theme === "xmas" ? "#FFD700" : "#67e8f9"
+                        }
+                      }
+                    },
+                    scales: {
+                      x: {
+                        grid: { color: "rgba(255,255,255,0.1)" },
+                        ticks: { color: "#94a3b8" }
+                      },
+                      y: {
+                        grid: { color: "rgba(255,255,255,0.1)" },
+                        ticks: { color: "#94a3b8" }
+                      }
+                    }
+                  }} />
                 </div>
-              </div>
+              </motion.div>
             </div>
 
+            {/* System Health */}
             <div className="col-12 col-lg-4">
-              <div
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
                 className="card border-0 shadow-sm h-100"
                 style={{
                   borderRadius: 18,
@@ -380,131 +521,139 @@ export default function AdminDashboard() {
                 }}
               >
                 <div className="card-body p-4">
-                  <h5 className="fw-semibold d-flex align-items-center gap-2 mb-3">
+                  <h5 className="fw-semibold d-flex align-items-center gap-2 mb-4">
                     <FaSnowflake /> System Health
                   </h5>
-
-                  <div className="d-flex align-items-center gap-3 mb-3">
+                  <div className="d-flex align-items-center gap-3 mb-4">
                     <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
+                      animate={{ scale: [1, 1.3, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity }}
                       className="rounded-circle"
                       style={{
-                        width: 14,
-                        height: 14,
+                        width: 16,
+                        height: 16,
                         backgroundColor: "#10b981",
+                        boxShadow: "0 0 15px #10b981",
                       }}
                     />
-                    All Systems Operational
+                    <span className="fw-semibold">All Systems Operational</span>
                   </div>
-
-                  <div className="border-top pt-3">
-                    <div className="d-flex justify-content-between mb-2">
-                      <span>Database</span>
-                      <span className="text-success fw-semibold">✓ Online</span>
-                    </div>
-
-                    <div className="d-flex justify-content-between mb-2">
-                      <span>API Server</span>
-                      <span className="text-success fw-semibold">✓ Online</span>
-                    </div>
-
-                    <div className="d-flex justify-content-between mb-2">
-                      <span>Sensors</span>
-                      <span className="text-success fw-semibold">
-                        ✓ {stats.totalSensors}/{stats.totalSensors}
-                      </span>
-                    </div>
+                  <div className="border-top border-secondary pt-3">
+                    {[
+                      { label: "Database", status: "Online" },
+                      { label: "API Server", status: "Online" },
+                      { label: "Sensors", status: `${stats.totalSensors}/${stats.totalSensors}` },
+                    ].map((item, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="d-flex justify-content-between mb-3"
+                      >
+                        <span>{item.label}</span>
+                        <span className="text-success fw-semibold">✓ {item.status}</span>
+                      </motion.div>
+                    ))}
                   </div>
-
-                  <div
-                    className="alert mt-3"
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="alert mt-3 mb-0"
                     style={{
                       borderRadius: 12,
-                      background:
-                        theme === "dark"
-                          ? "rgba(251, 191, 36, 0.15)"
-                          : "rgba(255, 215, 0, 0.25)",
+                      background: "rgba(251, 191, 36, 0.15)",
                       color: "#fbbf24",
                       border: "1px solid #fbbf24",
                     }}
                   >
                     <FaExclamationTriangle className="me-2" />
                     {stats.todayAlerts} alerts today
-                  </div>
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
 
           {/* Activity List */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             className="card border-0 shadow-sm"
             style={{
               borderRadius: 18,
               background:
-                theme === "dark" ? "#ffffff" : "rgba(255, 215, 0, 0.15)",
+                theme === "dark"
+                  ? "rgba(255, 255, 255, 0.05)"
+                  : "rgba(255, 215, 0, 0.08)",
               boxShadow: glow,
+              backdropFilter: "blur(10px)",
             }}
           >
             <div className="card-body p-4">
-              <h5 className="fw-semibold mb-3">Recent Activity</h5>
-
+              <h5 className="fw-semibold mb-4" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                Recent Activity
+              </h5>
               {[
-                {
-                  user: "john_doe",
-                  action: "triggered alert",
-                  time: "2 min ago",
-                },
-                {
-                  user: "admin",
-                  action: "added new sensor",
-                  time: "15 min ago",
-                },
-                {
-                  user: "jane_smith",
-                  action: "registered",
-                  time: "1 hour ago",
-                },
+                { user: "john_doe", action: "triggered alert", time: "2 min ago", icon: "🔔" },
+                { user: "admin", action: "added new sensor", time: "15 min ago", icon: "📡" },
+                { user: "jane_smith", action: "registered", time: "1 hour ago", icon: "👤" },
               ].map((a, i) => (
-                <div
+                <motion.div
                   key={i}
-                  className="d-flex align-items-center gap-3 py-3 border-bottom"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ x: 5, backgroundColor: "rgba(255,255,255,0.08)" }}
+                  className="d-flex align-items-center gap-3 py-3 px-2 rounded"
+                  style={{ cursor: "pointer", transition: "all 0.2s" }}
                 >
                   <div
                     className="rounded-circle d-flex align-items-center justify-content-center"
                     style={{
-                      width: 40,
-                      height: 40,
-                      background: "#f1f5f9",
+                      width: 48,
+                      height: 48,
+                      background: theme === "xmas" ? "rgba(255,215,0,0.2)" : "rgba(103,232,249,0.2)",
+                      fontSize: "1.5rem",
                     }}
                   >
-                    <FaChartLine className="text-muted" size={16} />
+                    {a.icon}
                   </div>
-
                   <div className="flex-grow-1">
-                    <div className="d-flex justify-content-between">
-                      <span>
-                        <strong>{a.user}</strong> {a.action}
+                    <div className="d-flex justify-content-between align-items-center">
+                      <span className="text-light">
+                        <strong style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                          {a.user}
+                        </strong>{" "}
+                        {a.action}
                       </span>
                       <span className="text-muted small">{a.time}</span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          {/* Xmas Footer */}
+          {/* Christmas Footer */}
           {theme === "xmas" && (
-            <div className="text-center mt-5">
-              <h4 className="text-warning fw-bold">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center mt-5"
+            >
+              <motion.h3
+                className="fw-bold mb-2"
+                animate={{
+                  color: ["#FFD700", "#FF6B6B", "#FFD700"],
+                }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
                 🎅 Ho Ho Ho! Keep Our Air Clean This Christmas! 🎄
-              </h4>
-              <p className="text-light">
-                North Pole Control Center - Powered by Santa’s Elves ❄️
+              </motion.h3>
+              <p className="text-light mb-0">
+                North Pole Control Center - Powered by Santa's Elves ❄️
               </p>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
