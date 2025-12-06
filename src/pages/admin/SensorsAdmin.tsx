@@ -1,6 +1,4 @@
-// src/pages/admin/SensorsAdmin.tsx  
-// 🌟 RUDOLF'S SENSOR NETWORK — Candy Cane Engineering Edition 🌟
-
+// src/pages/admin/SensorsAdmin.tsx - RUDOLF'S SENSOR NETWORK EXTRA FESTIVE EDITION
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,7 +13,6 @@ import {
   FaTools,
   FaCandyCane,
 } from "react-icons/fa";
-import { Modal, Form, Button, Badge } from "react-bootstrap";
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
@@ -35,7 +32,7 @@ type Location = {
   name: string;
 };
 
-// ❄️ Snowflake
+// ❄️ Enhanced Snowflake
 const Snowflake = ({ delay }: { delay: number }) => (
   <motion.div
     className="position-absolute"
@@ -46,6 +43,7 @@ const Snowflake = ({ delay }: { delay: number }) => (
       pointerEvents: "none",
       zIndex: 1,
       color: "#e0f7fa",
+      filter: "drop-shadow(0 0 3px rgba(255,255,255,0.8))",
     }}
     animate={{
       y: ["0vh", "110vh"],
@@ -60,6 +58,51 @@ const Snowflake = ({ delay }: { delay: number }) => (
     }}
   >
     ❄️
+  </motion.div>
+);
+
+// 🎄 Christmas Particles
+const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) => (
+  <motion.div
+    className="position-absolute"
+    style={{
+      left: `${Math.random() * 100}%`,
+      top: -30,
+      fontSize: "28px",
+      opacity: 0.6,
+      pointerEvents: "none",
+      zIndex: 1,
+    }}
+    animate={{
+      y: ["0vh", "110vh"],
+      rotate: [0, 360, 720],
+      opacity: [0, 0.8, 0.8, 0],
+    }}
+    transition={{
+      duration: 18 + Math.random() * 10,
+      delay,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  >
+    {emoji}
+  </motion.div>
+);
+
+// 🦌 Rudolf Animation
+const RudolfNose = () => (
+  <motion.div
+    animate={{
+      scale: [1, 1.3, 1],
+      opacity: [1, 0.7, 1],
+    }}
+    transition={{ duration: 1.5, repeat: Infinity }}
+    style={{
+      display: "inline-block",
+      fontSize: "1.5rem",
+    }}
+  >
+    🔴
   </motion.div>
 );
 
@@ -120,10 +163,10 @@ export default function SensorsAdmin() {
     try {
       if (editing.id) {
         await api.put(`/admin/sensors/${editing.id}`, editing);
-        toast.success("Sensor updated successfully");
+        toast.success("🎄 Sensor updated successfully!");
       } else {
         await api.post("/admin/sensors", editing);
-        toast.success("Sensor created successfully");
+        toast.success("🎁 Sensor created successfully!");
       }
       setShowModal(false);
       loadSensors();
@@ -139,7 +182,7 @@ export default function SensorsAdmin() {
 
     try {
       await api.delete(`/admin/sensors/${id}`);
-      toast.success("Sensor deleted successfully");
+      toast.success("🎁 Sensor deleted successfully!");
       loadSensors();
     } catch (err) {
       toast.error("Failed to delete sensor");
@@ -151,7 +194,7 @@ export default function SensorsAdmin() {
     [s.serialNumber, s.model, s.sensorType]
       .join(" ")
       .toLowerCase()
-      .includes(searchQuery.toLowerCase()),
+      .includes(searchQuery.toLowerCase())
   );
 
   const getStatusIcon = (status: string) => {
@@ -169,18 +212,18 @@ export default function SensorsAdmin() {
 
   const getStatusCandyBorder = (status: string) => {
     if (status === "ACTIVE")
-      return "2px solid rgba(16,185,129,0.4)"; // xanh mint
+      return "2px solid rgba(16,185,129,0.4)";
     if (status === "MAINTENANCE")
-      return "2px solid rgba(245,158,11,0.4)"; // caramel
-    return "2px solid rgba(100,116,139,0.4)"; // iced grey
+      return "2px solid rgba(245,158,11,0.4)";
+    return "2px solid rgba(100,116,139,0.4)";
   };
 
   const getCardGradient = (status: string) => {
     if (status === "ACTIVE")
-      return "linear-gradient(135deg, #0f766e, #10b981)"; // mint candy green
+      return "linear-gradient(135deg, #0f766e, #10b981)";
     if (status === "MAINTENANCE")
-      return "linear-gradient(135deg, #d97706, #f59e0b)"; // caramel
-    return "linear-gradient(135deg, #64748b, #475569)"; // frosty grey
+      return "linear-gradient(135deg, #d97706, #f59e0b)";
+    return "linear-gradient(135deg, #64748b, #475569)";
   };
 
   const getLocationName = (locationId: number) =>
@@ -194,36 +237,52 @@ export default function SensorsAdmin() {
           background: "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)",
           borderRadius: 20,
           paddingBottom: 40,
+          minHeight: "100vh",
         }}
       >
-        {Array.from({ length: 20 }).map((_, i) => (
-          <Snowflake key={i} delay={i * 0.4} />
+        {/* Snowfall */}
+        {Array.from({ length: 28 }).map((_, i) => (
+          <Snowflake key={`snow-${i}`} delay={i * 0.35} />
+        ))}
+
+        {/* Christmas Particles */}
+        {[...Array(6)].map((_, i) => (
+          <ChristmasParticle
+            key={`xmas-${i}`}
+            delay={i * 3}
+            emoji={["🦌", "🎄", "⭐", "🔔", "📡", "🎁"][i]}
+          />
         ))}
 
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 position-relative"
+          className="mb-4 position-relative px-4 pt-4"
           style={{ zIndex: 3 }}
         >
-          <h1
+          <motion.h1
             className="fw-bold d-flex align-items-center gap-3"
-            style={{
-              color: "#FFD700",
-              textShadow: "0 0 20px rgba(255,215,0,0.5)",
+            animate={{
+              textShadow: [
+                "0 0 20px rgba(255,215,0,0.5)",
+                "0 0 35px rgba(255,215,0,0.7)",
+                "0 0 20px rgba(255,215,0,0.5)",
+              ],
             }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{ color: "#FFD700" }}
           >
-            <FaCandyCane /> RUDOLF'S SENSOR NETWORK ⚡
-          </h1>
+            <FaCandyCane /> RUDOLF'S SENSOR NETWORK <RudolfNose />
+          </motion.h1>
           <p style={{ color: "#94a3b8" }}>
-            🎅 Candy Cane Engineering Division — Monitoring Santa’s air quality
+            🎅 Candy Cane Engineering Division — Monitoring Santa's air quality
             infrastructure
           </p>
         </motion.div>
 
         {/* Stats */}
-        <div className="row g-3 mb-4 position-relative" style={{ zIndex: 3 }}>
+        <div className="row g-3 mb-4 position-relative px-4" style={{ zIndex: 3 }}>
           {[
             {
               label: "Total Sensors",
@@ -257,7 +316,8 @@ export default function SensorsAdmin() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
             >
-              <div
+              <motion.div
+                whileHover={{ y: -5, scale: 1.02 }}
                 className="p-4 text-center"
                 style={{
                   borderRadius: 18,
@@ -278,7 +338,7 @@ export default function SensorsAdmin() {
                   {stat.value}
                 </div>
                 <div style={{ color: "#cbd5e1" }}>{stat.label}</div>
-              </div>
+              </motion.div>
             </motion.div>
           ))}
         </div>
@@ -287,7 +347,7 @@ export default function SensorsAdmin() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card border-0 shadow-sm mb-4"
+          className="card border-0 shadow-sm mb-4 mx-4"
           style={{
             borderRadius: 16,
             background: "rgba(255,255,255,0.04)",
@@ -327,25 +387,29 @@ export default function SensorsAdmin() {
                 </div>
               </div>
               <div className="col-12 col-md-6 text-end">
-                <Button
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleCreate}
-                  className="d-inline-flex align-items-center gap-2 px-4"
+                  className="btn d-inline-flex align-items-center gap-2 px-4 py-2"
                   style={{
                     borderRadius: 12,
-                    background:
-                      "linear-gradient(135deg, #ef4444, #dc2626)", // candy red
+                    background: "linear-gradient(135deg, #ef4444, #dc2626)",
                     border: "none",
+                    color: "white",
+                    fontWeight: 600,
+                    boxShadow: "0 0 20px rgba(239,68,68,0.4)",
                   }}
                 >
                   <FaPlus /> Add Sensor
-                </Button>
+                </motion.button>
               </div>
             </div>
           </div>
         </motion.div>
 
         {/* Sensor Grid */}
-        <div className="row g-4 position-relative" style={{ zIndex: 3 }}>
+        <div className="row g-4 position-relative px-4" style={{ zIndex: 3 }}>
           <AnimatePresence>
             {loading ? (
               <div className="col-12 text-center py-5">
@@ -380,6 +444,20 @@ export default function SensorsAdmin() {
                       border: getStatusCandyBorder(sensor.status),
                     }}
                   >
+                    {/* Candy Cane Top Stripe */}
+                    <div
+                      className="w-100"
+                      style={{
+                        height: 6,
+                        background:
+                          sensor.status === "ACTIVE"
+                            ? "repeating-linear-gradient(90deg, #10b981 0px, #10b981 10px, #fff 10px, #fff 20px)"
+                            : sensor.status === "MAINTENANCE"
+                            ? "repeating-linear-gradient(90deg, #f59e0b 0px, #f59e0b 10px, #fff 10px, #fff 20px)"
+                            : "repeating-linear-gradient(90deg, #64748b 0px, #64748b 10px, #fff 10px, #fff 20px)",
+                      }}
+                    />
+
                     {/* Header */}
                     <div
                       className="p-3 text-white"
@@ -394,7 +472,12 @@ export default function SensorsAdmin() {
                             {sensor.serialNumber}
                           </div>
                         </div>
-                        {getStatusIcon(sensor.status)}
+                        <motion.div
+                          animate={{ rotate: [0, 360] }}
+                          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                        >
+                          {getStatusIcon(sensor.status)}
+                        </motion.div>
                       </div>
                     </div>
 
@@ -410,7 +493,6 @@ export default function SensorsAdmin() {
                             </div>
                           </div>
                         </div>
-
                         <div className="d-flex align-items-center gap-2 mb-2">
                           <FaMapMarkerAlt className="text-secondary" />
                           <div>
@@ -420,10 +502,17 @@ export default function SensorsAdmin() {
                             </div>
                           </div>
                         </div>
-
                         <div className="d-flex align-items-center gap-2">
                           <div className="small text-muted">Type:</div>
-                          <Badge bg="info">{sensor.sensorType}</Badge>
+                          <span
+                            className="badge px-2 py-1"
+                            style={{
+                              background: "rgba(14,165,233,0.2)",
+                              color: "#0ea5e9",
+                            }}
+                          >
+                            {sensor.sensorType}
+                          </span>
                         </div>
                       </div>
 
@@ -431,29 +520,40 @@ export default function SensorsAdmin() {
                         <div className="small text-muted mb-3">
                           Installed:{" "}
                           {new Date(sensor.installationDate).toLocaleDateString(
-                            "vi-VN",
+                            "vi-VN"
                           )}
                         </div>
                       )}
 
                       <div className="d-flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline-light"
-                          className="flex-fill"
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="btn btn-sm flex-fill"
                           onClick={() => handleEdit(sensor)}
-                          style={{ borderRadius: 10 }}
+                          style={{
+                            borderRadius: 10,
+                            background: "rgba(255,255,255,0.1)",
+                            border: "1px solid rgba(255,255,255,0.2)",
+                            color: "white",
+                          }}
                         >
                           <FaEdit className="me-1" /> Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline-danger"
-                          style={{ borderRadius: 10 }}
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="btn btn-sm"
+                          style={{
+                            borderRadius: 10,
+                            background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                            border: "none",
+                            color: "white",
+                          }}
                           onClick={() => handleDelete(sensor.id)}
                         >
                           <FaTrash />
-                        </Button>
+                        </motion.button>
                       </div>
                     </div>
                   </div>
@@ -462,167 +562,230 @@ export default function SensorsAdmin() {
             )}
           </AnimatePresence>
         </div>
+      </div>
 
-        {/* Modal */}
-        <Modal
-          show={showModal}
-          onHide={() => setShowModal(false)}
-          centered
-          size="lg"
-        >
-          <Modal.Header
-            closeButton
-            className="border-0"
-            style={{
-              background: "linear-gradient(135deg, #ef4444, #b91c1c)",
-            }}
+      {/* Modal */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="modal d-block"
+            style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+            onClick={() => setShowModal(false)}
           >
-            <Modal.Title className="text-white">
-              🎄 {editing?.id ? "Edit Sensor" : "Create New Sensor"}
-            </Modal.Title>
-          </Modal.Header>
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="modal-dialog modal-dialog-centered modal-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className="modal-content"
+                style={{
+                  background: "rgba(26, 35, 50, 0.98)",
+                  color: "white",
+                  border: "2px solid rgba(239,68,68,0.3)",
+                  borderRadius: 16,
+                }}
+              >
+                {/* Candy Cane Border */}
+                <div
+                  className="position-absolute top-0 start-0 w-100"
+                  style={{
+                    height: 6,
+                    borderTopLeftRadius: 16,
+                    borderTopRightRadius: 16,
+                    background:
+                      "repeating-linear-gradient(90deg, #ef4444 0px, #ef4444 15px, #fff 15px, #fff 30px)",
+                  }}
+                />
 
-          <Modal.Body className="p-4">
-            <Form>
-              <div className="row g-3">
-                <div className="col-md-6">
-                  <Form.Group>
-                    <Form.Label className="fw-semibold">
-                      Serial Number
-                    </Form.Label>
-                    <Form.Control
-                      value={editing?.serialNumber || ""}
-                      onChange={(e) =>
-                        setEditing({
-                          ...editing!,
-                          serialNumber: e.target.value,
-                        })
-                      }
-                      placeholder="SN-001"
-                      style={{ borderRadius: 12 }}
-                    />
-                  </Form.Group>
+                <div className="modal-header border-0 pt-4">
+                  <h5 className="modal-title text-white">
+                    🎄 {editing?.id ? "Edit Sensor" : "Create New Sensor"}
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close btn-close-white"
+                    onClick={() => setShowModal(false)}
+                  />
                 </div>
 
-                <div className="col-md-6">
-                  <Form.Group>
-                    <Form.Label className="fw-semibold">
-                      Sensor Type
-                    </Form.Label>
-                    <Form.Control
-                      value={editing?.sensorType || ""}
-                      onChange={(e) =>
-                        setEditing({
-                          ...editing!,
-                          sensorType: e.target.value,
-                        })
-                      }
-                      placeholder="AirQuality"
-                      style={{ borderRadius: 12 }}
-                    />
-                  </Form.Group>
+                <div className="modal-body p-4">
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold">
+                        Serial Number
+                      </label>
+                      <input
+                        className="form-control"
+                        value={editing?.serialNumber || ""}
+                        onChange={(e) =>
+                          setEditing({
+                            ...editing!,
+                            serialNumber: e.target.value,
+                          })
+                        }
+                        placeholder="SN-001"
+                        style={{
+                          borderRadius: 12,
+                          background: "rgba(255,255,255,0.1)",
+                          border: "1px solid rgba(239,68,68,0.3)",
+                          color: "white",
+                        }}
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold">
+                        Sensor Type
+                      </label>
+                      <input
+                        className="form-control"
+                        value={editing?.sensorType || ""}
+                        onChange={(e) =>
+                          setEditing({
+                            ...editing!,
+                            sensorType: e.target.value,
+                          })
+                        }
+                        placeholder="AirQuality"
+                        style={{
+                          borderRadius: 12,
+                          background: "rgba(255,255,255,0.1)",
+                          border: "1px solid rgba(239,68,68,0.3)",
+                          color: "white",
+                        }}
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold">Model</label>
+                      <input
+                        className="form-control"
+                        value={editing?.model || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing!, model: e.target.value })
+                        }
+                        placeholder="AQM-Pro"
+                        style={{
+                          borderRadius: 12,
+                          background: "rgba(255,255,255,0.1)",
+                          border: "1px solid rgba(239,68,68,0.3)",
+                          color: "white",
+                        }}
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold">Location</label>
+                      <select
+                        className="form-select"
+                        value={editing?.locationId || ""}
+                        onChange={(e) =>
+                          setEditing({
+                            ...editing!,
+                            locationId: Number(e.target.value),
+                          })
+                        }
+                        style={{
+                          borderRadius: 12,
+                          background: "rgba(255,255,255,0.1)",
+                          border: "1px solid rgba(239,68,68,0.3)",
+                          color: "white",
+                        }}
+                      >
+                        {locations.map((loc) => (
+                          <option key={loc.id} value={loc.id} style={{ background: "#1a2332" }}>
+                            {loc.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold">Status</label>
+                      <select
+                        className="form-select"
+                        value={editing?.status || "ACTIVE"}
+                        onChange={(e) =>
+                          setEditing({
+                            ...editing!,
+                            status: e.target.value as Sensor["status"],
+                          })
+                        }
+                        style={{
+                          borderRadius: 12,
+                          background: "rgba(255,255,255,0.1)",
+                          border: "1px solid rgba(239,68,68,0.3)",
+                          color: "white",
+                        }}
+                      >
+                        <option value="ACTIVE" style={{ background: "#1a2332" }}>Active</option>
+                        <option value="INACTIVE" style={{ background: "#1a2332" }}>Inactive</option>
+                        <option value="MAINTENANCE" style={{ background: "#1a2332" }}>Maintenance</option>
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold">
+                        Installation Date
+                      </label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={editing?.installationDate || ""}
+                        onChange={(e) =>
+                          setEditing({
+                            ...editing!,
+                            installationDate: e.target.value,
+                          })
+                        }
+                        style={{
+                          borderRadius: 12,
+                          background: "rgba(255,255,255,0.1)",
+                          border: "1px solid rgba(239,68,68,0.3)",
+                          color: "white",
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="col-md-6">
-                  <Form.Group>
-                    <Form.Label className="fw-semibold">Model</Form.Label>
-                    <Form.Control
-                      value={editing?.model || ""}
-                      onChange={(e) =>
-                        setEditing({ ...editing!, model: e.target.value })
-                      }
-                      placeholder="AQM-Pro"
-                      style={{ borderRadius: 12 }}
-                    />
-                  </Form.Group>
-                </div>
-
-                <div className="col-md-6">
-                  <Form.Group>
-                    <Form.Label className="fw-semibold">Location</Form.Label>
-                    <Form.Select
-                      value={editing?.locationId || ""}
-                      onChange={(e) =>
-                        setEditing({
-                          ...editing!,
-                          locationId: Number(e.target.value),
-                        })
-                      }
-                      style={{ borderRadius: 12 }}
-                    >
-                      {locations.map((loc) => (
-                        <option key={loc.id} value={loc.id}>
-                          {loc.name}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </div>
-
-                <div className="col-md-6">
-                  <Form.Group>
-                    <Form.Label className="fw-semibold">Status</Form.Label>
-                    <Form.Select
-                      value={editing?.status || "ACTIVE"}
-                      onChange={(e) =>
-                        setEditing({
-                          ...editing!,
-                          status: e.target.value as Sensor["status"],
-                        })
-                      }
-                      style={{ borderRadius: 12 }}
-                    >
-                      <option value="ACTIVE">Active</option>
-                      <option value="INACTIVE">Inactive</option>
-                      <option value="MAINTENANCE">Maintenance</option>
-                    </Form.Select>
-                  </Form.Group>
-                </div>
-
-                <div className="col-md-6">
-                  <Form.Group>
-                    <Form.Label className="fw-semibold">
-                      Installation Date
-                    </Form.Label>
-                    <Form.Control
-                      type="date"
-                      value={editing?.installationDate || ""}
-                      onChange={(e) =>
-                        setEditing({
-                          ...editing!,
-                          installationDate: e.target.value,
-                        })
-                      }
-                      style={{ borderRadius: 12 }}
-                    />
-                  </Form.Group>
+                <div className="modal-footer border-0 pb-4">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="btn px-4 py-2"
+                    onClick={() => setShowModal(false)}
+                    style={{
+                      borderRadius: 12,
+                      background: "rgba(255,255,255,0.1)",
+                      border: "none",
+                      color: "white",
+                    }}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="btn px-4 py-2"
+                    onClick={handleSave}
+                    style={{
+                      borderRadius: 12,
+                      background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                      border: "none",
+                      color: "white",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {editing?.id ? "Update Sensor" : "Create Sensor"}
+                  </motion.button>
                 </div>
               </div>
-            </Form>
-          </Modal.Body>
-
-          <Modal.Footer className="border-0">
-            <Button
-              variant="secondary"
-              onClick={() => setShowModal(false)}
-              style={{ borderRadius: 12 }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleSave}
-              style={{
-                borderRadius: 12,
-                background: "linear-gradient(135deg, #ef4444, #dc2626)",
-                border: "none",
-              }}
-            >
-              {editing?.id ? "Update Sensor" : "Create Sensor"}
-            </Button>
-          </Modal.Footer>
-        </Modal>
-      </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AdminLayout>
   );
 }
