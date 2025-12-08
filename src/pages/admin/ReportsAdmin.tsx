@@ -1,4 +1,4 @@
-// src/pages/admin/ReportsAdmin.tsx - EXTRA FESTIVE EDITION
+// src/pages/admin/ReportsAdmin.tsx - DATA ANALYTICS HUB: NOEL CYBORG ANALYSIS EDITION
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,32 +12,35 @@ import {
   FaFileCode,
   FaFileAlt,
   FaChevronDown,
+  FaMoon,
+  FaSun,
 } from "react-icons/fa";
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
 
-// ❄️ Snowflake
-const Snowflake = ({ delay }: { delay: number }) => (
+// ❄️ Enhanced Snowflake with varied sizes
+const Snowflake = ({ delay, size = 18 }: { delay: number; size?: number }) => (
   <motion.div
     className="position-absolute"
     style={{
       left: `${Math.random() * 100}%`,
       top: -20,
-      fontSize: Math.random() * 14 + 10,
-      opacity: 0.75,
+      fontSize: `${size}px`,
+      opacity: 0.8,
       color: "#E6F7FF",
       pointerEvents: "none",
       zIndex: 1,
       filter: "drop-shadow(0 0 3px rgba(255,255,255,0.8))",
     }}
     animate={{
-      y: ["0vh", "110vh"],
-      opacity: [0, 1, 1, 0],
+      y: ["0vh", "105vh"],
       rotate: [0, 360],
+      opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 50 - 25],
     }}
     transition={{
-      duration: 9 + Math.random() * 4,
+      duration: 9 + Math.random() * 6,
       delay,
       repeat: Infinity,
       ease: "linear",
@@ -47,7 +50,57 @@ const Snowflake = ({ delay }: { delay: number }) => (
   </motion.div>
 );
 
-// 🎁 Gift bounce animation
+// 🎄 Christmas Particles (Cyborg-themed: Gears, Data, Robots mixed with Christmas)
+const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) => (
+  <motion.div
+    className="position-absolute"
+    style={{
+      left: `${Math.random() * 100}%`,
+      top: -30,
+      fontSize: `${20 + Math.random() * 15}px`,
+      opacity: 0.7,
+      pointerEvents: "none",
+      zIndex: 1,
+      filter: "drop-shadow(0 0 5px rgba(255,215,0,0.6))",
+    }}
+    animate={{
+      y: ["0vh", "110vh"],
+      rotate: [0, 360, 720],
+      opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 100 - 50],
+    }}
+    transition={{
+      duration: 15 + Math.random() * 10,
+      delay,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  >
+    {emoji}
+  </motion.div>
+);
+
+// ✨ Sparkle effect for theme toggle
+const Sparkle = ({ x, y }: { x: number; y: number }) => (
+  <motion.div
+    className="position-fixed"
+    style={{
+      left: x,
+      top: y,
+      width: 8,
+      height: 8,
+      borderRadius: "50%",
+      background: "radial-gradient(circle, #FFD700, transparent)",
+      pointerEvents: "none",
+      zIndex: 9999,
+    }}
+    initial={{ scale: 0, opacity: 1 }}
+    animate={{ scale: 3, opacity: 0 }}
+    transition={{ duration: 0.6, ease: "easeOut" }}
+  />
+);
+
+// 🎁 Gift bounce animation with cyborg twist
 const GiftBounce = () => (
   <motion.div
     animate={{ y: [0, -8, 0] }}
@@ -55,34 +108,6 @@ const GiftBounce = () => (
     className="d-inline-block"
   >
     <FaGift className="text-warning" size={24} />
-  </motion.div>
-);
-
-// 🎄 Christmas Particles
-const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) => (
-  <motion.div
-    className="position-absolute"
-    style={{
-      left: `${Math.random() * 100}%`,
-      top: -30,
-      fontSize: "26px",
-      opacity: 0.6,
-      pointerEvents: "none",
-      zIndex: 1,
-    }}
-    animate={{
-      y: ["0vh", "110vh"],
-      rotate: [0, 360, 720],
-      opacity: [0, 0.8, 0.8, 0],
-    }}
-    transition={{
-      duration: 20 + Math.random() * 10,
-      delay,
-      repeat: Infinity,
-      ease: "easeInOut",
-    }}
-  >
-    {emoji}
   </motion.div>
 );
 
@@ -105,6 +130,7 @@ type Report = {
 };
 
 export default function ReportsAdmin() {
+  const [theme, setTheme] = useState<"dark" | "xmas">("xmas"); // Default to xmas
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -116,6 +142,7 @@ export default function ReportsAdmin() {
     toDate: "",
   });
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+  const [sparkles, setSparkles] = useState<Array<{ x: number; y: number; id: number }>>([]);
 
   useEffect(() => {
     loadReports();
@@ -158,7 +185,7 @@ export default function ReportsAdmin() {
         fromDate: newReport.fromDate,
         toDate: newReport.toDate,
       });
-      toast.success("🎁 Report generated successfully!");
+      toast.success(theme === "xmas" ? "🎁 Report generated successfully!" : "Report generated successfully!");
       setShowModal(false);
       setNewReport({ locationId: "", fromDate: "", toDate: "" });
       await loadReports();
@@ -178,7 +205,7 @@ export default function ReportsAdmin() {
 
     try {
       await api.delete(`/admin/reports/${id}`);
-      toast.success("🎁 Report deleted successfully!");
+      toast.success(theme === "xmas" ? "🎁 Report deleted successfully!" : "Report deleted successfully!");
       await loadReports();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
@@ -262,56 +289,149 @@ export default function ReportsAdmin() {
     }
   };
 
+  // Theme toggle with sparkle effect
+  const handleThemeToggle = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    // Create sparkles
+    const newSparkles = Array.from({ length: 12 }, (_, i) => ({
+      x: x + (Math.random() - 0.5) * 100,
+      y: y + (Math.random() - 0.5) * 100,
+      id: Date.now() + i,
+    }));
+
+    setSparkles(newSparkles);
+    setTimeout(() => setSparkles([]), 600);
+
+    setTheme((prev) => (prev === "dark" ? "xmas" : "dark"));
+  };
+
+  const backgroundStyle =
+    theme === "dark"
+      ? "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)"
+      : "linear-gradient(180deg, #1a0f00 0%, #4b2600 100%)";
+
+  const getCardColor = (base: string) =>
+    theme === "dark" ? `${base}` : "#FFD700";
+
+  const glow = theme === "xmas" ? "0 0 25px rgba(255,215,0,0.5)" : "0 0 15px rgba(103,232,249,0.2)";
+
   return (
     <AdminLayout>
       <div
         className="min-vh-100 position-relative"
         style={{
-          background: "linear-gradient(180deg,#0a1929 0%, #102540 100%)",
+          background: backgroundStyle,
           padding: "1px",
+          transition: "background 0.5s ease",
         }}
       >
-        {/* Snowfall */}
-        {[...Array(30)].map((_, i) => (
-          <Snowflake key={`snow-${i}`} delay={i * 0.25} />
+        {/* Enhanced Snowfall */}
+        {[...Array(35)].map((_, i) => (
+          <Snowflake key={`snow-${i}`} delay={i * 0.2} size={12 + Math.random() * 12} />
         ))}
 
-        {/* Christmas Particles */}
-        {[...Array(6)].map((_, i) => (
-          <ChristmasParticle
-            key={`xmas-${i}`}
-            delay={i * 3}
-            emoji={["🎁", "📊", "⭐", "🎄", "📈", "🔔"][i]}
-          />
-        ))}
+        {/* Christmas Particles (only in xmas mode) */}
+        {theme === "xmas" && (
+          <>
+            {[...Array(8)].map((_, i) => (
+              <ChristmasParticle
+                key={`gift-${i}`}
+                delay={i * 2}
+                emoji={["⚙️", "🎄", "⭐", "🤖", "📊", "🎁", "🔧", "📈"][i % 8]}
+              />
+            ))}
+          </>
+        )}
+
+        {/* Sparkle effects on theme toggle */}
+        <AnimatePresence>
+          {sparkles.map((sparkle) => (
+            <Sparkle key={sparkle.id} x={sparkle.x} y={sparkle.y} />
+          ))}
+        </AnimatePresence>
 
         <div
           className="container-fluid p-4 position-relative"
           style={{ zIndex: 2 }}
         >
-          {/* Header */}
+          {/* Header with Enhanced Theme Toggle */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4"
+            className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"
           >
-            <motion.h2
-              className="fw-bold mb-1"
-              animate={{
-                textShadow: [
-                  "0 0 10px rgba(255,215,0,0.4)",
-                  "0 0 20px rgba(255,215,0,0.6)",
-                  "0 0 10px rgba(255,215,0,0.4)",
-                ],
+            <div>
+              <motion.h2
+                className="fw-bold mb-1"
+                animate={{
+                  textShadow:
+                    theme === "xmas"
+                      ? [
+                          "0 0 18px rgba(255,215,0,0.4)",
+                          "0 0 30px rgba(255,215,0,0.6)",
+                          "0 0 18px rgba(255,215,0,0.4)",
+                        ]
+                      : [
+                          "0 0 14px rgba(180,230,255,0.3)",
+                          "0 0 20px rgba(180,230,255,0.5)",
+                          "0 0 14px rgba(180,230,255,0.3)",
+                        ],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  background:
+                    theme === "dark"
+                      ? "linear-gradient(90deg, #b3eaff, #e0f7ff)"
+                      : "none",
+                  WebkitBackgroundClip: theme === "dark" ? "text" : "unset",
+                  WebkitTextFillColor:
+                    theme === "dark" ? "transparent" : "inherit",
+                  color: theme === "xmas" ? "#FFD700" : "#ffffff",
+                }}
+              >
+                {theme === "xmas" ? "🎅 Santa's Cyborg Data Analytics Hub 📊" : "Data Analytics Hub 📊"}
+              </motion.h2>
+              <p className="text-light text-opacity-75 mb-0">
+                {theme === "xmas" ? "Cyborg Elves Analyzing Air Quality from the North Pole ❄️" : "Santa's official air-quality analysis reports"}
+              </p>
+            </div>
+
+            {/* Enhanced Theme Toggle Button */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="btn px-4 py-3 d-flex align-items-center gap-3"
+              onClick={handleThemeToggle}
+              style={{
+                borderRadius: 50,
+                background:
+                  theme === "xmas"
+                    ? "linear-gradient(135deg, #C41E3A, #8B0000)"
+                    : "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                border: "none",
+                boxShadow: glow,
+                color: "white",
+                fontWeight: 600,
+                fontSize: "1rem",
               }}
-              transition={{ duration: 2, repeat: Infinity }}
-              style={{ color: "#FFD700" }}
             >
-              📊 Workshop Analytics 🎁
-            </motion.h2>
-            <p className="text-light text-opacity-75 mb-0">
-              Santa's official air-quality analysis reports
-            </p>
+              <motion.div
+                animate={{ rotate: theme === "xmas" ? 360 : 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                {theme === "dark" ? <FaGift size={22} /> : <FaFileExcel size={22} />}
+              </motion.div>
+              <span>{theme === "dark" ? "Cyborg Noel Mode" : "Dark Mode"}</span>
+              <motion.div
+                animate={{ rotate: theme === "xmas" ? 0 : 360 }}
+                transition={{ duration: 0.6 }}
+              >
+                {theme === "dark" ? <FaSun size={18} /> : <FaMoon size={18} />}
+              </motion.div>
+            </motion.button>
           </motion.div>
 
           {/* Stats Banner */}
@@ -323,8 +443,8 @@ export default function ReportsAdmin() {
               borderRadius: 16,
               background: "rgba(255,255,255,0.07)",
               backdropFilter: "blur(6px)",
-              border: "2px solid rgba(255,215,0,0.3)",
-              boxShadow: "0 0 30px rgba(255,215,0,0.2)",
+              border: theme === "xmas" ? "2px solid rgba(255,215,0,0.3)" : "2px solid rgba(103,232,249,0.3)",
+              boxShadow: glow,
             }}
           >
             <div className="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
@@ -344,12 +464,12 @@ export default function ReportsAdmin() {
                 whileTap={{ scale: 0.95 }}
                 className="btn d-inline-flex align-items-center gap-2 px-4 py-3"
                 style={{
-                  background: "linear-gradient(135deg, #fbbf24, #f59e0b)",
+                  background: theme === "xmas" ? "linear-gradient(135deg, #fbbf24, #f59e0b)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                   border: "none",
                   borderRadius: 12,
                   fontWeight: 600,
                   color: "white",
-                  boxShadow: "0 0 20px rgba(251,191,36,0.4)",
+                  boxShadow: glow,
                 }}
                 onClick={() => setShowModal(true)}
               >
@@ -419,8 +539,8 @@ export default function ReportsAdmin() {
                           <span
                             className="badge px-2 py-1"
                             style={{
-                              background: "rgba(255,215,0,0.2)",
-                              color: "#FFD700",
+                              background: theme === "xmas" ? "rgba(255,215,0,0.2)" : "rgba(103,232,249,0.2)",
+                              color: theme === "xmas" ? "#FFD700" : "#67e8f9",
                             }}
                           >
                             #{report.id}
@@ -439,8 +559,8 @@ export default function ReportsAdmin() {
                           <span
                             className="badge px-3 py-1"
                             style={{
-                              background: "rgba(251,191,36,0.2)",
-                              color: "#fbbf24",
+                              background: theme === "xmas" ? "rgba(251,191,36,0.2)" : "rgba(103,232,249,0.2)",
+                              color: theme === "xmas" ? "#fbbf24" : "#67e8f9",
                               fontWeight: 600,
                               fontSize: "0.9rem",
                             }}
@@ -461,7 +581,9 @@ export default function ReportsAdmin() {
                               className="btn btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
                               style={{
                                 background:
-                                  "linear-gradient(135deg, #10b981, #059669)",
+                                  theme === "xmas"
+                                    ? "linear-gradient(135deg, #10b981, #059669)"
+                                    : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                                 border: "none",
                                 borderRadius: 10,
                                 color: "white",
@@ -515,7 +637,7 @@ export default function ReportsAdmin() {
                                         borderRadius: 8,
                                       }}
                                     >
-                                      <item.icon style={{ color: item.color }} />
+                                      <item.icon style={{ color: getCardColor(item.color) }} />
                                       {item.label}
                                     </motion.button>
                                   ))}
@@ -530,7 +652,9 @@ export default function ReportsAdmin() {
                             className="btn btn-sm"
                             style={{
                               background:
-                                "linear-gradient(135deg, #ef4444, #dc2626)",
+                                theme === "xmas"
+                                  ? "linear-gradient(135deg, #ef4444, #dc2626)"
+                                  : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                               border: "none",
                               borderRadius: 8,
                               padding: "6px 12px",
@@ -557,7 +681,7 @@ export default function ReportsAdmin() {
             className="text-center mt-4"
           >
             <small className="text-light opacity-50">
-              🎅 {reports.length} reports generated · Workshop Analytics Division ❄️
+              {theme === "xmas" ? "🎅 Cyborg Elves Analyzing Air Quality Data ❄️" : "🎅 {reports.length} reports generated · Workshop Analytics Division ❄️"}
             </small>
           </motion.div>
         </div>
@@ -586,9 +710,9 @@ export default function ReportsAdmin() {
                 style={{
                   background: "rgba(26, 35, 50, 0.98)",
                   color: "white",
-                  border: "2px solid rgba(255,215,0,0.3)",
+                  border: theme === "xmas" ? "2px solid rgba(255,215,0,0.3)" : "2px solid rgba(103,232,249,0.3)",
                   borderRadius: 16,
-                  boxShadow: "0 0 40px rgba(255,215,0,0.3)",
+                  boxShadow: glow,
                 }}
               >
                 {/* Candy Cane Top Border */}
@@ -599,7 +723,9 @@ export default function ReportsAdmin() {
                     borderTopLeftRadius: 16,
                     borderTopRightRadius: 16,
                     background:
-                      "repeating-linear-gradient(90deg, #C41E3A 0px, #C41E3A 15px, #fff 15px, #fff 30px)",
+                      theme === "xmas"
+                        ? "repeating-linear-gradient(90deg, #C41E3A 0px, #C41E3A 15px, #fff 15px, #fff 30px)"
+                        : "repeating-linear-gradient(90deg, #0ea5e9 0px, #0ea5e9 15px, #fff 15px, #fff 30px)",
                   }}
                 />
 
@@ -629,7 +755,7 @@ export default function ReportsAdmin() {
                       style={{
                         background: "rgba(255,255,255,0.1)",
                         color: "white",
-                        border: "1px solid rgba(255,215,0,0.3)",
+                        border: theme === "xmas" ? "1px solid rgba(255,215,0,0.3)" : "1px solid rgba(103,232,249,0.3)",
                         borderRadius: 10,
                       }}
                     >
@@ -657,7 +783,7 @@ export default function ReportsAdmin() {
                       style={{
                         background: "rgba(255,255,255,0.1)",
                         color: "white",
-                        border: "1px solid rgba(255,215,0,0.3)",
+                        border: theme === "xmas" ? "1px solid rgba(255,215,0,0.3)" : "1px solid rgba(103,232,249,0.3)",
                         borderRadius: 10,
                       }}
                     />
@@ -675,7 +801,7 @@ export default function ReportsAdmin() {
                       style={{
                         background: "rgba(255,255,255,0.1)",
                         color: "white",
-                        border: "1px solid rgba(255,215,0,0.3)",
+                        border: theme === "xmas" ? "1px solid rgba(255,215,0,0.3)" : "1px solid rgba(103,232,249,0.3)",
                         borderRadius: 10,
                       }}
                     />
@@ -702,7 +828,7 @@ export default function ReportsAdmin() {
                     whileTap={{ scale: 0.98 }}
                     className="btn px-4 py-2"
                     style={{
-                      background: "linear-gradient(135deg, #fbbf24, #f59e0b)",
+                      background: theme === "xmas" ? "linear-gradient(135deg, #fbbf24, #f59e0b)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                       border: "none",
                       borderRadius: 10,
                       color: "white",
