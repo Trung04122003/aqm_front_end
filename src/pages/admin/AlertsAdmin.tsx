@@ -1,7 +1,7 @@
-// src/pages/admin/AlertsAdmin.tsx - EXTRA FESTIVE EDITION
+// src/pages/admin/AlertsAdmin.tsx - ALERT COMMAND CENTER: NOEL RED ALERT EDITION
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaTrash, FaSearch, FaBell, FaExclamationTriangle } from "react-icons/fa";
+import { FaTrash, FaSearch, FaBell, FaExclamationTriangle, FaMoon, FaSun } from "react-icons/fa";
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
@@ -17,24 +17,24 @@ type Alert = {
   isRead: boolean;
 };
 
-// ❄️ Enhanced Snowflake
-const Snowflake = ({ delay }: { delay: number }) => (
+// ❄️ Enhanced Snowflake with varied sizes
+const Snowflake = ({ delay, size = 18 }: { delay: number; size?: number }) => (
   <motion.div
     className="position-absolute"
     style={{
       left: `${Math.random() * 100}%`,
       top: -20,
-      fontSize: Math.random() * 14 + 10,
-      opacity: 0.75,
+      fontSize: `${size}px`,
+      opacity: 0.8,
       color: "#E6F7FF",
       pointerEvents: "none",
       zIndex: 1,
       filter: "drop-shadow(0 0 3px rgba(255,255,255,0.8))",
     }}
     animate={{
-      y: ["0vh", "110vh"],
-      opacity: [0, 1, 1, 0],
+      y: ["0vh", "105vh"],
       rotate: [0, 360],
+      opacity: [0, 1, 1, 0],
       x: [0, Math.random() * 50 - 25],
     }}
     transition={{
@@ -48,26 +48,27 @@ const Snowflake = ({ delay }: { delay: number }) => (
   </motion.div>
 );
 
-// 🎄 Christmas Ornaments
-const ChristmasOrnament = ({ delay, emoji }: { delay: number; emoji: string }) => (
+// 🎄 Christmas Particles (Alerts-themed: Bells, Gifts, Alarms)
+const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) => (
   <motion.div
     className="position-absolute"
     style={{
       left: `${Math.random() * 100}%`,
       top: -30,
-      fontSize: "28px",
-      opacity: 0.6,
+      fontSize: `${20 + Math.random() * 15}px`,
+      opacity: 0.7,
       pointerEvents: "none",
       zIndex: 1,
+      filter: "drop-shadow(0 0 5px rgba(255,215,0,0.6))",
     }}
     animate={{
       y: ["0vh", "110vh"],
       rotate: [0, 360, 720],
-      opacity: [0, 0.8, 0.8, 0],
-      scale: [0.8, 1.3, 0.8],
+      opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 100 - 50],
     }}
     transition={{
-      duration: 18 + Math.random() * 10,
+      duration: 15 + Math.random() * 10,
       delay,
       repeat: Infinity,
       ease: "easeInOut",
@@ -77,7 +78,27 @@ const ChristmasOrnament = ({ delay, emoji }: { delay: number; emoji: string }) =
   </motion.div>
 );
 
-// ✨ Delete Sparkle Effect
+// ✨ Sparkle effect for theme toggle
+const Sparkle = ({ x, y }: { x: number; y: number }) => (
+  <motion.div
+    className="position-fixed"
+    style={{
+      left: x,
+      top: y,
+      width: 8,
+      height: 8,
+      borderRadius: "50%",
+      background: "radial-gradient(circle, #FFD700, transparent)",
+      pointerEvents: "none",
+      zIndex: 9999,
+    }}
+    initial={{ scale: 0, opacity: 1 }}
+    animate={{ scale: 3, opacity: 0 }}
+    transition={{ duration: 0.6, ease: "easeOut" }}
+  />
+);
+
+// ✨ Delete Sparkle Effect with red alert vibe
 const DeleteSparkle = ({ x, y }: { x: number; y: number }) => (
   <motion.div
     className="position-fixed"
@@ -97,11 +118,12 @@ const DeleteSparkle = ({ x, y }: { x: number; y: number }) => (
     }}
     transition={{ duration: 1, ease: "easeOut" }}
   >
-    💥
+    🚨
   </motion.div>
 );
 
 export default function AlertsAdmin() {
+  const [theme, setTheme] = useState<"dark" | "xmas">("xmas"); // Default to xmas
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -146,11 +168,30 @@ export default function AlertsAdmin() {
 
     try {
       await api.delete(`/admin/alerts/${id}`);
-      toast.success("🎁 Alert deleted!");
+      toast.success(theme === "xmas" ? "🎁 Alert deleted!" : "Alert deleted!");
       loadAlerts();
     } catch {
       toast.error("Failed to delete alert");
     }
+  };
+
+  // Theme toggle with sparkle effect
+  const handleThemeToggle = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    // Create sparkles
+    const newSparkles = Array.from({ length: 12 }, (_, i) => ({
+      x: x + (Math.random() - 0.5) * 100,
+      y: y + (Math.random() - 0.5) * 100,
+      id: Date.now() + i,
+    }));
+
+    setSparkles(newSparkles);
+    setTimeout(() => setSparkles([]), 600);
+
+    setTheme((prev) => (prev === "dark" ? "xmas" : "dark"));
   };
 
   const filteredAlerts = useMemo(() => {
@@ -196,28 +237,50 @@ export default function AlertsAdmin() {
     };
   };
 
+  const backgroundStyle =
+    theme === "dark"
+      ? "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)"
+      : "linear-gradient(180deg, #1a0f00 0%, #4b2600 100%)";
+
+  const getCardColor = (base: string) =>
+    theme === "dark" ? `${base}` : "#FFD700";
+
+  const glow = theme === "xmas" ? "0 0 25px rgba(255,215,0,0.5)" : "0 0 15px rgba(103,232,249,0.2)";
+
   return (
     <AdminLayout>
       <div
         className="min-vh-100 position-relative"
         style={{
-          background: "linear-gradient(180deg, #0a1929 0%, #0f213b 100%)",
+          background: backgroundStyle,
           padding: "1px",
+          transition: "background 0.5s ease",
         }}
       >
-        {/* Snowfall */}
-        {[...Array(28)].map((_, i) => (
-          <Snowflake key={`snow-${i}`} delay={i * 0.25} />
+        {/* Enhanced Snowfall */}
+        {[...Array(35)].map((_, i) => (
+          <Snowflake key={`snow-${i}`} delay={i * 0.2} size={12 + Math.random() * 12} />
         ))}
 
-        {/* Christmas Ornaments */}
-        {[...Array(5)].map((_, i) => (
-          <ChristmasOrnament
-            key={`ornament-${i}`}
-            delay={i * 3.5}
-            emoji={["🔔", "🎁", "⭐", "🎄", "🦌"][i]}
-          />
-        ))}
+        {/* Christmas Particles (only in xmas mode) */}
+        {theme === "xmas" && (
+          <>
+            {[...Array(8)].map((_, i) => (
+              <ChristmasParticle
+                key={`gift-${i}`}
+                delay={i * 2}
+                emoji={["🔔", "🚨", "🎁", "⭐", "🎄", "⚠️", "🔴", "🦌"][i % 8]}
+              />
+            ))}
+          </>
+        )}
+
+        {/* Sparkle effects on theme toggle */}
+        <AnimatePresence>
+          {sparkles.map((sparkle) => (
+            <Sparkle key={sparkle.id} x={sparkle.x} y={sparkle.y} />
+          ))}
+        </AnimatePresence>
 
         {/* Delete Sparkles */}
         <AnimatePresence>
@@ -227,29 +290,83 @@ export default function AlertsAdmin() {
         </AnimatePresence>
 
         <div className="container-fluid p-4 position-relative" style={{ zIndex: 2 }}>
-          {/* HEADER */}
+          {/* HEADER with Enhanced Theme Toggle */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4"
+            className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"
           >
-            <motion.h2
-              className="fw-bold mb-1 d-flex align-items-center gap-2"
-              animate={{
-                textShadow: [
-                  "0 0 12px rgba(255,215,0,0.4)",
-                  "0 0 24px rgba(255,215,0,0.6)",
-                  "0 0 12px rgba(255,215,0,0.4)",
-                ],
+            <div>
+              <motion.h2
+                className="fw-bold mb-1"
+                animate={{
+                  textShadow:
+                    theme === "xmas"
+                      ? [
+                          "0 0 18px rgba(255,215,0,0.4)",
+                          "0 0 30px rgba(255,215,0,0.6)",
+                          "0 0 18px rgba(255,215,0,0.4)",
+                        ]
+                      : [
+                          "0 0 14px rgba(180,230,255,0.3)",
+                          "0 0 20px rgba(180,230,255,0.5)",
+                          "0 0 14px rgba(180,230,255,0.3)",
+                        ],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  background:
+                    theme === "dark"
+                      ? "linear-gradient(90deg, #b3eaff, #e0f7ff)"
+                      : "none",
+                  WebkitBackgroundClip: theme === "dark" ? "text" : "unset",
+                  WebkitTextFillColor:
+                    theme === "dark" ? "transparent" : "inherit",
+                  color: theme === "xmas" ? "#FFD700" : "#ffffff",
+                }}
+              >
+                {theme === "xmas" ? "🎅 Santa's Red Alert Command Center 🚨" : "Alert Command Center 🚨"}
+              </motion.h2>
+              <p className="text-light text-opacity-75 mb-0">
+                {theme === "xmas" 
+                  ? "Monitoring Naughty Air Quality Violations from the North Pole ❄️"
+                  : "Centralized alert monitoring & management"}
+              </p>
+            </div>
+
+            {/* Enhanced Theme Toggle Button */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="btn px-4 py-3 d-flex align-items-center gap-3"
+              onClick={handleThemeToggle}
+              style={{
+                borderRadius: 50,
+                background:
+                  theme === "xmas"
+                    ? "linear-gradient(135deg, #C41E3A, #8B0000)"
+                    : "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                border: "none",
+                boxShadow: glow,
+                color: "white",
+                fontWeight: 600,
+                fontSize: "1rem",
               }}
-              transition={{ duration: 2, repeat: Infinity }}
-              style={{ color: "#FFD700" }}
             >
-              <FaBell /> Naughty Air Quality List 📋
-            </motion.h2>
-            <p className="text-light text-opacity-75 mb-0">
-              Monitoring violations of North Pole Atmospheric Protocols
-            </p>
+              <motion.div
+                animate={{ rotate: theme === "xmas" ? 360 : 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                {theme === "dark" ? <FaBell size={22} /> : <FaExclamationTriangle size={22} />}
+              </motion.div>
+              <span>{theme === "dark" ? "Noel Red Alert Mode" : "Dark Mode"}</span>
+              <motion.div
+                animate={{ rotate: theme === "xmas" ? 0 : 360 }}
+                transition={{ duration: 0.6 }}
+              >
+                {theme === "dark" ? <FaSun size={18} /> : <FaMoon size={18} />}
+              </motion.div>
+            </motion.button>
           </motion.div>
 
           {/* Stats Cards */}
@@ -265,7 +382,7 @@ export default function AlertsAdmin() {
                 label: "Unread",
                 value: alerts.filter((a) => !a.isRead).length,
                 color: "#f59e0b",
-                icon: "📬",
+                icon: "🔔",
               },
               {
                 label: "Critical",
@@ -292,9 +409,9 @@ export default function AlertsAdmin() {
                   className="card border-0 h-100"
                   style={{
                     borderRadius: 16,
-                    background: `linear-gradient(135deg, ${stat.color}22, ${stat.color}08)`,
-                    border: `2px solid ${stat.color}40`,
-                    boxShadow: `0 0 20px ${stat.color}30`,
+                    background: `linear-gradient(135deg, ${getCardColor(stat.color)}22, ${getCardColor(stat.color)}08)`,
+                    border: `2px solid ${getCardColor(stat.color)}40`,
+                    boxShadow: `0 0 20px ${getCardColor(stat.color)}30`,
                   }}
                 >
                   <div className="card-body p-3 d-flex align-items-center gap-3">
@@ -303,7 +420,7 @@ export default function AlertsAdmin() {
                       style={{
                         width: 56,
                         height: 56,
-                        background: `${stat.color}30`,
+                        background: `${getCardColor(stat.color)}30`,
                         fontSize: "28px",
                       }}
                     >
@@ -315,7 +432,7 @@ export default function AlertsAdmin() {
                       </div>
                       <div
                         className="h3 mb-0 fw-bold"
-                        style={{ color: stat.color }}
+                        style={{ color: getCardColor(stat.color) }}
                       >
                         {stat.value}
                       </div>
@@ -378,14 +495,14 @@ export default function AlertsAdmin() {
                         borderRadius: 10,
                         background:
                           filter === btn.value
-                            ? `linear-gradient(135deg, ${btn.color}, ${btn.color}dd)`
+                            ? `linear-gradient(135deg, ${getCardColor(btn.color)}, ${getCardColor(btn.color)}dd)`
                             : "rgba(255,255,255,0.1)",
-                        border: `1px solid ${filter === btn.value ? btn.color : "rgba(255,255,255,0.2)"}`,
+                        border: `1px solid ${filter === btn.value ? getCardColor(btn.color) : "rgba(255,255,255,0.2)"}`,
                         color: "white",
                         fontWeight: 600,
                         boxShadow:
                           filter === btn.value
-                            ? `0 0 15px ${btn.color}50`
+                            ? `0 0 15px ${getCardColor(btn.color)}50`
                             : "none",
                       }}
                     >
@@ -405,9 +522,9 @@ export default function AlertsAdmin() {
               className="alert d-flex align-items-center gap-2 mb-4"
               style={{
                 background: "rgba(239, 68, 68, 0.15)",
-                border: "1px solid #ef4444",
+                border: `1px solid ${getCardColor("#ef4444")}`,
                 borderRadius: 12,
-                color: "#ef4444",
+                color: getCardColor("#ef4444"),
               }}
             >
               <FaExclamationTriangle />
@@ -459,7 +576,7 @@ export default function AlertsAdmin() {
                   {loading ? (
                     <tr>
                       <td colSpan={8} className="text-center py-5">
-                        <div className="spinner-border text-warning" />
+                        <div className="spinner-border" style={{color: theme === "xmas" ? "#FFD700" : "#67e8f9"}} />
                       </td>
                     </tr>
                   ) : filteredAlerts.length === 0 ? (
@@ -468,7 +585,7 @@ export default function AlertsAdmin() {
                         colSpan={8}
                         className="text-center py-5 text-light opacity-75"
                       >
-                        <div style={{ fontSize: "3rem" }}>🎄</div>
+                        <div style={{ fontSize: "3rem" }}>🚨</div>
                         <div className="mt-2">No alerts found</div>
                       </td>
                     </tr>
@@ -494,8 +611,8 @@ export default function AlertsAdmin() {
                             <span
                               className="badge px-2 py-1"
                               style={{
-                                background: "rgba(255,215,0,0.2)",
-                                color: "#FFD700",
+                                background: theme === "xmas" ? "rgba(255,215,0,0.2)" : "rgba(14,165,233,0.2)",
+                                color: theme === "xmas" ? "#FFD700" : "#0ea5e9",
                                 fontWeight: 600,
                               }}
                             >
@@ -509,7 +626,7 @@ export default function AlertsAdmin() {
                                 style={{
                                   width: 32,
                                   height: 32,
-                                  background: "rgba(14,165,233,0.3)",
+                                  background: theme === "xmas" ? "rgba(255,215,0,0.3)" : "rgba(14,165,233,0.3)",
                                   fontSize: "14px",
                                 }}
                               >
@@ -530,8 +647,8 @@ export default function AlertsAdmin() {
                             <span
                               className="badge px-3 py-1"
                               style={{
-                                background: "rgba(251,191,36,0.2)",
-                                color: "#fbbf24",
+                                background: theme === "xmas" ? "rgba(251,191,36,0.2)" : "rgba(14,165,233,0.2)",
+                                color: theme === "xmas" ? "#fbbf24" : "#0ea5e9",
                                 borderRadius: 8,
                                 fontWeight: 600,
                               }}
@@ -575,7 +692,9 @@ export default function AlertsAdmin() {
                               className="btn btn-sm"
                               style={{
                                 background:
-                                  "linear-gradient(135deg, #ef4444, #dc2626)",
+                                  theme === "xmas"
+                                    ? "linear-gradient(135deg, #ef4444, #dc2626)"
+                                    : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                                 border: "none",
                                 borderRadius: 8,
                                 padding: "6px 12px",
@@ -603,9 +722,9 @@ export default function AlertsAdmin() {
             className="text-center mt-4"
           >
             <small className="text-light opacity-50">
-              🎅 Monitoring {filteredAlerts.length} alert
-              {filteredAlerts.length !== 1 ? "s" : ""} · North Pole Air Quality
-              Command ❄️
+              {theme === "xmas"
+                ? "🎅 Monitoring Naughty Air Alerts from the North Pole ❄️"
+                : "🚨 Centralized Alert Command Center"}
             </small>
           </motion.div>
         </div>
