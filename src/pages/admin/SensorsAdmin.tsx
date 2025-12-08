@@ -1,4 +1,4 @@
-// src/pages/admin/SensorsAdmin.tsx - RUDOLF'S SENSOR NETWORK EXTRA FESTIVE EDITION
+// src/pages/admin/SensorsAdmin.tsx - SENSOR NETWORK MONITORING: SATELLITE NOEL FUTURE EDITION
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,6 +12,9 @@ import {
   FaExclamationTriangle,
   FaTools,
   FaCandyCane,
+  FaSatelliteDish,
+  FaMoon,
+  FaSun,
 } from "react-icons/fa";
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
@@ -32,26 +35,28 @@ type Location = {
   name: string;
 };
 
-// ❄️ Enhanced Snowflake
-const Snowflake = ({ delay }: { delay: number }) => (
+// ❄️ Enhanced Snowflake with varied sizes
+const Snowflake = ({ delay, size = 18 }: { delay: number; size?: number }) => (
   <motion.div
     className="position-absolute"
     style={{
       left: `${Math.random() * 100}%`,
       top: -20,
-      fontSize: "14px",
+      fontSize: `${size}px`,
+      opacity: 0.8,
+      color: "#E6F7FF",
       pointerEvents: "none",
       zIndex: 1,
-      color: "#e0f7fa",
       filter: "drop-shadow(0 0 3px rgba(255,255,255,0.8))",
     }}
     animate={{
-      y: ["0vh", "110vh"],
-      opacity: [0, 1, 1, 0],
+      y: ["0vh", "105vh"],
       rotate: [0, 360],
+      opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 50 - 25],
     }}
     transition={{
-      duration: 12 + Math.random() * 6,
+      duration: 9 + Math.random() * 6,
       delay,
       repeat: Infinity,
       ease: "linear",
@@ -61,25 +66,27 @@ const Snowflake = ({ delay }: { delay: number }) => (
   </motion.div>
 );
 
-// 🎄 Christmas Particles
+// 🎄 Christmas Particles (Gifts, Bells, Stars, Satellites)
 const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) => (
   <motion.div
     className="position-absolute"
     style={{
       left: `${Math.random() * 100}%`,
       top: -30,
-      fontSize: "28px",
-      opacity: 0.6,
+      fontSize: `${20 + Math.random() * 15}px`,
+      opacity: 0.7,
       pointerEvents: "none",
       zIndex: 1,
+      filter: "drop-shadow(0 0 5px rgba(255,215,0,0.6))",
     }}
     animate={{
       y: ["0vh", "110vh"],
       rotate: [0, 360, 720],
-      opacity: [0, 0.8, 0.8, 0],
+      opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 100 - 50],
     }}
     transition={{
-      duration: 18 + Math.random() * 10,
+      duration: 15 + Math.random() * 10,
       delay,
       repeat: Infinity,
       ease: "easeInOut",
@@ -89,7 +96,27 @@ const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) =
   </motion.div>
 );
 
-// 🦌 Rudolf Animation
+// ✨ Sparkle effect for theme toggle
+const Sparkle = ({ x, y }: { x: number; y: number }) => (
+  <motion.div
+    className="position-fixed"
+    style={{
+      left: x,
+      top: y,
+      width: 8,
+      height: 8,
+      borderRadius: "50%",
+      background: "radial-gradient(circle, #FFD700, transparent)",
+      pointerEvents: "none",
+      zIndex: 9999,
+    }}
+    initial={{ scale: 0, opacity: 1 }}
+    animate={{ scale: 3, opacity: 0 }}
+    transition={{ duration: 0.6, ease: "easeOut" }}
+  />
+);
+
+// 🦌 Rudolf Animation for festive touch
 const RudolfNose = () => (
   <motion.div
     animate={{
@@ -107,12 +134,14 @@ const RudolfNose = () => (
 );
 
 export default function SensorsAdmin() {
+  const [theme, setTheme] = useState<"dark" | "xmas">("xmas"); // Default to xmas
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Sensor | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sparkles, setSparkles] = useState<Array<{ x: number; y: number; id: number }>>([]);
 
   useEffect(() => {
     loadSensors();
@@ -163,10 +192,10 @@ export default function SensorsAdmin() {
     try {
       if (editing.id) {
         await api.put(`/admin/sensors/${editing.id}`, editing);
-        toast.success("🎄 Sensor updated successfully!");
+        toast.success("🛰️ Sensor updated successfully!");
       } else {
         await api.post("/admin/sensors", editing);
-        toast.success("🎁 Sensor created successfully!");
+        toast.success("🛰️ Sensor created successfully!");
       }
       setShowModal(false);
       loadSensors();
@@ -182,12 +211,31 @@ export default function SensorsAdmin() {
 
     try {
       await api.delete(`/admin/sensors/${id}`);
-      toast.success("🎁 Sensor deleted successfully!");
+      toast.success("🛰️ Sensor deleted successfully!");
       loadSensors();
     } catch (err) {
       toast.error("Failed to delete sensor");
       console.error(err);
     }
+  };
+
+  // Theme toggle with sparkle effect
+  const handleThemeToggle = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    // Create sparkles
+    const newSparkles = Array.from({ length: 12 }, (_, i) => ({
+      x: x + (Math.random() - 0.5) * 100,
+      y: y + (Math.random() - 0.5) * 100,
+      id: Date.now() + i,
+    }));
+
+    setSparkles(newSparkles);
+    setTimeout(() => setSparkles([]), 600);
+
+    setTheme((prev) => (prev === "dark" ? "xmas" : "dark"));
   };
 
   const filteredSensors = sensors.filter((s) =>
@@ -209,6 +257,16 @@ export default function SensorsAdmin() {
         return null;
     }
   };
+
+  const backgroundStyle =
+    theme === "dark"
+      ? "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)"
+      : "linear-gradient(180deg, #1a0f00 0%, #4b2600 100%)";
+
+  const getCardColor = (base: string) =>
+    theme === "dark" ? `${base}` : "#FFD700";
+
+  const glow = theme === "xmas" ? "0 0 25px rgba(255,215,0,0.5)" : "0 0 15px rgba(103,232,249,0.2)";
 
   const getStatusCandyBorder = (status: string) => {
     if (status === "ACTIVE")
@@ -234,27 +292,39 @@ export default function SensorsAdmin() {
       <div
         className="position-relative"
         style={{
-          background: "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)",
+          background: backgroundStyle,
           borderRadius: 20,
           paddingBottom: 40,
           minHeight: "100vh",
+          transition: "background 0.5s ease",
         }}
       >
-        {/* Snowfall */}
-        {Array.from({ length: 28 }).map((_, i) => (
-          <Snowflake key={`snow-${i}`} delay={i * 0.35} />
+        {/* Enhanced Snowfall */}
+        {[...Array(35)].map((_, i) => (
+          <Snowflake key={`snow-${i}`} delay={i * 0.2} size={12 + Math.random() * 12} />
         ))}
 
-        {/* Christmas Particles */}
-        {[...Array(6)].map((_, i) => (
-          <ChristmasParticle
-            key={`xmas-${i}`}
-            delay={i * 3}
-            emoji={["🦌", "🎄", "⭐", "🔔", "📡", "🎁"][i]}
-          />
-        ))}
+        {/* Christmas Particles (only in xmas mode) */}
+        {theme === "xmas" && (
+          <>
+            {[...Array(8)].map((_, i) => (
+              <ChristmasParticle
+                key={`gift-${i}`}
+                delay={i * 2}
+                emoji={["🦌", "🎄", "⭐", "🔔", "📡", "🎁", "🛰️", "🔭"][i % 8]}
+              />
+            ))}
+          </>
+        )}
 
-        {/* Header */}
+        {/* Sparkle effects on theme toggle */}
+        <AnimatePresence>
+          {sparkles.map((sparkle) => (
+            <Sparkle key={sparkle.id} x={sparkle.x} y={sparkle.y} />
+          ))}
+        </AnimatePresence>
+
+        {/* Header with Enhanced Theme Toggle */}
         <motion.div
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -271,13 +341,16 @@ export default function SensorsAdmin() {
               ],
             }}
             transition={{ duration: 2, repeat: Infinity }}
-            style={{ color: "#FFD700" }}
+            style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}
           >
-            <FaCandyCane /> RUDOLF'S SENSOR NETWORK <RudolfNose />
+            <FaSatelliteDish /> 
+            {theme === "xmas" ? "SANTA'S SATELLITE SENSOR NETWORK" : "FUTURE SATELLITE SENSOR HUB"}
+            {theme === "xmas" && <RudolfNose />}
           </motion.h1>
           <p style={{ color: "#94a3b8" }}>
-            🎅 Candy Cane Engineering Division — Monitoring Santa's air quality
-            infrastructure
+            {theme === "xmas"
+              ? "🎅 Monitoring air quality from orbit with Noel tech 🛰️"
+              : "Advanced satellite-based sensor monitoring for future air quality infrastructure"}
           </p>
         </motion.div>
 
@@ -288,25 +361,25 @@ export default function SensorsAdmin() {
               label: "Total Sensors",
               value: sensors.length,
               color: "#f87171",
-              icon: "📡",
+              icon: <FaSatelliteDish />,
             },
             {
               label: "Active",
               value: sensors.filter((s) => s.status === "ACTIVE").length,
               color: "#10b981",
-              icon: "🟢",
+              icon: <FaCheckCircle />,
             },
             {
               label: "Maintenance",
               value: sensors.filter((s) => s.status === "MAINTENANCE").length,
               color: "#f59e0b",
-              icon: "🛠️",
+              icon: <FaTools />,
             },
             {
               label: "Inactive",
               value: sensors.filter((s) => s.status === "INACTIVE").length,
               color: "#94a3b8",
-              icon: "⚪",
+              icon: <FaExclamationTriangle />,
             },
           ].map((stat, i) => (
             <motion.div
@@ -321,16 +394,17 @@ export default function SensorsAdmin() {
                 className="p-4 text-center"
                 style={{
                   borderRadius: 18,
-                  border: `2px dashed ${stat.color}`,
-                  background: `${stat.color}15`,
+                  border: `2px dashed ${getCardColor(stat.color)}`,
+                  background: `${getCardColor(stat.color)}15`,
                   backdropFilter: "blur(6px)",
+                  boxShadow: glow,
                 }}
               >
-                <div style={{ fontSize: "2rem" }}>{stat.icon}</div>
+                <div style={{ fontSize: "2rem", color: getCardColor(stat.color) }}>{stat.icon}</div>
                 <div
                   className="fw-bold"
                   style={{
-                    color: stat.color,
+                    color: getCardColor(stat.color),
                     fontSize: "2rem",
                     marginTop: 6,
                   }}
@@ -343,7 +417,7 @@ export default function SensorsAdmin() {
           ))}
         </div>
 
-        {/* Search + Create */}
+        {/* Search + Create + Theme Toggle */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -369,7 +443,7 @@ export default function SensorsAdmin() {
                 >
                   <span
                     className="input-group-text border-0"
-                    style={{ background: "transparent", color: "#FFD700" }}
+                    style={{ background: "transparent", color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}
                   >
                     <FaSearch />
                   </span>
@@ -386,7 +460,7 @@ export default function SensorsAdmin() {
                   />
                 </div>
               </div>
-              <div className="col-12 col-md-6 text-end">
+              <div className="col-12 col-md-6 text-end d-flex justify-content-end gap-3">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -394,14 +468,47 @@ export default function SensorsAdmin() {
                   className="btn d-inline-flex align-items-center gap-2 px-4 py-2"
                   style={{
                     borderRadius: 12,
-                    background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                    background: theme === "xmas" ? "linear-gradient(135deg, #ef4444, #dc2626)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                     border: "none",
                     color: "white",
                     fontWeight: 600,
-                    boxShadow: "0 0 20px rgba(239,68,68,0.4)",
+                    boxShadow: glow,
                   }}
                 >
                   <FaPlus /> Add Sensor
+                </motion.button>
+                {/* Enhanced Theme Toggle Button */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="btn px-4 py-2 d-flex align-items-center gap-3"
+                  onClick={handleThemeToggle}
+                  style={{
+                    borderRadius: 50,
+                    background:
+                      theme === "xmas"
+                        ? "linear-gradient(135deg, #C41E3A, #8B0000)"
+                        : "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                    border: "none",
+                    boxShadow: glow,
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: "1rem",
+                  }}
+                >
+                  <motion.div
+                    animate={{ rotate: theme === "xmas" ? 360 : 0 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    {theme === "dark" ? <FaCandyCane size={22} /> : <FaSatelliteDish size={22} />}
+                  </motion.div>
+                  <span>{theme === "dark" ? "Noel Mode" : "Future Mode"}</span>
+                  <motion.div
+                    animate={{ rotate: theme === "xmas" ? 0 : 360 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    {theme === "dark" ? <FaSun size={18} /> : <FaMoon size={18} />}
+                  </motion.div>
                 </motion.button>
               </div>
             </div>
@@ -415,13 +522,13 @@ export default function SensorsAdmin() {
               <div className="col-12 text-center py-5">
                 <div
                   className="spinner-border"
-                  style={{ width: 60, height: 60, color: "#FFD700" }}
+                  style={{ width: 60, height: 60, color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}
                 />
               </div>
             ) : filteredSensors.length === 0 ? (
               <div className="col-12 text-center py-5">
-                <div style={{ fontSize: "4rem" }}>📡</div>
-                <h5 className="text-muted mt-3">No sensors found</h5>
+                <div style={{ fontSize: "4rem", color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>🛰️</div>
+                <h5 className="text-muted mt-3">No sensors found in orbit</h5>
               </div>
             ) : (
               filteredSensors.map((sensor, index) => (
@@ -442,6 +549,7 @@ export default function SensorsAdmin() {
                       background: "rgba(255,255,255,0.05)",
                       backdropFilter: "blur(6px)",
                       border: getStatusCandyBorder(sensor.status),
+                      boxShadow: glow,
                     }}
                   >
                     {/* Candy Cane Top Stripe */}
@@ -507,8 +615,8 @@ export default function SensorsAdmin() {
                           <span
                             className="badge px-2 py-1"
                             style={{
-                              background: "rgba(14,165,233,0.2)",
-                              color: "#0ea5e9",
+                              background: theme === "xmas" ? "rgba(255,215,0,0.2)" : "rgba(14,165,233,0.2)",
+                              color: theme === "xmas" ? "#FFD700" : "#0ea5e9",
                             }}
                           >
                             {sensor.sensorType}
@@ -546,7 +654,7 @@ export default function SensorsAdmin() {
                           className="btn btn-sm"
                           style={{
                             borderRadius: 10,
-                            background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                            background: theme === "xmas" ? "linear-gradient(135deg, #ef4444, #dc2626)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                             border: "none",
                             color: "white",
                           }}
@@ -562,6 +670,29 @@ export default function SensorsAdmin() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Christmas Footer */}
+        {theme === "xmas" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mt-5 position-relative px-4"
+            style={{ zIndex: 3 }}
+          >
+            <motion.h3
+              className="fw-bold mb-2"
+              animate={{
+                color: ["#FFD700", "#FF6B6B", "#FFD700"],
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
+            >
+              🎅 Satellite Sensors Guiding Santa's Sleigh! 🛰️
+            </motion.h3>
+            <p className="text-light mb-0">
+              Noel Orbit Control - Powered by Rudolf's Red Nose Tech ❄️
+            </p>
+          </motion.div>
+        )}
       </div>
 
       {/* Modal */}
@@ -585,13 +716,14 @@ export default function SensorsAdmin() {
               <div
                 className="modal-content"
                 style={{
-                  background: "rgba(26, 35, 50, 0.98)",
+                  background: theme === "xmas" ? "rgba(26, 35, 50, 0.98)" : "rgba(10, 25, 41, 0.98)",
                   color: "white",
-                  border: "2px solid rgba(239,68,68,0.3)",
+                  border: `2px solid ${theme === "xmas" ? "rgba(239,68,68,0.3)" : "rgba(103,232,249,0.3)"}`,
                   borderRadius: 16,
+                  boxShadow: glow,
                 }}
               >
-                {/* Candy Cane Border */}
+                {/* Candy Cane Top Stripe */}
                 <div
                   className="position-absolute top-0 start-0 w-100"
                   style={{
@@ -599,13 +731,15 @@ export default function SensorsAdmin() {
                     borderTopLeftRadius: 16,
                     borderTopRightRadius: 16,
                     background:
-                      "repeating-linear-gradient(90deg, #ef4444 0px, #ef4444 15px, #fff 15px, #fff 30px)",
+                      theme === "xmas"
+                        ? "repeating-linear-gradient(90deg, #ef4444 0px, #ef4444 15px, #fff 15px, #fff 30px)"
+                        : "repeating-linear-gradient(90deg, #0ea5e9 0px, #0ea5e9 15px, #fff 15px, #fff 30px)",
                   }}
                 />
 
                 <div className="modal-header border-0 pt-4">
                   <h5 className="modal-title text-white">
-                    🎄 {editing?.id ? "Edit Sensor" : "Create New Sensor"}
+                    {theme === "xmas" ? "🎄" : "🛰️"} {editing?.id ? "Edit Satellite Sensor" : "Deploy New Satellite Sensor"}
                   </h5>
                   <button
                     type="button"
@@ -633,7 +767,7 @@ export default function SensorsAdmin() {
                         style={{
                           borderRadius: 12,
                           background: "rgba(255,255,255,0.1)",
-                          border: "1px solid rgba(239,68,68,0.3)",
+                          border: `1px solid ${theme === "xmas" ? "rgba(239,68,68,0.3)" : "rgba(103,232,249,0.3)"}`,
                           color: "white",
                         }}
                       />
@@ -655,7 +789,7 @@ export default function SensorsAdmin() {
                         style={{
                           borderRadius: 12,
                           background: "rgba(255,255,255,0.1)",
-                          border: "1px solid rgba(239,68,68,0.3)",
+                          border: `1px solid ${theme === "xmas" ? "rgba(239,68,68,0.3)" : "rgba(103,232,249,0.3)"}`,
                           color: "white",
                         }}
                       />
@@ -672,7 +806,7 @@ export default function SensorsAdmin() {
                         style={{
                           borderRadius: 12,
                           background: "rgba(255,255,255,0.1)",
-                          border: "1px solid rgba(239,68,68,0.3)",
+                          border: `1px solid ${theme === "xmas" ? "rgba(239,68,68,0.3)" : "rgba(103,232,249,0.3)"}`,
                           color: "white",
                         }}
                       />
@@ -691,7 +825,7 @@ export default function SensorsAdmin() {
                         style={{
                           borderRadius: 12,
                           background: "rgba(255,255,255,0.1)",
-                          border: "1px solid rgba(239,68,68,0.3)",
+                          border: `1px solid ${theme === "xmas" ? "rgba(239,68,68,0.3)" : "rgba(103,232,249,0.3)"}`,
                           color: "white",
                         }}
                       >
@@ -716,7 +850,7 @@ export default function SensorsAdmin() {
                         style={{
                           borderRadius: 12,
                           background: "rgba(255,255,255,0.1)",
-                          border: "1px solid rgba(239,68,68,0.3)",
+                          border: `1px solid ${theme === "xmas" ? "rgba(239,68,68,0.3)" : "rgba(103,232,249,0.3)"}`,
                           color: "white",
                         }}
                       >
@@ -742,7 +876,7 @@ export default function SensorsAdmin() {
                         style={{
                           borderRadius: 12,
                           background: "rgba(255,255,255,0.1)",
-                          border: "1px solid rgba(239,68,68,0.3)",
+                          border: `1px solid ${theme === "xmas" ? "rgba(239,68,68,0.3)" : "rgba(103,232,249,0.3)"}`,
                           color: "white",
                         }}
                       />
@@ -772,13 +906,13 @@ export default function SensorsAdmin() {
                     onClick={handleSave}
                     style={{
                       borderRadius: 12,
-                      background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                      background: theme === "xmas" ? "linear-gradient(135deg, #ef4444, #dc2626)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                       border: "none",
                       color: "white",
                       fontWeight: 600,
                     }}
                   >
-                    {editing?.id ? "Update Sensor" : "Create Sensor"}
+                    {editing?.id ? "Update Sensor" : "Deploy Sensor"}
                   </motion.button>
                 </div>
               </div>
