@@ -1,7 +1,7 @@
-// src/pages/admin/SystemLogs.tsx - FROSTBYTE SECURITY TERMINAL EXTRA FESTIVE EDITION
+// src/pages/admin/SystemLogs.tsx - SECURITY CENTER: NOEL SECURE FORTRESS EDITION
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaShieldAlt, FaInfoCircle, FaExclamationTriangle, FaTimesCircle } from "react-icons/fa";
+import { FaShieldAlt, FaInfoCircle, FaExclamationTriangle, FaTimesCircle, FaMoon, FaSun } from "react-icons/fa";
 import api from "../../api/axios";
 import AdminLayout from "../../layouts/AdminLayout";
 
@@ -13,27 +13,28 @@ type LogEntry = {
   user?: string;
 };
 
-// ❄️ Snowflake
-const Snowflake = ({ delay }: { delay: number }) => (
+// ❄️ Enhanced Snowflake with varied sizes
+const Snowflake = ({ delay, size = 18 }: { delay: number; size?: number }) => (
   <motion.div
     className="position-absolute"
     style={{
       left: `${Math.random() * 100}%`,
       top: -20,
-      fontSize: Math.random() * 12 + 8,
-      opacity: 0.6,
+      fontSize: `${size}px`,
+      opacity: 0.8,
       color: "#E6F7FF",
       pointerEvents: "none",
       zIndex: 1,
-      filter: "drop-shadow(0 0 2px rgba(255,255,255,0.8))",
+      filter: "drop-shadow(0 0 3px rgba(255,255,255,0.8))",
     }}
     animate={{
-      y: ["0vh", "110vh"],
-      opacity: [0, 0.8, 0.8, 0],
+      y: ["0vh", "105vh"],
       rotate: [0, 360],
+      opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 50 - 25],
     }}
     transition={{
-      duration: 10 + Math.random() * 5,
+      duration: 9 + Math.random() * 6,
       delay,
       repeat: Infinity,
       ease: "linear",
@@ -43,25 +44,27 @@ const Snowflake = ({ delay }: { delay: number }) => (
   </motion.div>
 );
 
-// 🎄 Floating Security Icons
-const SecurityIcon = ({ delay, emoji }: { delay: number; emoji: string }) => (
+// 🎄 Christmas Particles (Security-themed: Shields, Locks, Gifts)
+const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) => (
   <motion.div
     className="position-absolute"
     style={{
       left: `${Math.random() * 100}%`,
       top: -30,
-      fontSize: "24px",
-      opacity: 0.5,
+      fontSize: `${20 + Math.random() * 15}px`,
+      opacity: 0.7,
       pointerEvents: "none",
       zIndex: 1,
+      filter: "drop-shadow(0 0 5px rgba(255,215,0,0.6))",
     }}
     animate={{
       y: ["0vh", "110vh"],
-      rotate: [0, 360],
-      opacity: [0, 0.7, 0.7, 0],
+      rotate: [0, 360, 720],
+      opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 100 - 50],
     }}
     transition={{
-      duration: 20 + Math.random() * 10,
+      duration: 15 + Math.random() * 10,
       delay,
       repeat: Infinity,
       ease: "easeInOut",
@@ -69,6 +72,26 @@ const SecurityIcon = ({ delay, emoji }: { delay: number; emoji: string }) => (
   >
     {emoji}
   </motion.div>
+);
+
+// ✨ Sparkle effect for theme toggle
+const Sparkle = ({ x, y }: { x: number; y: number }) => (
+  <motion.div
+    className="position-fixed"
+    style={{
+      left: x,
+      top: y,
+      width: 8,
+      height: 8,
+      borderRadius: "50%",
+      background: "radial-gradient(circle, #FFD700, transparent)",
+      pointerEvents: "none",
+      zIndex: 9999,
+    }}
+    initial={{ scale: 0, opacity: 1 }}
+    animate={{ scale: 3, opacity: 0 }}
+    transition={{ duration: 0.6, ease: "easeOut" }}
+  />
 );
 
 // 🔒 Pulsing Shield
@@ -85,10 +108,12 @@ const PulsingShield = () => (
   </motion.div>
 );
 
-export default function FrostbyteSecurityTerminal() {
+export default function SystemLogs() {
+  const [theme, setTheme] = useState<"dark" | "xmas">("xmas"); // Default to xmas
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState<"ALL" | "INFO" | "WARNING" | "ERROR">("ALL");
   const [autoScroll, setAutoScroll] = useState(true);
+  const [sparkles, setSparkles] = useState<Array<{ x: number; y: number; id: number }>>([]);
 
   useEffect(() => {
     loadLogs();
@@ -104,6 +129,25 @@ export default function FrostbyteSecurityTerminal() {
     } catch (err) {
       console.error("Failed to fetch logs");
     }
+  };
+
+  // Theme toggle with sparkle effect
+  const handleThemeToggle = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    // Create sparkles
+    const newSparkles = Array.from({ length: 12 }, (_, i) => ({
+      x: x + (Math.random() - 0.5) * 100,
+      y: y + (Math.random() - 0.5) * 100,
+      id: Date.now() + i,
+    }));
+
+    setSparkles(newSparkles);
+    setTimeout(() => setSparkles([]), 600);
+
+    setTheme((prev) => (prev === "dark" ? "xmas" : "dark"));
   };
 
   const getColor = (level: string) => {
@@ -149,31 +193,50 @@ export default function FrostbyteSecurityTerminal() {
     (l) => filter === "ALL" || l.level === filter
   );
 
+  const backgroundStyle =
+    theme === "dark"
+      ? "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)"
+      : "linear-gradient(180deg, #1a0f00 0%, #4b2600 100%)";
+
+  const glow = theme === "xmas" ? "0 0 25px rgba(255,215,0,0.5)" : "0 0 15px rgba(103,232,249,0.2)";
+
   return (
     <AdminLayout>
       <div
         style={{
           position: "relative",
           minHeight: "100vh",
-          background: "linear-gradient(180deg, #0a1929 0%, #0f172a 100%)",
+          background: backgroundStyle,
           padding: "1.5rem",
+          transition: "background 0.5s ease",
         }}
       >
-        {/* Snowfall */}
-        {[...Array(25)].map((_, i) => (
-          <Snowflake key={`snow-${i}`} delay={i * 0.3} />
+        {/* Enhanced Snowfall */}
+        {[...Array(35)].map((_, i) => (
+          <Snowflake key={`snow-${i}`} delay={i * 0.2} size={12 + Math.random() * 12} />
         ))}
 
-        {/* Security Icons */}
-        {[...Array(5)].map((_, i) => (
-          <SecurityIcon
-            key={`sec-${i}`}
-            delay={i * 4}
-            emoji={["🛡️", "🔒", "🔐", "🗝️", "🎄"][i]}
-          />
-        ))}
+        {/* Christmas Particles (only in xmas mode) */}
+        {theme === "xmas" && (
+          <>
+            {[...Array(8)].map((_, i) => (
+              <ChristmasParticle
+                key={`gift-${i}`}
+                delay={i * 2}
+                emoji={["🛡️", "🎄", "⭐", "🔒", "🗝️", "🎁", "🔐", "🦌"][i % 8]}
+              />
+            ))}
+          </>
+        )}
 
-        {/* HEADER */}
+        {/* Sparkle effects on theme toggle */}
+        <AnimatePresence>
+          {sparkles.map((sparkle) => (
+            <Sparkle key={sparkle.id} x={sparkle.x} y={sparkle.y} />
+          ))}
+        </AnimatePresence>
+
+        {/* HEADER with Enhanced Theme Toggle */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -190,12 +253,13 @@ export default function FrostbyteSecurityTerminal() {
               ],
             }}
             transition={{ duration: 2, repeat: Infinity }}
+            style={{ color: "#0ea5e9" }}
           >
             <PulsingShield />
-            Frostbyte Security Terminal
+            {theme === "xmas" ? "Santa's Secure Fortress Center 🛡️" : "Security Center 🛡️"}
           </motion.h2>
           <p className="text-light text-opacity-75 mb-0" style={{ marginTop: -6 }}>
-            Real-time activity feed from the North Pole CyberWatch Division ❄️
+            {theme === "xmas" ? "Guarding the North Pole with Elf Security Protocols ❄️" : "Real-time activity feed from the North Pole CyberWatch Division ❄️"}
           </p>
         </motion.div>
 
@@ -267,7 +331,7 @@ export default function FrostbyteSecurityTerminal() {
           ))}
         </motion.div>
 
-        {/* FILTER BAR */}
+        {/* FILTER BAR with Theme Toggle */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -286,7 +350,7 @@ export default function FrostbyteSecurityTerminal() {
                 borderRadius: 12,
                 background: filter === lvl ? getColor(lvl) : "#1e293b",
                 color: filter === lvl ? "#fff" : "#cbd5e1",
-                border: `1px solid ${filter === lvl ? getColor(lvl) : "#334155"}`,
+                border: `1px solid ${filter === lvl ? getColor(lvl) : " #334155"}`,
                 fontWeight: 600,
                 boxShadow:
                   filter === lvl ? `0 0 15px ${getColor(lvl)}50` : "none",
@@ -300,7 +364,7 @@ export default function FrostbyteSecurityTerminal() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="btn btn-sm px-4 py-2 ms-auto"
+            className="btn btn-sm px-4 py-2"
             onClick={() => setAutoScroll(!autoScroll)}
             style={{
               borderRadius: 12,
@@ -313,6 +377,40 @@ export default function FrostbyteSecurityTerminal() {
             }}
           >
             {autoScroll ? "🔄 Auto-scroll ON" : "⏸️ Auto-scroll OFF"}
+          </motion.button>
+
+          {/* Enhanced Theme Toggle Button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            className="btn px-4 py-2 d-flex align-items-center gap-3 ms-auto"
+            onClick={handleThemeToggle}
+            style={{
+              borderRadius: 50,
+              background:
+                theme === "xmas"
+                  ? "linear-gradient(135deg, #C41E3A, #8B0000)"
+                  : "linear-gradient(135deg, #0ea5e9, #0369a1)",
+              border: "none",
+              boxShadow: glow,
+              color: "white",
+              fontWeight: 600,
+              fontSize: "1rem",
+            }}
+          >
+            <motion.div
+              animate={{ rotate: theme === "xmas" ? 360 : 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              {theme === "dark" ? <FaShieldAlt size={22} /> : <FaInfoCircle size={22} />}
+            </motion.div>
+            <span>{theme === "dark" ? "Noel Secure Mode" : "Dark Mode"}</span>
+            <motion.div
+              animate={{ rotate: theme === "xmas" ? 0 : 360 }}
+              transition={{ duration: 0.6 }}
+            >
+              {theme === "dark" ? <FaSun size={18} /> : <FaMoon size={18} />}
+            </motion.div>
           </motion.button>
         </motion.div>
 
@@ -457,10 +555,6 @@ export default function FrostbyteSecurityTerminal() {
           transition={{ delay: 0.5 }}
           className="text-center mt-4"
         >
-          <small className="text-light opacity-50">
-            🛡️ Monitoring {filteredLogs.length} log entr
-            {filteredLogs.length !== 1 ? "ies" : "y"} · CyberWatch Division ❄️
-          </small>
         </motion.div>
 
         {/* Decorative Corner Elements */}
