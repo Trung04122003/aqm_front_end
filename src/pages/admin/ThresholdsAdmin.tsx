@@ -1,4 +1,4 @@
-// src/pages/admin/ThresholdsAdmin.tsx - NORTH POLE CALIBRATION LAB EXTRA FESTIVE EDITION
+// src/pages/admin/ThresholdsAdmin.tsx - THRESHOLDS COMMAND CENTER: NOEL DANGER ALERT EDITION
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -8,6 +8,9 @@ import {
   FaSlidersH,
   FaUserAstronaut,
   FaThermometerHalf,
+  FaMoon,
+  FaSun,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { FaGaugeHigh } from "react-icons/fa6";
 import AdminLayout from "../../layouts/AdminLayout";
@@ -23,27 +26,28 @@ type Threshold = {
   aqiThreshold?: number;
 };
 
-// ❄️ Snowflake
-const Snowflake = ({ delay }: { delay: number }) => (
+// ❄️ Enhanced Snowflake with varied sizes
+const Snowflake = ({ delay, size = 18 }: { delay: number; size?: number }) => (
   <motion.div
     className="position-absolute"
     style={{
       left: `${Math.random() * 100}%`,
       top: -20,
-      fontSize: Math.random() * 12 + 10,
-      opacity: 0.7,
+      fontSize: `${size}px`,
+      opacity: 0.8,
       color: "#E6F7FF",
       pointerEvents: "none",
       zIndex: 1,
       filter: "drop-shadow(0 0 3px rgba(255,255,255,0.8))",
     }}
     animate={{
-      y: ["0vh", "110vh"],
-      opacity: [0, 1, 1, 0],
+      y: ["0vh", "105vh"],
       rotate: [0, 360],
+      opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 50 - 25],
     }}
     transition={{
-      duration: 11 + Math.random() * 5,
+      duration: 9 + Math.random() * 6,
       delay,
       repeat: Infinity,
       ease: "linear",
@@ -53,25 +57,27 @@ const Snowflake = ({ delay }: { delay: number }) => (
   </motion.div>
 );
 
-// 🎄 Christmas Particles
+// 🎄 Christmas Particles (Danger-themed: Alerts, Warnings, Alarms)
 const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) => (
   <motion.div
     className="position-absolute"
     style={{
       left: `${Math.random() * 100}%`,
       top: -30,
-      fontSize: "26px",
-      opacity: 0.6,
+      fontSize: `${20 + Math.random() * 15}px`,
+      opacity: 0.7,
       pointerEvents: "none",
       zIndex: 1,
+      filter: "drop-shadow(0 0 5px rgba(255,215,0,0.6))",
     }}
     animate={{
       y: ["0vh", "110vh"],
       rotate: [0, 360, 720],
-      opacity: [0, 0.8, 0.8, 0],
+      opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 100 - 50],
     }}
     transition={{
-      duration: 18 + Math.random() * 10,
+      duration: 15 + Math.random() * 10,
       delay,
       repeat: Infinity,
       ease: "easeInOut",
@@ -81,22 +87,44 @@ const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) =
   </motion.div>
 );
 
-// ⚙️ Rotating Gear
+// ✨ Sparkle effect for theme toggle
+const Sparkle = ({ x, y }: { x: number; y: number }) => (
+  <motion.div
+    className="position-fixed"
+    style={{
+      left: x,
+      top: y,
+      width: 8,
+      height: 8,
+      borderRadius: "50%",
+      background: "radial-gradient(circle, #FFD700, transparent)",
+      pointerEvents: "none",
+      zIndex: 9999,
+    }}
+    initial={{ scale: 0, opacity: 1 }}
+    animate={{ scale: 3, opacity: 0 }}
+    transition={{ duration: 0.6, ease: "easeOut" }}
+  />
+);
+
+// ⚙️ Rotating Gear for danger vibe
 const RotatingGear = () => (
   <motion.div
     animate={{ rotate: [0, 360] }}
     transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
     style={{ display: "inline-block" }}
   >
-    <FaSlidersH style={{ color: "#0ea5e9", fontSize: "1.5rem" }} />
+    <FaSlidersH style={{ color: "#ef4444", fontSize: "1.5rem" }} />
   </motion.div>
 );
 
 export default function ThresholdsAdmin() {
+  const [theme, setTheme] = useState<"dark" | "xmas">("xmas"); // Default to xmas
   const [thresholds, setThresholds] = useState<Threshold[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Threshold | null>(null);
+  const [sparkles, setSparkles] = useState<Array<{ x: number; y: number; id: number }>>([]);
 
   useEffect(() => {
     loadThresholds();
@@ -134,10 +162,10 @@ export default function ThresholdsAdmin() {
     try {
       if (editing.id) {
         await api.put(`/admin/thresholds/${editing.id}`, editing);
-        toast.success("🎄 Calibration updated!");
+        toast.success(theme === "xmas" ? "🎄 Calibration updated!" : "Calibration updated!");
       } else {
         await api.post("/admin/thresholds", editing);
-        toast.success("🎁 Calibration created!");
+        toast.success(theme === "xmas" ? "🎁 Calibration created!" : "Calibration created!");
       }
       setShowModal(false);
       loadThresholds();
@@ -152,11 +180,30 @@ export default function ThresholdsAdmin() {
 
     try {
       await api.delete(`/admin/thresholds/${id}`);
-      toast.success("🎁 Calibration deleted!");
+      toast.success(theme === "xmas" ? "🎁 Calibration deleted!" : "Calibration deleted!");
       loadThresholds();
     } catch {
       toast.error("Failed to delete");
     }
+  };
+
+  // Theme toggle with sparkle effect
+  const handleThemeToggle = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    // Create sparkles
+    const newSparkles = Array.from({ length: 12 }, (_, i) => ({
+      x: x + (Math.random() - 0.5) * 100,
+      y: y + (Math.random() - 0.5) * 100,
+      id: Date.now() + i,
+    }));
+
+    setSparkles(newSparkles);
+    setTimeout(() => setSparkles([]), 600);
+
+    setTheme((prev) => (prev === "dark" ? "xmas" : "dark"));
   };
 
   const getLevel = (value?: number, type?: "pm25" | "pm10" | "aqi") => {
@@ -177,54 +224,117 @@ export default function ThresholdsAdmin() {
     return { color: "#10b981", label: "Low" };
   };
 
+  const backgroundStyle =
+    theme === "dark"
+      ? "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)"
+      : "linear-gradient(180deg, #1a0f00 0%, #4b2600 100%)";
+
+  const glow = theme === "xmas" ? "0 0 25px rgba(255,215,0,0.5)" : "0 0 15px rgba(103,232,249,0.2)";
+
   return (
     <AdminLayout>
       <div
         style={{
           position: "relative",
           minHeight: "100vh",
-          background: "linear-gradient(180deg, #0a1929 0%, #0f172a 100%)",
+          background: backgroundStyle,
           padding: "1.5rem",
+          transition: "background 0.5s ease",
         }}
       >
-        {/* Snowfall */}
-        {[...Array(28)].map((_, i) => (
-          <Snowflake key={`snow-${i}`} delay={i * 0.3} />
+        {/* Enhanced Snowfall */}
+        {[...Array(35)].map((_, i) => (
+          <Snowflake key={`snow-${i}`} delay={i * 0.2} size={12 + Math.random() * 12} />
         ))}
 
-        {/* Christmas Particles */}
-        {[...Array(6)].map((_, i) => (
-          <ChristmasParticle
-            key={`xmas-${i}`}
-            delay={i * 3}
-            emoji={["⚙️", "🎄", "⭐", "🔧", "📊", "🎁"][i]}
-          />
-        ))}
+        {/* Christmas Particles (only in xmas mode) */}
+        {theme === "xmas" && (
+          <>
+            {[...Array(8)].map((_, i) => (
+              <ChristmasParticle
+                key={`gift-${i}`}
+                delay={i * 2}
+                emoji={["⚠️", "🎄", "⭐", "🚨", "📊", "🎁", "🔴", "🦌"][i % 8]}
+              />
+            ))}
+          </>
+        )}
 
-        {/* HEADER */}
+        {/* Sparkle effects on theme toggle */}
+        <AnimatePresence>
+          {sparkles.map((sparkle) => (
+            <Sparkle key={sparkle.id} x={sparkle.x} y={sparkle.y} />
+          ))}
+        </AnimatePresence>
+
+        {/* HEADER with Enhanced Theme Toggle */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
+          className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"
           style={{ position: "relative", zIndex: 2 }}
         >
-          <motion.h2
-            className="mb-1 d-flex align-items-center gap-3"
-            animate={{
-              textShadow: [
-                "0 0 15px rgba(14,165,233,0.5)",
-                "0 0 25px rgba(14,165,233,0.7)",
-                "0 0 15px rgba(14,165,233,0.5)",
-              ],
+          <div>
+            <motion.h2
+              className="mb-1 d-flex align-items-center gap-3"
+              animate={{
+                textShadow:
+                  theme === "xmas"
+                    ? [
+                        "0 0 15px rgba(239,68,68,0.5)",
+                        "0 0 25px rgba(239,68,68,0.7)",
+                        "0 0 15px rgba(239,68,68,0.5)",
+                      ]
+                    : [
+                        "0 0 15px rgba(14,165,233,0.5)",
+                        "0 0 25px rgba(14,165,233,0.7)",
+                        "0 0 15px rgba(14,165,233,0.5)",
+                      ],
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+              style={{ color: theme === "xmas" ? "#ef4444" : "#0ea5e9", fontWeight: 700 }}
+            >
+              <RotatingGear />
+              {theme === "xmas" ? "Santa's Danger Threshold Command Center 🚨" : "Thresholds Command Center 🚨"}
+            </motion.h2>
+            <p className="text-light text-opacity-75 mb-4">
+              {theme === "xmas" ? "Calibrating Naughty Air Warnings for the North Pole ❄️" : "Configure sensor thresholds for alert generation"}
+            </p>
+          </div>
+
+          {/* Enhanced Theme Toggle Button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            className="btn px-4 py-3 d-flex align-items-center gap-3"
+            onClick={handleThemeToggle}
+            style={{
+              borderRadius: 50,
+              background:
+                theme === "xmas"
+                  ? "linear-gradient(135deg, #C41E3A, #8B0000)"
+                  : "linear-gradient(135deg, #0ea5e9, #0369a1)",
+              border: "none",
+              boxShadow: glow,
+              color: "white",
+              fontWeight: 600,
+              fontSize: "1rem",
             }}
-            transition={{ duration: 2, repeat: Infinity }}
-            style={{ color: "#0ea5e9", fontWeight: 700 }}
           >
-            <RotatingGear />
-            North Pole Calibration Lab ❄️
-          </motion.h2>
-          <p className="text-light text-opacity-75 mb-4">
-            Configure sensor thresholds for alert generation
-          </p>
+            <motion.div
+              animate={{ rotate: theme === "xmas" ? 360 : 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              {theme === "dark" ? <FaExclamationTriangle size={22} /> : <FaSlidersH size={22} />}
+            </motion.div>
+            <span>{theme === "dark" ? "Noel Danger Mode" : "Dark Mode"}</span>
+            <motion.div
+              animate={{ rotate: theme === "xmas" ? 0 : 360 }}
+              transition={{ duration: 0.6 }}
+            >
+              {theme === "dark" ? <FaSun size={18} /> : <FaMoon size={18} />}
+            </motion.div>
+          </motion.button>
         </motion.div>
 
         {/* STATS */}
@@ -238,7 +348,7 @@ export default function ThresholdsAdmin() {
               className="card border-0 shadow-sm"
               style={{
                 borderRadius: 16,
-                background: "linear-gradient(135deg,#0ea5e9 0%,#0284c7 100%)",
+                background: theme === "xmas" ? "linear-gradient(135deg,#ef4444 0%,#dc2626 100%)" : "linear-gradient(135deg,#0ea5e9 0%,#0284c7 100%)",
               }}
             >
               <div className="card-body text-white p-4">
@@ -263,7 +373,7 @@ export default function ThresholdsAdmin() {
               className="card border-0 shadow-sm"
               style={{
                 borderRadius: 16,
-                background: "linear-gradient(135deg,#f43f5e 0%,#be123c 100%)",
+                background: theme === "xmas" ? "linear-gradient(135deg,#f43f5e 0%,#be123c 100%)" : "linear-gradient(135deg,#f43f5e 0%,#be123c 100%)",
               }}
             >
               <div className="card-body text-white p-4">
@@ -290,7 +400,7 @@ export default function ThresholdsAdmin() {
               className="card border-0 shadow-sm"
               style={{
                 borderRadius: 16,
-                background: "linear-gradient(135deg,#22c55e 0%,#15803d 100%)",
+                background: theme === "xmas" ? "linear-gradient(135deg,#f59e0b 0%,#d97706 100%)" : "linear-gradient(135deg,#22c55e 0%,#15803d 100%)",
               }}
             >
               <div className="card-body text-white p-4">
@@ -332,11 +442,11 @@ export default function ThresholdsAdmin() {
               onClick={handleCreate}
               style={{
                 borderRadius: 12,
-                background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                background: theme === "xmas" ? "linear-gradient(135deg, #ef4444, #dc2626)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                 border: "none",
                 color: "white",
                 fontWeight: 600,
-                boxShadow: "0 0 20px rgba(14,165,233,0.4)",
+                boxShadow: glow,
               }}
             >
               <FaPlus /> New Calibration
@@ -351,12 +461,12 @@ export default function ThresholdsAdmin() {
               <div className="col-12 text-center py-5">
                 <div
                   className="spinner-border"
-                  style={{ width: 60, height: 60, color: "#0ea5e9" }}
+                  style={{ width: 60, height: 60, color: theme === "xmas" ? "#ef4444" : "#0ea5e9" }}
                 />
               </div>
             ) : thresholds.length === 0 ? (
               <div className="col-12 text-center py-5">
-                <div style={{ fontSize: "4rem" }}>❄️</div>
+                <div style={{ fontSize: "4rem" }}>🚨</div>
                 <h5 className="text-muted mt-3">No calibration profiles available</h5>
               </div>
             ) : (
@@ -387,7 +497,9 @@ export default function ThresholdsAdmin() {
                         style={{
                           height: 6,
                           background:
-                            "repeating-linear-gradient(90deg, #0ea5e9 0px, #0ea5e9 10px, #fff 10px, #fff 20px)",
+                            theme === "xmas"
+                              ? "repeating-linear-gradient(90deg, #ef4444 0px, #ef4444 10px, #fff 10px, #fff 20px)"
+                              : "repeating-linear-gradient(90deg, #0ea5e9 0px, #0ea5e9 10px, #fff 10px, #fff 20px)",
                         }}
                       />
 
@@ -395,7 +507,7 @@ export default function ThresholdsAdmin() {
                       <div
                         className="p-3 text-white"
                         style={{
-                          background: "linear-gradient(135deg,#0ea5e9,#0369a1)",
+                          background: theme === "xmas" ? "linear-gradient(135deg,#ef4444,#dc2626)" : "linear-gradient(135deg,#0ea5e9,#0369a1)",
                         }}
                       >
                         <div className="d-flex justify-content-between align-items-center">
@@ -530,9 +642,9 @@ export default function ThresholdsAdmin() {
                             onClick={() => handleEdit(threshold)}
                             style={{
                               borderRadius: 10,
-                              background: "rgba(14,165,233,0.2)",
-                              border: "1px solid #0ea5e9",
-                              color: "#0ea5e9",
+                              background: theme === "xmas" ? "rgba(239,68,68,0.2)" : "rgba(14,165,233,0.2)",
+                              border: theme === "xmas" ? "1px solid #ef4444" : "1px solid #0ea5e9",
+                              color: theme === "xmas" ? "#ef4444" : "#0ea5e9",
                             }}
                           >
                             <FaEdit className="me-1" /> Edit
@@ -544,7 +656,7 @@ export default function ThresholdsAdmin() {
                             onClick={() => handleDelete(threshold.id)}
                             style={{
                               borderRadius: 10,
-                              background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                              background: theme === "xmas" ? "linear-gradient(135deg, #ef4444, #dc2626)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                               border: "none",
                               color: "white",
                             }}
@@ -560,6 +672,29 @@ export default function ThresholdsAdmin() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Christmas Footer */}
+        {theme === "xmas" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mt-5"
+            style={{ position: "relative", zIndex: 2 }}
+          >
+            <motion.h3
+              className="fw-bold mb-2"
+              animate={{
+                color: ["#ef4444", "#FF6B6B", "#ef4444"],
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
+            >
+              🎅 Danger Thresholds: Keeping the North Pole Safe! 🚨
+            </motion.h3>
+            <p className="text-light mb-0">
+              Noel Alert Calibration Lab - Powered by Elf Engineers ❄️
+            </p>
+          </motion.div>
+        )}
       </div>
 
       {/* MODAL */}
@@ -585,7 +720,7 @@ export default function ThresholdsAdmin() {
                 style={{
                   background: "rgba(26, 35, 50, 0.98)",
                   color: "white",
-                  border: "2px solid rgba(14,165,233,0.3)",
+                  border: theme === "xmas" ? "2px solid rgba(239,68,68,0.3)" : "2px solid rgba(14,165,233,0.3)",
                   borderRadius: 16,
                 }}
               >
@@ -597,13 +732,15 @@ export default function ThresholdsAdmin() {
                     borderTopLeftRadius: 16,
                     borderTopRightRadius: 16,
                     background:
-                      "repeating-linear-gradient(90deg, #0ea5e9 0px, #0ea5e9 15px, #fff 15px, #fff 30px)",
+                      theme === "xmas"
+                        ? "repeating-linear-gradient(90deg, #ef4444 0px, #ef4444 15px, #fff 15px, #fff 30px)"
+                        : "repeating-linear-gradient(90deg, #0ea5e9 0px, #0ea5e9 15px, #fff 15px, #fff 30px)",
                   }}
                 />
 
                 <div className="modal-header border-0 pt-4">
                   <h5 className="modal-title text-white">
-                    {editing?.id ? "Recalibrate Threshold" : "Create Calibration"}
+                    {theme === "xmas" ? "🎄" : "🚨"} {editing?.id ? "Recalibrate Threshold" : "Create Calibration"}
                   </h5>
                   <button
                     type="button"
@@ -627,7 +764,7 @@ export default function ThresholdsAdmin() {
                       style={{
                         borderRadius: 12,
                         background: "rgba(255,255,255,0.1)",
-                        border: "1px solid rgba(14,165,233,0.3)",
+                        border: theme === "xmas" ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(14,165,233,0.3)",
                         color: "white",
                       }}
                     />
@@ -647,7 +784,7 @@ export default function ThresholdsAdmin() {
                       style={{
                         borderRadius: 12,
                         background: "rgba(255,255,255,0.1)",
-                        border: "1px solid rgba(14,165,233,0.3)",
+                        border: theme === "xmas" ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(14,165,233,0.3)",
                         color: "white",
                       }}
                     />
@@ -667,7 +804,7 @@ export default function ThresholdsAdmin() {
                       style={{
                         borderRadius: 12,
                         background: "rgba(255,255,255,0.1)",
-                        border: "1px solid rgba(14,165,233,0.3)",
+                        border: theme === "xmas" ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(14,165,233,0.3)",
                         color: "white",
                       }}
                     />
@@ -696,7 +833,7 @@ export default function ThresholdsAdmin() {
                     onClick={handleSave}
                     style={{
                       borderRadius: 12,
-                      background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                      background: theme === "xmas" ? "linear-gradient(135deg, #ef4444, #dc2626)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                       border: "none",
                       color: "white",
                       fontWeight: 600,
