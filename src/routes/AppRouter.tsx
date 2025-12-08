@@ -23,6 +23,7 @@ import SystemLogs from "../pages/admin/SystemLogs";
 import Profile from "../pages/Profile";
 import AdminProfile from "../pages/admin/AdminProfile";
 import ThresholdSettings from "../pages/ThresholdSettings";
+import LocationsAdmin from "../pages/admin/LocationsAdmin";
 
 export default function AppRouter() {
   return (
@@ -56,6 +57,7 @@ export default function AppRouter() {
         <Route path="/admin/alerts" element={<AlertsAdmin />} />
         <Route path="/admin/reports" element={<ReportsAdmin />} />
         <Route path="/admin/supports" element={<SupportsAdmin />} /> {/* ✅ NEW */}
+        <Route path="/admin/locations" element={<LocationsAdmin />} />
         <Route path="/admin/logs" element={<SystemLogs />} />
       </Route>
 

@@ -1,4 +1,5 @@
-// src/layouts/AdminLayout.tsx - ENHANCED EXTRA FESTIVE EDITION
+// src/layouts/AdminLayout.tsx - FIXED VERSION
+
 import React, { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
@@ -16,6 +17,7 @@ import {
   FaGift,
   FaShieldAlt,
   FaLifeRing,
+  FaMapMarkerAlt, // ✅ Icon cho Locations
 } from "react-icons/fa";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -29,8 +31,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     navigate("/admin-login");
   };
 
+  // ✅ FIXED: Thêm Locations vào menu chính, đặt ngay dưới Dashboard
   const menuItems = [
     { path: "/admin", icon: <FaHome />, label: "Dashboard" },
+    { path: "/admin/locations", icon: <FaMapMarkerAlt />, label: "Manage Locations" }, // ✅ NEW
     { path: "/admin/users", icon: <FaUsers />, label: "Users" },
     { path: "/admin/sensors", icon: <FaServer />, label: "Sensors" },
     { path: "/admin/alerts", icon: <FaBell />, label: "Alert Management" },
@@ -53,13 +57,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         background: "rgba(255,255,255,0.8)",
         pointerEvents: "none",
       }}
-      animate={{ 
-        opacity: [0, 1, 0], 
+      animate={{
+        opacity: [0, 1, 0],
         scale: [0.4, 1.2, 0.4],
         y: [0, -20, -40]
       }}
-      transition={{ 
-        duration: 3, 
+      transition={{
+        duration: 3,
         delay,
         repeat: Infinity,
         ease: "easeInOut"
@@ -158,7 +162,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </div>
                 </div>
               </Link>
-              
+             
               {/* Decorative Stars */}
               <motion.div
                 className="position-absolute"
@@ -212,7 +216,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         />
                       )}
-
                       <motion.span
                         animate={isActive ? { scale: [1, 1.2, 1] } : {}}
                         transition={{ duration: 0.6 }}
@@ -224,7 +227,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       >
                         {item.icon}
                       </motion.span>
-
                       <span
                         style={{
                           color: isActive ? "#FFD700" : "#ffffffc4",
@@ -232,7 +234,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       >
                         {item.label}
                       </span>
-
                       {/* Candy Cane Active Indicator */}
                       {isActive && (
                         <motion.div
@@ -247,7 +248,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           }}
                         />
                       )}
-
                       {/* Floating Ornament on Hover */}
                       {isActive && index % 2 === 0 && (
                         <FloatingOrnament emoji="🎄" delay={index * 0.1} />
@@ -288,7 +288,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </motion.div>
 
             {/* FOOTER */}
-            <div className="position-absolute bottom-0 w-100 p-3 border-top border-white border-opacity-10">
+            <div className="position-absolute bottom-1 w-100 p-3 border-top border-white border-opacity-10">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -421,7 +421,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       whileHover={{ x: 5 }}
                       className="dropdown-item py-2 px-3 text-danger fw-bold d-flex align-items-center gap-2"
                       onClick={handleLogout}
-                      style={{ 
+                      style={{
                         background: "transparent",
                         border: "none",
                         width: "100%",
