@@ -619,7 +619,7 @@ export default function LocationsAdmin() {
                             <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              className="btn btn-sm"
+                              className="btn btn-sm flex-fill"
                               style={{
                                 background: "linear-gradient(135deg, #ef4444, #dc2626)",
                                 border: "none",

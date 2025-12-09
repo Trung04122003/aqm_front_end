@@ -1,4 +1,4 @@
-// src/pages/admin/AdminProfile.tsx - EXTRA FESTIVE EDITION
+// src/pages/admin/AdminProfile.tsx - PROFILE FROZEN HEART: NOEL SECURITY EDITION
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,33 +11,37 @@ import {
   FaLock,
   FaSnowflake,
   FaCandyCane,
+  FaMoon,
+  FaSun,
+  FaHeart,
 } from "react-icons/fa";
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
 import { useAuth } from "../../auth/AuthProvider";
 
-// ❄️ Enhanced Snowflake
-const Snowflake = ({ delay = 0 }: { delay?: number }) => (
+// ❄️ Enhanced Snowflake with varied sizes
+const Snowflake = ({ delay, size = 18 }: { delay: number; size?: number }) => (
   <motion.div
     className="position-absolute"
     style={{
-      left: `${10 + Math.random() * 80}%`,
+      left: `${Math.random() * 100}%`,
       top: -20,
-      fontSize: `${12 + Math.random() * 8}px`,
+      fontSize: `${size}px`,
+      opacity: 0.8,
+      color: "#E6F7FF",
       pointerEvents: "none",
-      color: "rgba(255,255,255,0.7)",
       zIndex: 1,
       filter: "drop-shadow(0 0 3px rgba(255,255,255,0.8))",
     }}
     animate={{
-      y: ["-2vh", "105vh"],
+      y: ["0vh", "105vh"],
       rotate: [0, 360],
       opacity: [0, 1, 1, 0],
-      x: [0, Math.random() * 30 - 15],
+      x: [0, Math.random() * 50 - 25],
     }}
     transition={{
-      duration: 12 + Math.random() * 8,
+      duration: 9 + Math.random() * 6,
       delay,
       repeat: Infinity,
       ease: "linear",
@@ -47,26 +51,27 @@ const Snowflake = ({ delay = 0 }: { delay?: number }) => (
   </motion.div>
 );
 
-// 🎄 Floating Christmas Icons
+// 🎄 Floating Christmas Icons (Security-themed: Shields, Locks, Hearts)
 const ChristmasIcon = ({ delay, emoji }: { delay: number; emoji: string }) => (
   <motion.div
     className="position-absolute"
     style={{
       left: `${Math.random() * 100}%`,
       top: -30,
-      fontSize: "24px",
-      opacity: 0.6,
+      fontSize: `${20 + Math.random() * 15}px`,
+      opacity: 0.7,
       pointerEvents: "none",
       zIndex: 1,
+      filter: "drop-shadow(0 0 5px rgba(255,215,0,0.6))",
     }}
     animate={{
       y: ["0vh", "110vh"],
       rotate: [0, 360, 720],
-      opacity: [0, 0.8, 0.8, 0],
-      scale: [0.8, 1.2, 0.8],
+      opacity: [0, 1, 1, 0],
+      x: [0, Math.random() * 100 - 50],
     }}
     transition={{
-      duration: 20 + Math.random() * 10,
+      duration: 15 + Math.random() * 10,
       delay,
       repeat: Infinity,
       ease: "easeInOut",
@@ -74,6 +79,26 @@ const ChristmasIcon = ({ delay, emoji }: { delay: number; emoji: string }) => (
   >
     {emoji}
   </motion.div>
+);
+
+// ✨ Sparkle effect for theme toggle
+const Sparkle = ({ x, y }: { x: number; y: number }) => (
+  <motion.div
+    className="position-fixed"
+    style={{
+      left: x,
+      top: y,
+      width: 8,
+      height: 8,
+      borderRadius: "50%",
+      background: "radial-gradient(circle, #FFD700, transparent)",
+      pointerEvents: "none",
+      zIndex: 9999,
+    }}
+    initial={{ scale: 0, opacity: 1 }}
+    animate={{ scale: 3, opacity: 0 }}
+    transition={{ duration: 0.6, ease: "easeOut" }}
+  />
 );
 
 // ✨ Success Confetti
@@ -103,10 +128,12 @@ const Confetti = ({ x, y }: { x: number; y: number }) => (
 
 export default function AdminProfile() {
   useAuth();
+  const [theme, setTheme] = useState<"dark" | "xmas">("xmas"); // Default to xmas
   const [editing, setEditing] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confetti, setConfetti] = useState<Array<{ x: number; y: number; id: number }>>([]);
+  const [sparkles, setSparkles] = useState<Array<{ x: number; y: number; id: number }>>([]);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -153,11 +180,30 @@ export default function AdminProfile() {
     setTimeout(() => setConfetti([]), 2000);
   };
 
+  // Theme toggle with sparkle effect
+  const handleThemeToggle = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    // Create sparkles
+    const newSparkles = Array.from({ length: 12 }, (_, i) => ({
+      x: x + (Math.random() - 0.5) * 100,
+      y: y + (Math.random() - 0.5) * 100,
+      id: Date.now() + i,
+    }));
+
+    setSparkles(newSparkles);
+    setTimeout(() => setSparkles([]), 600);
+
+    setTheme((prev) => (prev === "dark" ? "xmas" : "dark"));
+  };
+
   const handleSave = async (e: React.MouseEvent) => {
     setLoading(true);
     try {
       await api.put("/admin/profile", formData);
-      toast.success("🎅 Admin profile updated successfully!");
+      toast.success(theme === "xmas" ? "🎅 Admin profile updated successfully!" : "Admin profile updated successfully!");
       setEditing(false);
       triggerConfetti(e);
       loadProfile();
@@ -178,7 +224,7 @@ export default function AdminProfile() {
     setLoading(true);
     try {
       await api.post("/admin/profile/change-password", passwordData);
-      toast.success("🎄 Password changed successfully!");
+      toast.success(theme === "xmas" ? "🎄 Password changed successfully!" : "Password changed successfully!");
       triggerConfetti(e);
       setChangingPassword(false);
       setPasswordData({
@@ -194,29 +240,41 @@ export default function AdminProfile() {
     }
   };
 
+  const backgroundStyle =
+    theme === "dark"
+      ? "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)"
+      : "linear-gradient(180deg, #1a0f00 0%, #4b2600 100%)";
+
+  const glow = theme === "xmas" ? "0 0 25px rgba(255,215,0,0.5)" : "0 0 15px rgba(103,232,249,0.2)";
+
   return (
     <AdminLayout>
       <div
         style={{
           position: "relative",
           minHeight: "100vh",
+          background: backgroundStyle,
           padding: "2rem",
-          background: "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)",
+          transition: "background 0.5s ease",
         }}
       >
-        {/* Snowfall */}
-        {[...Array(25)].map((_, i) => (
-          <Snowflake key={`snow-${i}`} delay={i * 0.4} />
+        {/* Enhanced Snowfall */}
+        {[...Array(35)].map((_, i) => (
+          <Snowflake key={`snow-${i}`} delay={i * 0.2} size={12 + Math.random() * 12} />
         ))}
 
-        {/* Christmas Icons */}
-        {[...Array(6)].map((_, i) => (
-          <ChristmasIcon
-            key={`xmas-${i}`}
-            delay={i * 3}
-            emoji={["🎁", "🔔", "⭐", "🎄", "🦌", "🎅"][i]}
-          />
-        ))}
+        {/* Christmas Icons (only in xmas mode) */}
+        {theme === "xmas" && (
+          <>
+            {[...Array(8)].map((_, i) => (
+              <ChristmasIcon
+                key={`xmas-${i}`}
+                delay={i * 2}
+                emoji={["🎁", "🔔", "⭐", "🎄", "🛡️", "🔒", "❤️", "🦌"][i % 8]}
+              />
+            ))}
+          </>
+        )}
 
         {/* Confetti on save */}
         <AnimatePresence>
@@ -225,30 +283,74 @@ export default function AdminProfile() {
           ))}
         </AnimatePresence>
 
-        {/* Header */}
+        {/* Sparkle effects on theme toggle */}
+        <AnimatePresence>
+          {sparkles.map((sparkle) => (
+            <Sparkle key={sparkle.id} x={sparkle.x} y={sparkle.y} />
+          ))}
+        </AnimatePresence>
+
+        {/* Header with Enhanced Theme Toggle */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 px-2"
+          className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"
           style={{ position: "relative", zIndex: 2 }}
         >
-          <motion.h2
-            className="fw-bold mb-1 d-flex align-items-center gap-2"
-            animate={{
-              textShadow: [
-                "0px 0px 10px rgba(255,220,100,0.5)",
-                "0px 0px 20px rgba(255,220,100,0.8)",
-                "0px 0px 10px rgba(255,220,100,0.5)",
-              ],
+          <div>
+            <motion.h2
+              className="fw-bold mb-1 d-flex align-items-center gap-2"
+              animate={{
+                textShadow: [
+                  "0 0 10px rgba(255,220,100,0.5)",
+                  "0 0 20px rgba(255,220,100,0.8)",
+                  "0 0 10px rgba(255,220,100,0.5)",
+                ],
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+              style={{ color: theme === "xmas" ? "#FFD700" : "#0ea5e9" }}
+            >
+              <FaHeart style={{ color: "#0ea5e9" }} /> 
+              {theme === "xmas" ? "Santa's Frozen Heart Profile ❄️" : "Profile Frozen Heart ❄️"}
+            </motion.h2>
+            <p className="text-light opacity-75 mb-0">
+              {theme === "xmas" ? "Secure Your Elf Credentials in the Frozen Fortress ❄️" : "Manage your operator credentials & command privileges."}
+            </p>
+          </div>
+
+          {/* Enhanced Theme Toggle Button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            className="btn px-4 py-3 d-flex align-items-center gap-3"
+            onClick={handleThemeToggle}
+            style={{
+              borderRadius: 50,
+              background:
+                theme === "xmas"
+                  ? "linear-gradient(135deg, #C41E3A, #8B0000)"
+                  : "linear-gradient(135deg, #0ea5e9, #0369a1)",
+              border: "none",
+              boxShadow: glow,
+              color: "white",
+              fontWeight: 600,
+              fontSize: "1rem",
             }}
-            transition={{ duration: 2, repeat: Infinity }}
-            style={{ color: "#FFD700" }}
           >
-            <FaCandyCane /> North Pole Operator Profile
-          </motion.h2>
-          <p className="text-light opacity-75 mb-0">
-            Manage your operator credentials & command privileges.
-          </p>
+            <motion.div
+              animate={{ rotate: theme === "xmas" ? 360 : 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              {theme === "dark" ? <FaCandyCane size={22} /> : <FaSnowflake size={22} />}
+            </motion.div>
+            <span>{theme === "dark" ? "Frozen Heart Noel Mode" : "Dark Mode"}</span>
+            <motion.div
+              animate={{ rotate: theme === "xmas" ? 0 : 360 }}
+              transition={{ duration: 0.6 }}
+            >
+              {theme === "dark" ? <FaSun size={18} /> : <FaMoon size={18} />}
+            </motion.div>
+          </motion.button>
         </motion.div>
 
         {/* Profile Panel */}
@@ -261,9 +363,9 @@ export default function AdminProfile() {
             borderRadius: 20,
             backdropFilter: "blur(16px)",
             background: "rgba(255,255,255,0.08)",
-            border: "2px solid rgba(255,215,0,0.3)",
+            border: theme === "xmas" ? "2px solid #FFD700" : "2px solid #0ea5e9",
             padding: "2.5rem",
-            boxShadow: "0 0 40px rgba(255,215,0,0.2)",
+            boxShadow: glow,
           }}
         >
           {/* Candy Cane Top Border */}
@@ -274,7 +376,9 @@ export default function AdminProfile() {
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
               background:
-                "repeating-linear-gradient(90deg, #C41E3A 0px, #C41E3A 15px, #fff 15px, #fff 30px)",
+                theme === "xmas"
+                  ? "repeating-linear-gradient(90deg, #C41E3A 0px, #C41E3A 15px, #fff 15px, #fff 30px)"
+                  : "repeating-linear-gradient(90deg, #0ea5e9 0px, #0ea5e9 15px, #fff 15px, #fff 30px)",
             }}
           />
 
@@ -302,26 +406,26 @@ export default function AdminProfile() {
                 height: 130,
                 margin: "0 auto",
                 borderRadius: "50%",
-                border: "4px solid #FFD700",
-                background: "linear-gradient(135deg, #C41E3A, #8B0000)",
+                border: theme === "xmas" ? "4px solid #FFD700" : "4px solid #0ea5e9",
+                background: theme === "xmas" ? "linear-gradient(135deg, #C41E3A, #8B0000)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "4rem",
                 cursor: "pointer",
-                boxShadow: "0 0 30px rgba(255,215,0,0.6)",
+                boxShadow: glow,
               }}
             >
               🎅
             </motion.div>
             <motion.h4
               className="fw-bold mt-3"
-              style={{ color: "#FFD700" }}
+              style={{ color: theme === "xmas" ? "#FFD700" : "#0ea5e9" }}
               animate={{
                 textShadow: [
-                  "0 0 10px rgba(255,215,0,0.5)",
-                  "0 0 20px rgba(255,215,0,0.8)",
-                  "0 0 10px rgba(255,215,0,0.5)",
+                  "0 0 10px rgba(255,220,100,0.5)",
+                  "0 0 20px rgba(255,220,100,0.8)",
+                  "0 0 10px rgba(255,220,100,0.5)",
                 ],
               }}
               transition={{ duration: 2, repeat: Infinity }}
@@ -331,9 +435,9 @@ export default function AdminProfile() {
             <div
               className="d-inline-flex align-items-center gap-2 px-3 py-1"
               style={{
-                background: "rgba(255,215,0,0.2)",
+                background: theme === "xmas" ? "rgba(255,215,0,0.2)" : "rgba(103,232,249,0.2)",
                 borderRadius: 20,
-                border: "1px solid rgba(255,215,0,0.5)",
+                border: "1px solid rgba(255,255,255,0.5)",
               }}
             >
               <FaSnowflake className="text-info" />
@@ -355,11 +459,11 @@ export default function AdminProfile() {
                   className="btn px-4 py-2"
                   style={{
                     borderRadius: 12,
-                    background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                    background: theme === "xmas" ? "linear-gradient(135deg, #fbbf24, #f59e0b)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                     border: "none",
                     color: "white",
                     fontWeight: 600,
-                    boxShadow: "0 0 20px rgba(14,165,233,0.4)",
+                    boxShadow: glow,
                   }}
                   onClick={() => setEditing(true)}
                 >
@@ -380,11 +484,11 @@ export default function AdminProfile() {
                     className="btn px-4 py-2"
                     style={{
                       borderRadius: 12,
-                      background: "linear-gradient(135deg, #10b981, #059669)",
+                      background: theme === "xmas" ? "linear-gradient(135deg, #10b981, #059669)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                       border: "none",
                       color: "white",
                       fontWeight: 600,
-                      boxShadow: "0 0 20px rgba(16,185,129,0.4)",
+                      boxShadow: glow,
                     }}
                     onClick={handleSave}
                     disabled={loading}
@@ -513,14 +617,14 @@ export default function AdminProfile() {
               borderRadius: 14,
               background: changingPassword
                 ? "linear-gradient(135deg, #64748b, #475569)"
-                : "linear-gradient(135deg, #fbbf24, #f59e0b)",
+                : theme === "xmas" ? "linear-gradient(135deg, #fbbf24, #f59e0b)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
               border: "none",
               color: "white",
               fontWeight: 600,
               fontSize: "1rem",
               boxShadow: changingPassword
                 ? "0 0 20px rgba(100,116,139,0.4)"
-                : "0 0 20px rgba(251,191,36,0.4)",
+                : glow,
             }}
             onClick={() => setChangingPassword(!changingPassword)}
           >
@@ -551,7 +655,7 @@ export default function AdminProfile() {
                     borderRadius: 12,
                     background: "rgba(255,255,255,0.12)",
                     color: "white",
-                    border: "1px solid rgba(251,191,36,0.3)",
+                    border: theme === "xmas" ? "1px solid rgba(251,191,36,0.3)" : "1px solid rgba(103,232,249,0.3)",
                     padding: "12px 16px",
                   }}
                 />
@@ -570,7 +674,7 @@ export default function AdminProfile() {
                     borderRadius: 12,
                     background: "rgba(255,255,255,0.12)",
                     color: "white",
-                    border: "1px solid rgba(251,191,36,0.3)",
+                    border: theme === "xmas" ? "1px solid rgba(251,191,36,0.3)" : "1px solid rgba(103,232,249,0.3)",
                     padding: "12px 16px",
                   }}
                 />
@@ -589,7 +693,7 @@ export default function AdminProfile() {
                     borderRadius: 12,
                     background: "rgba(255,255,255,0.12)",
                     color: "white",
-                    border: "1px solid rgba(251,191,36,0.3)",
+                    border: theme === "xmas" ? "1px solid rgba(251,191,36,0.3)" : "1px solid rgba(103,232,249,0.3)",
                     padding: "12px 16px",
                   }}
                 />
@@ -599,11 +703,11 @@ export default function AdminProfile() {
                   className="btn w-100 py-3"
                   style={{
                     borderRadius: 12,
-                    background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                    background: theme === "xmas" ? "linear-gradient(135deg, #ef4444, #dc2626)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                     border: "none",
                     color: "white",
                     fontWeight: 600,
-                    boxShadow: "0 0 20px rgba(239,68,68,0.4)",
+                    boxShadow: glow,
                   }}
                   disabled={loading}
                   onClick={handleChangePassword}
@@ -621,7 +725,7 @@ export default function AdminProfile() {
             transition={{ duration: 3, repeat: Infinity }}
           >
             <small className="text-light opacity-75">
-              🎅 Secured by North Pole Encryption ❄️
+              {theme === "xmas" ? "🎅 Secured by Frozen Heart Encryption ❄️" : "🎅 Secured by North Pole Encryption ❄️"}
             </small>
           </motion.div>
         </motion.div>
