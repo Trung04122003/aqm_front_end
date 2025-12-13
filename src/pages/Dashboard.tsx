@@ -190,12 +190,20 @@ export default function ChristmasDashboard() {
         if (showToast) {
           toast.warning("No recent data available. Try fetching new data!");
         }
+        setCurrentData(null);
+        setHistory([]);
         return;
       }
 
       setCurrentData(current);
       setHistory(history || []);
       setLastUpdate(new Date());
+      
+      console.log("✅ Loaded data:", {
+        current: current.aqi,
+        historyCount: (history || []).length,
+        firstPoint: history?.[0]
+      });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
@@ -203,6 +211,8 @@ export default function ChristmasDashboard() {
       if (showToast) {
         toast.error("Failed to load air quality data");
       }
+      setCurrentData(null);
+      setHistory([]);
     } finally {
       setLoading(false);
     }
@@ -284,25 +294,41 @@ export default function ChristmasDashboard() {
     }, { good: 0, moderate: 0, unhealthy: 0, veryUnhealthy: 0 });
   };
 
+  // ✅ Calculate average AQI (handle empty history)
+  const calculateAverageAQI = () => {
+    if (!history || history.length === 0) return 0;
+    const sum = history.reduce((total, h) => total + (h.aqi || 0), 0);
+    return Math.round(sum / history.length);
+  };
+
   const distribution = calculateDistribution();
   const aqi = currentData?.aqi || 0;
   const pm25 = currentData?.pm25 || 0;
   const pm10 = currentData?.pm10 || 0;
+  const averageAQI = calculateAverageAQI();
   const status = getAQIStatus(aqi);
   const selectedLocation = locations.find((l) => l.id === selected);
 
-  // 📊 LINE CHART - 24H AQI Trend
-  const lineChartData = {
-    labels: history.map((h) => 
-      new Date(h.timestampUtc).toLocaleTimeString("vi-VN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    ),
+  // ✅ FIXED: Filter valid history data and format timestamps properly
+  const validHistory = history.filter(h => h.timestampUtc && h.aqi != null);
+  
+  // 📊 LINE CHART - 24H AQI Trend (FIXED)
+  const lineChartData = validHistory.length > 0 ? {
+    labels: validHistory.map((h) => {
+      try {
+        const date = new Date(h.timestampUtc);
+        return date.toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      } catch {
+        return "N/A";
+      }
+    }),
     datasets: [
       {
         label: "AQI - Christmas Tracking 🎄",
-        data: history.map((h) => h.aqi),
+        data: validHistory.map((h) => h.aqi),
         borderColor: "#C41E3A",
         backgroundColor: "rgba(196, 30, 58, 0.1)",
         fill: true,
@@ -314,10 +340,10 @@ export default function ChristmasDashboard() {
         pointBorderWidth: 2,
       },
     ],
-  };
+  } : null;
 
-  // 🥧 DOUGHNUT CHART - Distribution
-  const doughnutData = {
+  // 🥧 DOUGHNUT CHART - Distribution (FIXED)
+  const doughnutData = (distribution.good + distribution.moderate + distribution.unhealthy + distribution.veryUnhealthy) > 0 ? {
     labels: ["Good 🎅", "Moderate 🧝", "Unhealthy ⚠️", "Very Unhealthy 😷"],
     datasets: [
       {
@@ -327,46 +353,50 @@ export default function ChristmasDashboard() {
         borderColor: "#fff",
       },
     ],
-  };
+  } : null;
 
-  // 📊 BAR CHART - PM2.5 & PM10 Comparison (Last 6 hours)
-  const recent6Hours = history.slice(-6);
-  const barChartData = {
-    labels: recent6Hours.map((h) => 
-      new Date(h.timestampUtc).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
-    ),
+  // 📊 BAR CHART - PM2.5 & PM10 Comparison (Last 6 hours) (FIXED)
+  const recent6Hours = validHistory.slice(-6);
+  const barChartData = recent6Hours.length > 0 ? {
+    labels: recent6Hours.map((h) => {
+      try {
+        return new Date(h.timestampUtc).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+      } catch {
+        return "N/A";
+      }
+    }),
     datasets: [
       {
         label: "PM2.5 🎁",
-        data: recent6Hours.map((h) => h.pm25),
+        data: recent6Hours.map((h) => h.pm25 || 0),
         backgroundColor: "rgba(255, 215, 0, 0.7)",
         borderColor: "#FFD700",
         borderWidth: 2,
       },
       {
         label: "PM10 🎅",
-        data: recent6Hours.map((h) => h.pm10),
+        data: recent6Hours.map((h) => h.pm10 || 0),
         backgroundColor: "rgba(22, 91, 51, 0.7)",
         borderColor: "#165B33",
         borderWidth: 2,
       },
     ],
-  };
+  } : null;
 
-  // 🎯 RADAR CHART - Pollutants Overview
-  const radarData = {
+  // 🎯 RADAR CHART - Pollutants Overview (FIXED TYPE)
+  const radarData = currentData ? {
     labels: ["PM2.5", "PM10", "NO₂", "SO₂", "CO", "O₃"],
     datasets: [
       {
         label: "Current Levels",
         data: [
-          currentData?.pm25 || 0,
-          currentData?.pm10 || 0,
-          (currentData?.no2 || 0) * 100,
-          (currentData?.so2 || 0) * 100,
-          (currentData?.co || 0) * 10,
-          (currentData?.o3 || 0) * 10,
-        ],
+          currentData.pm25 || 0,
+          currentData.pm10 || 0,
+          (currentData.no2 || 0) * 100,
+          (currentData.so2 || 0) * 100,
+          (currentData.co || 0) * 10,
+          (currentData.o3 || 0) * 10,
+        ] as number[], // ✅ FIXED: Explicit type annotation
         backgroundColor: "rgba(255, 215, 0, 0.2)",
         borderColor: "#FFD700",
         borderWidth: 3,
@@ -376,7 +406,7 @@ export default function ChristmasDashboard() {
         pointHoverBorderColor: "#C41E3A",
       },
     ],
-  };
+  } : null;
 
   // Loading State
   if (loading && !currentData) {
@@ -704,7 +734,7 @@ export default function ChristmasDashboard() {
                   <FaGift size={24} style={{ color: "#C41E3A" }} />
                   <h5 className="mb-0" style={{ color: "#165B33", fontWeight: "bold" }}>🎁 24h Distribution</h5>
                 </div>
-                {history.length > 0 ? (
+                {doughnutData ? (
                   <>
                     <Doughnut
                       data={doughnutData}
@@ -725,15 +755,18 @@ export default function ChristmasDashboard() {
                     <div className="text-center mt-3">
                       <div className="text-muted small">Average AQI (24h)</div>
                       <div className="h3 fw-bold" style={{ color: "#165B33" }}>
-                        {Math.round(history.reduce((sum, h) => sum + h.aqi, 0) / history.length)} 🎄
+                        {averageAQI > 0 ? averageAQI : "---"} 🎄
                       </div>
-                      <div className="small text-muted">{history.length} data points</div>
+                      <div className="small text-muted">{validHistory.length} data points</div>
                     </div>
                   </>
                 ) : (
                   <div className="text-center text-muted py-5">
                     <FaExclamationCircle size={48} className="mb-3" />
-                    <p>No history data</p>
+                    <p>No history data available</p>
+                    <button className="btn btn-sm btn-success" onClick={handleFetchNew}>
+                      Fetch Data
+                    </button>
                   </div>
                 )}
               </div>
@@ -802,7 +835,7 @@ export default function ChristmasDashboard() {
                     🎄
                   </motion.div>
                 </div>
-                {history.length > 0 ? (
+                {lineChartData ? (
                   <Line
                     data={lineChartData}
                     options={{
@@ -843,7 +876,7 @@ export default function ChristmasDashboard() {
                 ) : (
                   <div className="text-center text-muted py-5">
                     <FaExclamationCircle size={48} className="mb-3" />
-                    <p>No trend data available</p>
+                    <p>No trend data available. Click "Fetch New Data" to get started!</p>
                   </div>
                 )}
               </div>
@@ -864,7 +897,7 @@ export default function ChristmasDashboard() {
                   <FaLeaf size={24} style={{ color: "#10b981" }} />
                   <h5 className="mb-0" style={{ color: "#165B33", fontWeight: "bold" }}>🎯 Pollutants</h5>
                 </div>
-                {currentData ? (
+                {radarData ? (
                   <Radar
                     data={radarData}
                     options={{
@@ -894,7 +927,7 @@ export default function ChristmasDashboard() {
                 ) : (
                   <div className="text-center text-muted py-5">
                     <FaExclamationCircle size={48} className="mb-3" />
-                    <p>No pollutant data</p>
+                    <p>No pollutant data available</p>
                   </div>
                 )}
               </div>
