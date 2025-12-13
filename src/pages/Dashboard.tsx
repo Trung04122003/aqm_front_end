@@ -236,8 +236,8 @@ export default function ChristmasDashboard() {
     try {
       toast.info("🌍 Fetching new data from OpenWeatherMap...");
       
-      // Trigger backend to fetch from external API
-      await api.post(`/admin/aqi/fetch/${selected}`);
+      // ✅ FIXED: Use user endpoint instead of admin
+      await api.post(`/aqi/fetch/${selected}`);
       
       // Wait 3 seconds for data to be fetched and saved
       setTimeout(async () => {
@@ -251,8 +251,8 @@ export default function ChristmasDashboard() {
       console.error("Failed to fetch new data:", e);
       setFetchingNew(false);
       
-      if (e.response?.status === 401 || e.response?.status === 403) {
-        toast.error("🔒 Admin permission required to fetch new data");
+      if (e.response?.status === 500) {
+        toast.error("❌ Server error. Please check if OpenWeatherMap API is configured.");
       } else {
         toast.error("❌ Failed to fetch new data. Please try again later.");
       }
