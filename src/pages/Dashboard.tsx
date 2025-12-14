@@ -1,6 +1,6 @@
 // src/pages/Dashboard.tsx - ULTRA PREMIUM CHRISTMAS EDITION 🎄✨
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import MainLayout from "../layouts/MainLayout";
 import { motion } from "framer-motion";
 import {
@@ -43,6 +43,7 @@ import {
 } from "chart.js";
 import { toast } from "react-toastify";
 import LocationSelector from "../components/LocationSelector";
+import VietnamMap from "../components/VietnamMap";
 
 ChartJS.register(
   CategoryScale,
@@ -373,6 +374,14 @@ export default function ChristmasDashboard() {
     return Math.round(sum / history.length);
   };
 
+  const aqiDataMap = useMemo(() => {
+    const map = new Map<number, number>();
+    if (currentData && selected) {
+      map.set(selected, currentData.aqi || 0);
+    }
+    return map;
+  }, [currentData, selected]);
+
   const distribution = calculateDistribution();
   const aqi = currentData?.aqi || 0;
   const pm25 = currentData?.pm25 || 0;
@@ -562,6 +571,164 @@ export default function ChristmasDashboard() {
           overflow: "hidden",
         }}
       >
+        {/* 🗺️ VIETNAM MAP - Show after location selector */}
+        <div className="row g-4 mb-4">
+          <div className="col-12 col-lg-4">
+            <VietnamMap
+              locations={locations}
+              selectedId={selected}
+              onSelect={setSelected}
+              aqiData={aqiDataMap}
+            />
+          </div>
+
+          {/* 🇻🇳 VIETNAM STATISTICS */}
+          <div className="col-12 col-lg-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card border-0 shadow-lg h-100"
+              style={{ borderRadius: 20, border: "3px solid #FFD700" }}
+            >
+              <div className="card-body p-4">
+                <h5 className="mb-4 fw-bold" style={{ color: "#C41E3A" }}>
+                  🇻🇳 Vietnam Air Quality Coverage
+                </h5>
+
+                <div className="row g-3">
+                  {/* Northern */}
+                  <div className="col-md-4">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      className="p-4 rounded-3 text-center h-100"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(196, 30, 58, 0.1), rgba(196, 30, 58, 0.05))",
+                        border: "2px solid rgba(196, 30, 58, 0.3)",
+                      }}
+                    >
+                      <div style={{ fontSize: "3rem" }} className="mb-2">
+                        🏔️
+                      </div>
+                      <div
+                        className="fw-bold h3 mb-1"
+                        style={{ color: "#C41E3A" }}
+                      >
+                        24
+                      </div>
+                      <div className="text-muted small">Northern Vietnam</div>
+                      <div className="small mt-2" style={{ color: "#6c757d" }}>
+                        Ha Noi, Hai Phong, Quang Ninh...
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Central */}
+                  <div className="col-md-4">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      className="p-4 rounded-3 text-center h-100"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(22, 91, 51, 0.1), rgba(22, 91, 51, 0.05))",
+                        border: "2px solid rgba(22, 91, 51, 0.3)",
+                      }}
+                    >
+                      <div style={{ fontSize: "3rem" }} className="mb-2">
+                        🏖️
+                      </div>
+                      <div
+                        className="fw-bold h3 mb-1"
+                        style={{ color: "#165B33" }}
+                      >
+                        19
+                      </div>
+                      <div className="text-muted small">Central Vietnam</div>
+                      <div className="small mt-2" style={{ color: "#6c757d" }}>
+                        Da Nang, Hue, Khanh Hoa...
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Southern */}
+                  <div className="col-md-4">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      className="p-4 rounded-3 text-center h-100"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05))",
+                        border: "2px solid rgba(255, 215, 0, 0.5)",
+                      }}
+                    >
+                      <div style={{ fontSize: "3rem" }} className="mb-2">
+                        🌴
+                      </div>
+                      <div
+                        className="fw-bold h3 mb-1"
+                        style={{ color: "#FFD700" }}
+                      >
+                        20
+                      </div>
+                      <div className="text-muted small">Southern Vietnam</div>
+                      <div className="small mt-2" style={{ color: "#6c757d" }}>
+                        Ho Chi Minh, Can Tho, Ca Mau...
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+
+                {/* Quick Facts */}
+                <div
+                  className="mt-4 p-3 rounded-3"
+                  style={{
+                    background: "rgba(255, 215, 0, 0.1)",
+                    border: "2px dashed #FFD700",
+                  }}
+                >
+                  <div className="row g-3 text-center">
+                    <div className="col-6 col-md-3">
+                      <div
+                        className="fw-bold h5 mb-0"
+                        style={{ color: "#165B33" }}
+                      >
+                        {locations.length}
+                      </div>
+                      <div className="small text-muted">Total Provinces</div>
+                    </div>
+                    <div className="col-6 col-md-3">
+                      <div
+                        className="fw-bold h5 mb-0"
+                        style={{ color: "#C41E3A" }}
+                      >
+                        {locations.length}
+                      </div>
+                      <div className="small text-muted">Active Sensors</div>
+                    </div>
+                    <div className="col-6 col-md-3">
+                      <div
+                        className="fw-bold h5 mb-0"
+                        style={{ color: "#FFD700" }}
+                      >
+                        24/7
+                      </div>
+                      <div className="small text-muted">Real-Time</div>
+                    </div>
+                    <div className="col-6 col-md-3">
+                      <div
+                        className="fw-bold h5 mb-0"
+                        style={{ color: "#10b981" }}
+                      >
+                        {currentData?.aqi ? currentData.aqi : "--"}
+                      </div>
+                      <div className="small text-muted">Current AQI</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
         {/* Floating Snowflakes */}
         {[...Array(20)].map((_, i) => (
           <Snowflake key={i} delay={i * 0.3} />
