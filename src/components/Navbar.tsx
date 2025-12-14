@@ -1,4 +1,4 @@
-// src/components/Navbar.tsx - CHRISTMAS 2025 EDITION WITH NOTIFICATIONS 🔔
+// src/components/Navbar.tsx - CHRISTMAS 2025 EDITION WITH REAL-TIME NOTIFICATIONS 🔔
 
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
@@ -7,27 +7,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
 import AlertBadge from "./AlertBadge";
 import SearchBar from "./SearchBar";
-import api from "../api/axios";
-import { toast } from "react-toastify";
-
-type Alert = {
-  id: number;
-  pollutant: string;
-  value: number;
-  locationName: string;
-  triggeredAt: string;
-  isRead: boolean;
-};
+import { useRealtimeAlerts } from "../hooks/useRealtimeAlerts";
 
 export default function ChristmasNavbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [recentAlerts, setRecentAlerts] = useState<Alert[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [snowflakes, setSnowflakes] = useState<
     Array<{ id: number; left: number; delay: number; duration: number }>
   >([]);
+
+  // ✅ USE REAL-TIME ALERTS HOOK
+  const { unreadAlerts, unreadCount, markAsRead } = useRealtimeAlerts(
+    true,
+    30000
+  );
 
   // Generate snowflakes
   useEffect(() => {
@@ -39,38 +33,6 @@ export default function ChristmasNavbar() {
     }));
     setSnowflakes(flakes);
   }, []);
-
-  // Fetch unread alerts
-  useEffect(() => {
-    if (!user) return;
-    fetchAlerts();
-    // Poll every 30 seconds
-    const interval = setInterval(fetchAlerts, 30000);
-    return () => clearInterval(interval);
-  }, [user]);
-
-  const fetchAlerts = async () => {
-    try {
-      const res = await api.get("/alerts/unread");
-      const alerts = Array.isArray(res.data) ? res.data : [];
-      setRecentAlerts(alerts.slice(0, 3)); // Show only latest 3
-      setUnreadCount(alerts.length);
-    } catch (err) {
-      console.error("Failed to fetch alerts", err);
-    }
-  };
-
-  const handleMarkAsRead = async (id: number) => {
-    try {
-      await api.put(`/alerts/${id}/read`);
-      setRecentAlerts((prev) => prev.filter((a) => a.id !== id));
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-      toast.success("🎅 Alert marked as read!");
-    } catch (err) {
-      console.error("Failed to mark as read:", err);
-      toast.error("Failed to mark as read");
-    }
-  };
 
   const formatTime = (ts: string) => {
     try {
@@ -190,7 +152,7 @@ export default function ChristmasNavbar() {
                 🎁
               </motion.div>
 
-              {/* ✅ INLINE NOTIFICATION PANEL */}
+              {/* ✅ REAL-TIME NOTIFICATION BELL */}
               <div className="position-relative">
                 <motion.div
                   whileHover={{ scale: 1.1, rotate: [-5, 5, -5, 0] }}
@@ -202,12 +164,16 @@ export default function ChristmasNavbar() {
                   <FaBell size={22} style={{ color: "#FFD700" }} />
                   {unreadCount > 0 && (
                     <div className="position-absolute top-0 start-100 translate-middle">
-                      <AlertBadge count={unreadCount} size="sm" variant="danger" />
+                      <AlertBadge
+                        count={unreadCount}
+                        size="sm"
+                        variant="danger"
+                      />
                     </div>
                   )}
                 </motion.div>
 
-                {/* ✅ NOTIFICATION PANEL (Inline, not dropdown) */}
+                {/* ✅ NOTIFICATION PANEL */}
                 <AnimatePresence>
                   {showNotifications && (
                     <motion.div
@@ -229,7 +195,8 @@ export default function ChristmasNavbar() {
                       <div
                         className="p-3 text-white d-flex justify-content-between align-items-center"
                         style={{
-                          background: "linear-gradient(135deg, #C41E3A, #165B33)",
+                          background:
+                            "linear-gradient(135deg, #C41E3A, #165B33)",
                         }}
                       >
                         <div className="fw-bold">🔔 Notifications</div>
@@ -249,13 +216,15 @@ export default function ChristmasNavbar() {
 
                       {/* Notification List */}
                       <div style={{ maxHeight: 400, overflowY: "auto" }}>
-                        {recentAlerts.length === 0 ? (
+                        {unreadAlerts.length === 0 ? (
                           <div className="text-center py-5">
                             <div style={{ fontSize: "3rem" }}>🎄</div>
-                            <div className="text-muted small">All caught up!</div>
+                            <div className="text-muted small">
+                              All caught up!
+                            </div>
                           </div>
                         ) : (
-                          recentAlerts.map((alert) => (
+                          unreadAlerts.slice(0, 5).map((alert) => (
                             <motion.div
                               key={alert.id}
                               initial={{ opacity: 0, x: -20 }}
@@ -267,7 +236,10 @@ export default function ChristmasNavbar() {
                               }}
                             >
                               <div className="d-flex justify-content-between align-items-start mb-2">
-                                <div className="fw-semibold" style={{ color: "#C41E3A" }}>
+                                <div
+                                  className="fw-semibold"
+                                  style={{ color: "#C41E3A" }}
+                                >
                                   {alert.pollutant} Alert
                                 </div>
                                 <motion.button
@@ -279,7 +251,7 @@ export default function ChristmasNavbar() {
                                     padding: "2px 8px",
                                     fontSize: "0.75rem",
                                   }}
-                                  onClick={() => handleMarkAsRead(alert.id)}
+                                  onClick={() => markAsRead(alert.id)}
                                 >
                                   ✓
                                 </motion.button>

@@ -1,23 +1,20 @@
-// src/pages/Alerts.tsx - CHRISTMAS 2025 EDITION 🔔
-
-import { useEffect, useState } from "react";
-import api from "../api/axios";
+// src/pages/Alerts.tsx - REAL-TIME EDITION 🔔
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "react-toastify";
-import { FaCheckCircle, FaSnowflake } from "react-icons/fa";
+import { FaCheckCircle, FaSnowflake, FaSync } from "react-icons/fa";
+import { useRealtimeAlerts } from "../hooks/useRealtimeAlerts";
 
-type Alert = {
-  id: number;
-  pollutant: string;
-  value: number;
-  locationName: string;
-  triggeredAt: string;
-  isRead: boolean;
-  status?: string;
-};
+// Import Alert type from hook
+import type { Alert } from "../hooks/useRealtimeAlerts";
 
 // Christmas Alert Card Component
-const ChristmasAlertCard = ({ alert, onMarkAsRead }: { alert: Alert; onMarkAsRead: (id: number) => void }) => {
+const ChristmasAlertCard = ({ 
+  alert, 
+  onMarkAsRead 
+}: { 
+  alert: Alert; 
+  onMarkAsRead: (id: number) => void;
+}) => {
   const formatTime = (ts: string) => {
     try {
       const date = new Date(ts);
@@ -33,9 +30,12 @@ const ChristmasAlertCard = ({ alert, onMarkAsRead }: { alert: Alert; onMarkAsRea
   };
 
   const getSeverity = () => {
-    if (alert.pollutant === "PM2.5" && alert.value > 55) return { level: "danger", color: "#C41E3A", emoji: "🦌", bg: "rgba(196, 30, 58, 0.1)" };
-    if (alert.pollutant === "PM10" && alert.value > 150) return { level: "danger", color: "#C41E3A", emoji: "🦌", bg: "rgba(196, 30, 58, 0.1)" };
-    if (alert.pollutant === "AQI" && alert.value > 150) return { level: "danger", color: "#C41E3A", emoji: "⛄", bg: "rgba(196, 30, 58, 0.1)" };
+    if (alert.pollutant === "PM2.5" && alert.value > 55) 
+      return { level: "danger", color: "#C41E3A", emoji: "🦌", bg: "rgba(196, 30, 58, 0.1)" };
+    if (alert.pollutant === "PM10" && alert.value > 150) 
+      return { level: "danger", color: "#C41E3A", emoji: "🦌", bg: "rgba(196, 30, 58, 0.1)" };
+    if (alert.pollutant === "AQI" && alert.value > 150) 
+      return { level: "danger", color: "#C41E3A", emoji: "⛄", bg: "rgba(196, 30, 58, 0.1)" };
     return { level: "warning", color: "#FFD700", emoji: "🧝", bg: "rgba(255, 215, 0, 0.1)" };
   };
 
@@ -56,14 +56,12 @@ const ChristmasAlertCard = ({ alert, onMarkAsRead }: { alert: Alert; onMarkAsRea
         transition: "all 0.3s"
       }}
     >
-      {/* Christmas Ornament Background */}
       <div className="position-absolute" style={{ top: -20, right: -20, fontSize: "80px", opacity: 0.1 }}>
         🎄
       </div>
 
       <div className="card-body p-4">
         <div className="d-flex align-items-start gap-3">
-          {/* Icon */}
           <motion.div
             animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -79,7 +77,6 @@ const ChristmasAlertCard = ({ alert, onMarkAsRead }: { alert: Alert; onMarkAsRea
             {severity.emoji}
           </motion.div>
 
-          {/* Content */}
           <div className="flex-grow-1">
             <div className="d-flex justify-content-between align-items-start mb-2">
               <div>
@@ -106,12 +103,11 @@ const ChristmasAlertCard = ({ alert, onMarkAsRead }: { alert: Alert; onMarkAsRea
                   <FaSnowflake size={12} style={{ color: "#87CEEB" }} />
                   <span>📍 {alert.locationName || "Unknown"}</span>
                   <span>•</span>
-                  <span>🕒 {formatTime(alert.triggeredAt)}</span>
+                  <span>🕐 {formatTime(alert.triggeredAt)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Value Display */}
             <div className="d-flex align-items-center gap-3 mb-3">
               <div className="p-3 rounded-3" style={{ background: "rgba(255, 255, 255, 0.8)", border: `2px solid ${severity.color}` }}>
                 <div className="small text-muted mb-1">Current Value</div>
@@ -137,8 +133,7 @@ const ChristmasAlertCard = ({ alert, onMarkAsRead }: { alert: Alert; onMarkAsRea
               </div>
             </div>
 
-            {/* Action Button */}
-            {!alert.isRead && onMarkAsRead && (
+            {!alert.isRead && (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -166,52 +161,18 @@ const ChristmasAlertCard = ({ alert, onMarkAsRead }: { alert: Alert; onMarkAsRea
 };
 
 export default function ChristmasAlerts() {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  // ✅ USE REAL-TIME HOOK
+  const { 
+    alerts, 
+    unreadCount, 
+    loading, 
+    error, 
+    markAsRead, 
+    markAllAsRead,
+    triggerCheck
+  } = useRealtimeAlerts(true, 30000); // Auto-refresh every 30s
+
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadAlerts();
-  }, []);
-
-  const loadAlerts = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.get("/alerts");
-      const alertData = Array.isArray(res.data) ? res.data : [];
-      setAlerts(alertData);
-    } catch (err) {
-      console.error("Failed to load alerts:", err);
-      setError("Failed to load alerts. Please try again.");
-      toast.error("Failed to load alerts");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleMarkAsRead = async (id: number) => {
-    try {
-      await api.put(`/alerts/${id}/read`);
-      setAlerts((prev) =>
-        prev.map((alert) =>
-          alert.id === id ? { ...alert, isRead: true } : alert
-        )
-      );
-      toast.success("🎅 Alert marked as read!");
-    } catch (err) {
-      console.error("Failed to mark as read:", err);
-      toast.error("Failed to mark as read");
-    }
-  };
-
-  const handleMarkAllAsRead = async () => {
-    const unreadIds = alerts.filter((a) => !a.isRead).map((a) => a.id);
-    for (const id of unreadIds) {
-      await handleMarkAsRead(id);
-    }
-  };
 
   const filteredAlerts = alerts.filter((alert) => {
     if (filter === "unread") return !alert.isRead;
@@ -219,9 +180,6 @@ export default function ChristmasAlerts() {
     return true;
   });
 
-  const unreadCount = alerts.filter((a) => !a.isRead).length;
-
-  // Snowflake component
   const Snowflake = ({ delay }: { delay: number }) => (
     <motion.div
       className="position-absolute"
@@ -250,12 +208,10 @@ export default function ChristmasAlerts() {
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #E0F7FA 0%, #B3E5FC 50%, #FFFAFA 100%)", padding: "2rem", position: "relative", overflow: "hidden" }}>
-      {/* Floating Snowflakes */}
       {[...Array(15)].map((_, i) => (
         <Snowflake key={i} delay={i * 0.5} />
       ))}
 
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -271,7 +227,6 @@ export default function ChristmasAlerts() {
               style={{ 
                 width: 50, 
                 height: 50, 
-                textDecoration: "none",
                 background: "linear-gradient(135deg, #C41E3A, #165B33)",
                 color: "white",
                 border: "3px solid #FFD700",
@@ -295,31 +250,51 @@ export default function ChristmasAlerts() {
                 )}
               </h2>
               <p className="text-muted mb-0">
-                🎅 Santa's watching your air quality! Real-time notifications for healthy holidays
+                🎅 Real-time monitoring - Updates every 30 seconds
               </p>
             </div>
           </div>
 
-          {unreadCount > 0 && (
+          <div className="d-flex gap-2">
+            {/* ✅ MANUAL CHECK BUTTON */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="btn d-flex align-items-center gap-2"
               style={{
-                background: "linear-gradient(135deg, #165B33, #50C878)",
+                background: "linear-gradient(135deg, #FFD700, #FFA500)",
                 color: "white",
                 border: "none",
                 borderRadius: 12,
                 padding: "12px 24px",
-                fontWeight: "bold",
-                boxShadow: "0 4px 16px rgba(22, 91, 51, 0.3)"
+                fontWeight: "bold"
               }}
-              onClick={handleMarkAllAsRead}
+              onClick={triggerCheck}
             >
-              <FaCheckCircle />
-              Mark All as Read 🎄
+              <FaSync />
+              Check Now
             </motion.button>
-          )}
+
+            {unreadCount > 0 && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="btn d-flex align-items-center gap-2"
+                style={{
+                  background: "linear-gradient(135deg, #165B33, #50C878)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 12,
+                  padding: "12px 24px",
+                  fontWeight: "bold"
+                }}
+                onClick={markAllAsRead}
+              >
+                <FaCheckCircle />
+                Mark All Read 🎄
+              </motion.button>
+            )}
+          </div>
         </div>
 
         {/* Filter Tabs */}
@@ -355,34 +330,27 @@ export default function ChristmasAlerts() {
         </div>
       </motion.div>
 
-      {/* Error State */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="alert d-flex align-items-center gap-3"
-            style={{ 
-              background: "rgba(196, 30, 58, 0.1)", 
-              border: "2px solid #C41E3A",
-              borderRadius: 16,
-              color: "#C41E3A"
-            }}
-          >
-            <span style={{ fontSize: "24px" }}>⚠️</span>
-            <div>{error}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="alert"
+          style={{ 
+            background: "rgba(196, 30, 58, 0.1)", 
+            border: "2px solid #C41E3A",
+            borderRadius: 16,
+            color: "#C41E3A"
+          }}
+        >
+          ⚠️ {error}
+        </motion.div>
+      )}
 
-      {/* Loading State */}
       {loading && (
         <div className="text-center py-5">
           <motion.div
             animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="d-inline-block mb-3"
+            transition={{ duration: 2, repeat: Infinity }}
             style={{ fontSize: "4rem" }}
           >
             🎅
@@ -393,19 +361,17 @@ export default function ChristmasAlerts() {
         </div>
       )}
 
-      {/* Empty State */}
       {!loading && filteredAlerts.length === 0 && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="card border-0 shadow-lg text-center py-5"
-          style={{ borderRadius: 24, border: "3px solid #FFD700", background: "white" }}
+          style={{ borderRadius: 24, border: "3px solid #FFD700" }}
         >
           <motion.div
-            animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+            animate={{ rotate: [0, 10, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
             style={{ fontSize: "6rem" }}
-            className="mb-3"
           >
             {filter === "unread" ? "🎅" : "🔔"}
           </motion.div>
@@ -414,36 +380,32 @@ export default function ChristmasAlerts() {
           </h5>
           <p style={{ color: "#6c757d" }}>
             {filter === "unread"
-              ? "You have no unread alerts. Great job staying informed this Christmas!"
+              ? "You have no unread alerts. Great job staying informed!"
               : "You'll receive alerts when air quality exceeds your thresholds. 🎁"}
           </p>
         </motion.div>
       )}
 
-      {/* Alerts List */}
       <AnimatePresence mode="popLayout">
-        {!loading &&
-          filteredAlerts.map((alert) => (
-            <ChristmasAlertCard
-              key={alert.id}
-              alert={alert}
-              onMarkAsRead={handleMarkAsRead}
-            />
-          ))}
+        {!loading && filteredAlerts.map((alert) => (
+          <ChristmasAlertCard
+            key={alert.id}
+            alert={alert}
+            onMarkAsRead={markAsRead}
+          />
+        ))}
       </AnimatePresence>
 
-      {/* Christmas Footer */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
         className="text-center mt-5 py-4"
       >
         <h4 style={{ color: "#C41E3A", fontWeight: "bold" }}>
           🎅 Stay Safe This Holiday Season! 🎄
         </h4>
         <p style={{ color: "#165B33" }}>
-          May your air be as pure as freshly fallen snow! ❄️⛄
+          Real-time monitoring • Auto-refresh every 30s ❄️⛄
         </p>
       </motion.div>
     </div>
