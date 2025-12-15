@@ -44,6 +44,8 @@ import {
 import { toast } from "react-toastify";
 import LocationSelector from "../components/LocationSelector";
 import VietnamMap from "../components/VietnamMap";
+import VietnamHeatmap from "../components/VietnamHeatmap";
+import ProvinceComparison from "../components/ProvinceComparison";
 
 ChartJS.register(
   CategoryScale,
@@ -124,6 +126,8 @@ export default function ChristmasDashboard() {
   const [fetchingNew, setFetchingNew] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [trend, setTrend] = useState<"up" | "down" | "stable">("stable");
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
   const { user } = useAuth();
 
   // Auto-refresh every 5 minutes
@@ -163,6 +167,16 @@ export default function ChristmasDashboard() {
       else setTrend("stable");
     }
   }, [history, currentData]);
+
+  /**
+   * Load all AQI when heatmap is shown
+   */
+  useEffect(() => {
+    if (showHeatmap && allAqiData.size === 0) {
+      loadAllAqi();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showHeatmap]);
 
   const loadLocations = async () => {
     setLoadingLocations(true);
@@ -381,6 +395,41 @@ export default function ChristmasDashboard() {
     }
     return map;
   }, [currentData, selected]);
+
+  // Create AQI data map for all provinces (after history state)
+  const [allAqiData, setAllAqiData] = useState<Map<number, number>>(new Map());
+
+  // History data by location (for comparison)
+  const historyByLocation = useMemo(() => {
+    const map = new Map<number, typeof history>();
+    if (selected && history) {
+      map.set(selected, history);
+    }
+    return map;
+  }, [selected, history]);
+
+  /**
+   * 📊 Load AQI data for ALL provinces (for heatmap)
+   */
+  const loadAllAqi = async () => {
+    try {
+      console.log("📊 Loading AQI for all provinces...");
+
+      const res = await api.get("/data/all-latest");
+
+      // Convert object to Map
+      const aqiMap = new Map<number, number>();
+      Object.entries(res.data).forEach(([locationId, aqi]) => {
+        aqiMap.set(Number(locationId), aqi as number);
+      });
+
+      setAllAqiData(aqiMap);
+      console.log(`✅ Loaded AQI for ${aqiMap.size} provinces`);
+    } catch (e) {
+      console.error("❌ Failed to load all AQI:", e);
+      toast.error("Failed to load heatmap data");
+    }
+  };
 
   const distribution = calculateDistribution();
   const aqi = currentData?.aqi || 0;
@@ -729,6 +778,121 @@ export default function ChristmasDashboard() {
             </motion.div>
           </div>
         </div>
+
+        {/* 🔥 HEATMAP VISUALIZATION */}
+        {showHeatmap && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="row g-4 mb-4"
+          >
+            <div className="col-12 col-lg-6">
+              <VietnamHeatmap
+                locations={locations}
+                aqiData={allAqiData}
+                onLocationClick={(id) => {
+                  setSelected(id);
+                  setShowHeatmap(false);
+                }}
+              />
+            </div>
+
+            <div className="col-12 col-lg-6">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="card border-0 shadow-lg h-100"
+                style={{ borderRadius: 20, border: "3px solid #FFD700" }}
+              >
+                <div className="card-body p-4">
+                  <h5 className="mb-3 fw-bold" style={{ color: "#C41E3A" }}>
+                    🔥 Heatmap Insights
+                  </h5>
+
+                  <div className="mb-3">
+                    <p className="text-muted">
+                      The heatmap shows air quality intensity across Vietnam
+                      using color gradients. Darker/redder areas indicate higher
+                      pollution levels.
+                    </p>
+                  </div>
+
+                  <div
+                    className="p-3 rounded-3 mb-3"
+                    style={{ background: "rgba(239, 68, 68, 0.1)" }}
+                  >
+                    <div className="fw-bold mb-2" style={{ color: "#C41E3A" }}>
+                      🔴 High Pollution Areas
+                    </div>
+                    <ul className="mb-0 small">
+                      <li>Urban centers (Ha Noi, Ho Chi Minh)</li>
+                      <li>Industrial zones</li>
+                      <li>High traffic density areas</li>
+                    </ul>
+                  </div>
+
+                  <div
+                    className="p-3 rounded-3 mb-3"
+                    style={{ background: "rgba(16, 185, 129, 0.1)" }}
+                  >
+                    <div className="fw-bold mb-2" style={{ color: "#10b981" }}>
+                      🟢 Clean Air Regions
+                    </div>
+                    <ul className="mb-0 small">
+                      <li>Mountain provinces (Ha Giang, Lao Cai)</li>
+                      <li>Coastal areas with sea breeze</li>
+                      <li>Rural agricultural regions</li>
+                    </ul>
+                  </div>
+
+                  <div
+                    className="mt-3 p-3 rounded-3"
+                    style={{
+                      background: "rgba(255, 215, 0, 0.1)",
+                      border: "2px dashed #FFD700",
+                    }}
+                  >
+                    <div
+                      className="small fw-bold mb-2"
+                      style={{ color: "#B8860B" }}
+                    >
+                      💡 Pro Tip:
+                    </div>
+                    <p className="small mb-0 text-muted">
+                      Click on any point in the heatmap to view detailed data
+                      for that province!
+                    </p>
+                  </div>
+
+                  {/* Reload Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="btn btn-outline-primary w-100 mt-3"
+                    onClick={loadAllAqi}
+                    style={{ borderRadius: 12 }}
+                  >
+                    🔄 Reload Heatmap Data
+                  </motion.button>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ⚖️ PROVINCE COMPARISON */}
+        {showComparison && (
+          <div className="row g-4 mb-4">
+            <div className="col-12">
+              <ProvinceComparison
+                locations={locations}
+                historyData={historyByLocation}
+                onClose={() => setShowComparison(false)}
+              />
+            </div>
+          </div>
+        )}
         {/* Floating Snowflakes */}
         {[...Array(20)].map((_, i) => (
           <Snowflake key={i} delay={i * 0.3} />
@@ -776,6 +940,32 @@ export default function ChristmasDashboard() {
           >
             <FaCloudRain />
             {refreshing ? "Fetching..." : "Fetch Weather"}
+          </motion.button>
+          {/* Heatmap Toggle */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`btn d-flex align-items-center gap-2 ${showHeatmap ? "btn-danger" : "btn-outline-danger"}`}
+            onClick={() => {
+              setShowHeatmap(!showHeatmap);
+              if (!showHeatmap && allAqiData.size === 0) {
+                loadAllAqi(); // Load data when opening
+              }
+            }}
+            style={{ fontWeight: 600, borderRadius: 12 }}
+          >
+            {showHeatmap ? "🔥 Hide Heatmap" : "🔥 Show Heatmap"}
+          </motion.button>
+
+          {/* Comparison Toggle */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`btn d-flex align-items-center gap-2 ${showComparison ? "btn-warning" : "btn-outline-warning"}`}
+            onClick={() => setShowComparison(!showComparison)}
+            style={{ fontWeight: 600, borderRadius: 12 }}
+          >
+            {showComparison ? "⚖️ Hide Compare" : "⚖️ Compare Provinces"}
           </motion.button>
         </motion.div>
 
