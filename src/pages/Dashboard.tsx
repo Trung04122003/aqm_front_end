@@ -128,6 +128,11 @@ export default function ChristmasDashboard() {
   const [trend, setTrend] = useState<"up" | "down" | "stable">("stable");
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [allAqiData, setAllAqiData] = useState<Map<number, number>>(new Map());
+  
+  // ✅ NEW: Cache for storing history data of all locations
+  const [historyCache, setHistoryCache] = useState<Map<number, AirQualityData[]>>(new Map());
+
   const { user } = useAuth();
 
   // Auto-refresh every 5 minutes
@@ -140,7 +145,7 @@ export default function ChristmasDashboard() {
       5 * 60 * 1000
     );
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
   useEffect(() => {
@@ -152,7 +157,7 @@ export default function ChristmasDashboard() {
     if (!selected) return;
     loadAirQualityData();
     loadWeather();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
   // Calculate trend when history changes
@@ -161,7 +166,6 @@ export default function ChristmasDashboard() {
       const recent = history.slice(-5);
       const avg = recent.reduce((sum, d) => sum + d.aqi, 0) / recent.length;
       const current = currentData?.aqi || 0;
-
       if (current > avg + 10) setTrend("up");
       else if (current < avg - 10) setTrend("down");
       else setTrend("stable");
@@ -175,7 +179,7 @@ export default function ChristmasDashboard() {
     if (showHeatmap && allAqiData.size === 0) {
       loadAllAqi();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showHeatmap]);
 
   const loadLocations = async () => {
@@ -195,13 +199,11 @@ export default function ChristmasDashboard() {
 
   const loadAirQualityData = async (showToast = true) => {
     if (!selected) return;
-
     setLoading(true);
     try {
       const res = await api.get<AirQualityResponse>(
         `/data?locationId=${selected}&range=24h`
       );
-
       const { current, history } = res.data;
 
       if (!current) {
@@ -217,13 +219,19 @@ export default function ChristmasDashboard() {
       setHistory(history || []);
       setLastUpdate(new Date());
 
+      // ✅ CRITICAL FIX: Cache history data for comparison
+      setHistoryCache(prev => {
+        const newCache = new Map(prev);
+        newCache.set(selected, history || []);
+        return newCache;
+      });
+
       console.log("✅ Loaded data:", {
         current: current.aqi,
         historyCount: (history || []).length,
         firstPoint: history?.[0],
       });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       console.error("Failed to load air quality:", e);
       if (showToast) {
@@ -238,7 +246,6 @@ export default function ChristmasDashboard() {
 
   const loadWeather = async () => {
     if (!selected) return;
-
     try {
       const res = await api.get(`/weather?location=${selected}`);
       if (res.data && res.data.length > 0) {
@@ -256,7 +263,7 @@ export default function ChristmasDashboard() {
       await loadAirQualityData();
       await loadWeather();
       toast.success("✅ Data refreshed!");
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       toast.error("Failed to refresh data");
     } finally {
@@ -266,23 +273,19 @@ export default function ChristmasDashboard() {
 
   const handleFetchNew = async () => {
     if (!selected) return;
-
     setFetchingNew(true);
     try {
       toast.info("🌍 Fetching new data from OpenWeatherMap...");
       await api.post(`/aqi/fetch/${selected}`);
-
       setTimeout(async () => {
         await loadAirQualityData();
         setFetchingNew(false);
         toast.success("✅ Fresh data fetched successfully!");
       }, 3000);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       console.error("Failed to fetch new data:", e);
       setFetchingNew(false);
-
       if (e.response?.status === 500) {
         toast.error(
           "❌ Server error. Please check if OpenWeatherMap API is configured."
@@ -295,29 +298,52 @@ export default function ChristmasDashboard() {
 
   const handleFetchWeather = async () => {
     if (!selected) return;
-
     setRefreshing(true);
     try {
       toast.info("🌤️ Fetching fresh weather data...");
       await api.post(`/weather/fetch/${selected}`);
-
-      // Wait a bit then reload weather
       setTimeout(async () => {
         await loadWeather();
         setRefreshing(false);
         toast.success("✅ Fresh weather data loaded!");
       }, 2000);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       console.error("Failed to fetch weather:", e);
       setRefreshing(false);
-
       if (e.response?.status === 500) {
         toast.error("❌ Weather API error. Please try again later.");
       } else {
         toast.error("❌ Failed to fetch weather data.");
       }
+    }
+  };
+
+  // ✅ NEW: Load history for specific location (for comparison)
+  const loadHistoryForLocation = async (locationId: number) => {
+    // Check cache first
+    if (historyCache.has(locationId)) {
+      console.log(`✅ Using cached history for location ${locationId}`);
+      return;
+    }
+
+    try {
+      console.log(`📊 Fetching history for location ${locationId}...`);
+      const res = await api.get<AirQualityResponse>(
+        `/data?locationId=${locationId}&range=24h`
+      );
+      
+      const { history } = res.data;
+      
+      setHistoryCache(prev => {
+        const newCache = new Map(prev);
+        newCache.set(locationId, history || []);
+        return newCache;
+      });
+      
+      console.log(`✅ Cached history for location ${locationId}: ${history?.length || 0} points`);
+    } catch (e) {
+      console.error(`❌ Failed to load history for location ${locationId}:`, e);
     }
   };
 
@@ -368,6 +394,7 @@ export default function ChristmasDashboard() {
   const calculateDistribution = () => {
     if (!history || history.length === 0)
       return { good: 0, moderate: 0, unhealthy: 0, veryUnhealthy: 0 };
+
     return history.reduce(
       (acc, point) => {
         const aqi = point.aqi || 0;
@@ -381,7 +408,6 @@ export default function ChristmasDashboard() {
     );
   };
 
-  // ✅ Calculate average AQI (handle empty history)
   const calculateAverageAQI = () => {
     if (!history || history.length === 0) return 0;
     const sum = history.reduce((total, h) => total + (h.aqi || 0), 0);
@@ -396,33 +422,17 @@ export default function ChristmasDashboard() {
     return map;
   }, [currentData, selected]);
 
-  // Create AQI data map for all provinces (after history state)
-  const [allAqiData, setAllAqiData] = useState<Map<number, number>>(new Map());
-
-  // History data by location (for comparison)
-  const historyByLocation = useMemo(() => {
-    const map = new Map<number, typeof history>();
-    if (selected && history) {
-      map.set(selected, history);
-    }
-    return map;
-  }, [selected, history]);
-
   /**
    * 📊 Load AQI data for ALL provinces (for heatmap)
    */
   const loadAllAqi = async () => {
     try {
       console.log("📊 Loading AQI for all provinces...");
-
       const res = await api.get("/data/all-latest");
-
-      // Convert object to Map
       const aqiMap = new Map<number, number>();
       Object.entries(res.data).forEach(([locationId, aqi]) => {
         aqiMap.set(Number(locationId), aqi as number);
       });
-
       setAllAqiData(aqiMap);
       console.log(`✅ Loaded AQI for ${aqiMap.size} provinces`);
     } catch (e) {
@@ -439,10 +449,8 @@ export default function ChristmasDashboard() {
   const status = getAQIStatus(aqi);
   const selectedLocation = locations.find((l) => l.id === selected);
 
-  // ✅ FIXED: Filter valid history data and format timestamps properly
   const validHistory = history.filter((h) => h.timestampUtc && h.aqi != null);
 
-  // 📊 LINE CHART - 24H AQI Trend (FIXED)
   const lineChartData =
     validHistory.length > 0
       ? {
@@ -475,7 +483,6 @@ export default function ChristmasDashboard() {
         }
       : null;
 
-  // 🥧 DOUGHNUT CHART - Distribution (FIXED)
   const doughnutData =
     distribution.good +
       distribution.moderate +
@@ -505,7 +512,6 @@ export default function ChristmasDashboard() {
         }
       : null;
 
-  // 📊 BAR CHART - PM2.5 & PM10 Comparison (Last 6 hours) (FIXED)
   const recent6Hours = validHistory.slice(-6);
   const barChartData =
     recent6Hours.length > 0
@@ -539,7 +545,6 @@ export default function ChristmasDashboard() {
         }
       : null;
 
-  // 🎯 RADAR CHART - Pollutants Overview (FIXED TYPE)
   const radarData = currentData
     ? {
         labels: ["PM2.5", "PM10", "NO₂", "SO₂", "CO", "O₃"],
@@ -553,7 +558,7 @@ export default function ChristmasDashboard() {
               (currentData.so2 || 0) * 100,
               (currentData.co || 0) * 10,
               (currentData.o3 || 0) * 10,
-            ] as number[], // ✅ FIXED: Explicit type annotation
+            ] as number[],
             backgroundColor: "rgba(255, 215, 0, 0.2)",
             borderColor: "#FFD700",
             borderWidth: 3,
@@ -630,7 +635,6 @@ export default function ChristmasDashboard() {
               aqiData={aqiDataMap}
             />
           </div>
-
           {/* 🇻🇳 VIETNAM STATISTICS */}
           <div className="col-12 col-lg-8">
             <motion.div
@@ -643,7 +647,6 @@ export default function ChristmasDashboard() {
                 <h5 className="mb-4 fw-bold" style={{ color: "#C41E3A" }}>
                   🇻🇳 Vietnam Air Quality Coverage
                 </h5>
-
                 <div className="row g-3">
                   {/* Northern */}
                   <div className="col-md-4">
@@ -671,7 +674,6 @@ export default function ChristmasDashboard() {
                       </div>
                     </motion.div>
                   </div>
-
                   {/* Central */}
                   <div className="col-md-4">
                     <motion.div
@@ -698,7 +700,6 @@ export default function ChristmasDashboard() {
                       </div>
                     </motion.div>
                   </div>
-
                   {/* Southern */}
                   <div className="col-md-4">
                     <motion.div
@@ -726,7 +727,6 @@ export default function ChristmasDashboard() {
                     </motion.div>
                   </div>
                 </div>
-
                 {/* Quick Facts */}
                 <div
                   className="mt-4 p-3 rounded-3"
@@ -797,7 +797,6 @@ export default function ChristmasDashboard() {
                 }}
               />
             </div>
-
             <div className="col-12 col-lg-6">
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -809,7 +808,6 @@ export default function ChristmasDashboard() {
                   <h5 className="mb-3 fw-bold" style={{ color: "#C41E3A" }}>
                     🔥 Heatmap Insights
                   </h5>
-
                   <div className="mb-3">
                     <p className="text-muted">
                       The heatmap shows air quality intensity across Vietnam
@@ -817,7 +815,6 @@ export default function ChristmasDashboard() {
                       pollution levels.
                     </p>
                   </div>
-
                   <div
                     className="p-3 rounded-3 mb-3"
                     style={{ background: "rgba(239, 68, 68, 0.1)" }}
@@ -831,7 +828,6 @@ export default function ChristmasDashboard() {
                       <li>High traffic density areas</li>
                     </ul>
                   </div>
-
                   <div
                     className="p-3 rounded-3 mb-3"
                     style={{ background: "rgba(16, 185, 129, 0.1)" }}
@@ -845,7 +841,6 @@ export default function ChristmasDashboard() {
                       <li>Rural agricultural regions</li>
                     </ul>
                   </div>
-
                   <div
                     className="mt-3 p-3 rounded-3"
                     style={{
@@ -864,7 +859,6 @@ export default function ChristmasDashboard() {
                       for that province!
                     </p>
                   </div>
-
                   {/* Reload Button */}
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -887,12 +881,14 @@ export default function ChristmasDashboard() {
             <div className="col-12">
               <ProvinceComparison
                 locations={locations}
-                historyData={historyByLocation}
+                historyData={historyCache}
+                onLoadHistory={loadHistoryForLocation}
                 onClose={() => setShowComparison(false)}
               />
             </div>
           </div>
         )}
+
         {/* Floating Snowflakes */}
         {[...Array(20)].map((_, i) => (
           <Snowflake key={i} delay={i * 0.3} />
@@ -917,7 +913,6 @@ export default function ChristmasDashboard() {
             />
             {refreshing ? "Refreshing..." : "Refresh"}
           </motion.button>
-
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -929,7 +924,6 @@ export default function ChristmasDashboard() {
             <FaWind />
             {fetchingNew ? "Fetching..." : "Fetch New Data"}
           </motion.button>
-
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -949,14 +943,13 @@ export default function ChristmasDashboard() {
             onClick={() => {
               setShowHeatmap(!showHeatmap);
               if (!showHeatmap && allAqiData.size === 0) {
-                loadAllAqi(); // Load data when opening
+                loadAllAqi();
               }
             }}
             style={{ fontWeight: 600, borderRadius: 12 }}
           >
             {showHeatmap ? "🔥 Hide Heatmap" : "🔥 Show Heatmap"}
           </motion.button>
-
           {/* Comparison Toggle */}
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -1006,7 +999,6 @@ export default function ChristmasDashboard() {
           >
             🎄
           </motion.div>
-
           <div className="row align-items-center position-relative">
             <div className="col-lg-8">
               <div className="d-flex align-items-center gap-2 mb-2">
@@ -1061,7 +1053,6 @@ export default function ChristmasDashboard() {
               >
                 🎄
               </div>
-
               <div className="card-body p-5 text-center position-relative">
                 <motion.div
                   animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
@@ -1071,7 +1062,6 @@ export default function ChristmasDashboard() {
                 >
                   {status.emoji}
                 </motion.div>
-
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1085,14 +1075,12 @@ export default function ChristmasDashboard() {
                 >
                   {aqi || "---"}
                 </motion.div>
-
                 <div
                   className="h5 mb-3"
                   style={{ color: status.color, fontWeight: "bold" }}
                 >
                   {status.label}
                 </div>
-
                 {/* Trend Indicator */}
                 <div className="d-flex justify-content-center align-items-center gap-2 mb-4">
                   {trend === "up" && (
@@ -1120,7 +1108,6 @@ export default function ChristmasDashboard() {
                     </>
                   )}
                 </div>
-
                 <div className="row g-3 text-start">
                   <div className="col-6">
                     <div
@@ -1159,7 +1146,6 @@ export default function ChristmasDashboard() {
                     </div>
                   </div>
                 </div>
-
                 <div
                   className="mt-4 pt-4 border-top"
                   style={{ borderColor: "#FFD700 !important" }}
@@ -1201,7 +1187,6 @@ export default function ChristmasDashboard() {
                     ⛄ Winter Conditions
                   </h5>
                 </div>
-
                 <div className="text-center mb-4">
                   <motion.div
                     animate={{ rotate: [0, 10, -10, 0] }}
@@ -1220,7 +1205,6 @@ export default function ChristmasDashboard() {
                     Perfect for building snowmen!
                   </div>
                 </div>
-
                 <div className="row g-3">
                   <div className="col-6">
                     <div
@@ -1694,7 +1678,6 @@ export default function ChristmasDashboard() {
                 <p className="mb-0 text-muted">Based on current AQI: {aqi}</p>
               </div>
             </div>
-
             <div className="row g-4">
               {aqi <= 50 && (
                 <div className="col-12">
@@ -1723,7 +1706,6 @@ export default function ChristmasDashboard() {
                   </div>
                 </div>
               )}
-
               {aqi > 50 && aqi <= 100 && (
                 <div className="col-12">
                   <div
@@ -1755,7 +1737,6 @@ export default function ChristmasDashboard() {
                   </div>
                 </div>
               )}
-
               {aqi > 100 && (
                 <div className="col-12">
                   <div
