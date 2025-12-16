@@ -1,8 +1,10 @@
-// src/pages/Forecast.tsx - CHRISTMAS 2025 EDITION
+// src/pages/Forecast.tsx - REAL-TIME FORECAST EDITION 🔮
 
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { motion } from "framer-motion";
+import { toast } from "react-toastify";
+import { FaSync, FaMagic } from "react-icons/fa";
 
 type Location = { id: number; name: string };
 type Forecast = {
@@ -132,6 +134,7 @@ export default function ChristmasForecast() {
   const [selected, setSelected] = useState<number | null>(null);
   const [forecasts, setForecasts] = useState<Forecast[]>([]);
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     loadLocations();
@@ -149,6 +152,7 @@ export default function ChristmasForecast() {
       if (res.data.length > 0) setSelected(res.data[0].id);
     } catch (err) {
       console.error(err);
+      toast.error("Failed to load locations");
     }
   };
 
@@ -159,8 +163,43 @@ export default function ChristmasForecast() {
       setForecasts(res.data || []);
     } catch (err) {
       console.error(err);
+      toast.error("Failed to load forecasts");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ NEW: Generate real-time forecast
+  const handleGenerateForecast = async () => {
+    if (!selected) {
+      toast.warning("Please select a location first");
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      toast.info("🔮 Generating AI forecast based on real-time data...");
+      
+      const res = await api.post(`/forecast/generate/${selected}`);
+      
+      console.log("✅ Forecast generated:", res.data);
+      
+      // Reload forecasts after generation
+      await loadForecasts();
+      
+      toast.success(`✅ Generated ${res.data.count || 0} forecast predictions!`);
+      
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error("❌ Failed to generate forecast:", err);
+      
+      if (err.response?.status === 404) {
+        toast.error("❌ No recent data available for this location. Try fetching fresh data first!");
+      } else {
+        toast.error("❌ Failed to generate forecast. Please try again.");
+      }
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -172,11 +211,46 @@ export default function ChristmasForecast() {
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
           <div className="d-flex align-items-center gap-3">
-            <motion.a href="/" whileHover={{ scale: 1.1, x: -5 }} whileTap={{ scale: 0.9 }} className="btn rounded-circle" style={{ width: 50, height: 50, background: "linear-gradient(135deg, #C41E3A, #165B33)", color: "white", border: "3px solid #FFD700", fontSize: "20px" }}>←</motion.a>
+            <motion.a 
+              href="/" 
+              whileHover={{ scale: 1.1, x: -5 }} 
+              whileTap={{ scale: 0.9 }} 
+              className="btn rounded-circle" 
+              style={{ width: 50, height: 50, background: "linear-gradient(135deg, #C41E3A, #165B33)", color: "white", border: "3px solid #FFD700", fontSize: "20px" }}
+            >
+              ←
+            </motion.a>
             <div>
               <h2 className="mb-1 fw-bold" style={{ color: "#C41E3A" }}>🔮 Christmas Air Quality Forecast</h2>
               <p className="text-muted mb-0">🎅 Santa's AI-powered predictions for the next 48 hours</p>
             </div>
+          </div>
+
+          {/* ✅ NEW: Action Buttons */}
+          <div className="d-flex gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="btn btn-outline-success d-flex align-items-center gap-2"
+              onClick={loadForecasts}
+              disabled={loading || !selected}
+              style={{ borderWidth: 2, fontWeight: 600, borderRadius: 12 }}
+            >
+              <FaSync className={loading ? "spinner-border spinner-border-sm" : ""} />
+              {loading ? "Loading..." : "Refresh"}
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="btn btn-primary d-flex align-items-center gap-2"
+              onClick={handleGenerateForecast}
+              disabled={generating || !selected}
+              style={{ fontWeight: 600, borderRadius: 12, background: "linear-gradient(135deg, #C41E3A, #165B33)", border: "none" }}
+            >
+              <FaMagic className={generating ? "spinner-border spinner-border-sm" : ""} />
+              {generating ? "Generating..." : "🔮 Generate Forecast"}
+            </motion.button>
           </div>
         </div>
 
@@ -185,7 +259,12 @@ export default function ChristmasForecast() {
           <div className="card-body p-3">
             <div className="d-flex align-items-center gap-3">
               <span style={{ fontSize: "24px" }}>📍</span>
-              <select className="form-select border-0" style={{ maxWidth: 300, borderRadius: 12, background: "linear-gradient(135deg, #FFFAFA, #E0F7FA)" }} value={selected ?? ""} onChange={(e) => setSelected(Number(e.target.value))}>
+              <select 
+                className="form-select border-0" 
+                style={{ maxWidth: 300, borderRadius: 12, background: "linear-gradient(135deg, #FFFAFA, #E0F7FA)" }} 
+                value={selected ?? ""} 
+                onChange={(e) => setSelected(Number(e.target.value))}
+              >
                 {locations.map((loc) => (
                   <option key={loc.id} value={loc.id}>🎄 {loc.name}</option>
                 ))}
@@ -198,17 +277,40 @@ export default function ChristmasForecast() {
       {/* Loading */}
       {loading && (
         <div className="text-center py-5">
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="d-inline-block mb-3" style={{ fontSize: "4rem" }}>🔮</motion.div>
+          <motion.div 
+            animate={{ rotate: 360 }} 
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }} 
+            className="d-inline-block mb-3" 
+            style={{ fontSize: "4rem" }}
+          >
+            🔮
+          </motion.div>
           <div style={{ color: "#C41E3A", fontWeight: "bold" }}>Loading forecast data...</div>
         </div>
       )}
 
       {/* Empty State */}
       {!loading && forecasts.length === 0 && (
-        <div className="text-center py-5">
-          <div style={{ fontSize: "5rem" }}>📊</div>
-          <h5 className="text-muted">No forecast data available</h5>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-5"
+        >
+          <div style={{ fontSize: "5rem" }} className="mb-3">📊</div>
+          <h5 className="text-muted mb-3">No forecast data available</h5>
+          <p className="text-muted mb-4">Generate AI-powered predictions based on real-time air quality data</p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="btn btn-lg btn-primary d-inline-flex align-items-center gap-2"
+            onClick={handleGenerateForecast}
+            disabled={generating || !selected}
+            style={{ fontWeight: 600, borderRadius: 12, background: "linear-gradient(135deg, #C41E3A, #165B33)", border: "none" }}
+          >
+            <FaMagic />
+            {generating ? "Generating..." : "🔮 Generate First Forecast"}
+          </motion.button>
+        </motion.div>
       )}
 
       {/* Forecast Cards */}
@@ -260,7 +362,12 @@ export default function ChristmasForecast() {
       )}
 
       {/* Footer */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-center mt-5 py-4">
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        transition={{ delay: 0.5 }} 
+        className="text-center mt-5 py-4"
+      >
         <h4 style={{ color: "#C41E3A", fontWeight: "bold" }}>🎅 Ho Ho Ho! Stay Informed! 🎄</h4>
         <p style={{ color: "#165B33" }}>May your holidays be merry and your air quality excellent! ❄️</p>
       </motion.div>
