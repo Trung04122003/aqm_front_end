@@ -1,8 +1,10 @@
-// src/pages/Reports.tsx - CHRISTMAS 2025 EDITION 🎄
+// src/pages/Reports.tsx - REAL-TIME REPORTS EDITION 📊
 
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-toastify";
+import { FaFileAlt, FaSync, FaDownload } from "react-icons/fa";
 
 type Location = { id: number; name: string };
 type Report = {
@@ -16,10 +18,10 @@ type Report = {
   avgAqi: number;
   maxAqi: number;
   minAqi: number;
-  goodDays: number; // ✅ NOW EXISTS IN BE
-  moderateDays: number; // ✅ NOW EXISTS IN BE
-  unhealthyDays: number; // ✅ NOW EXISTS IN BE
-  totalDataPoints: number; // ✅ NOW EXISTS IN BE
+  goodDays: number;
+  moderateDays: number;
+  unhealthyDays: number;
+  totalDataPoints: number;
   generatedAt?: string;
 };
 
@@ -68,6 +70,33 @@ const ChristmasStatCard = ({
   </motion.div>
 );
 
+// Snowflake component
+const Snowflake = ({ delay }: { delay: number }) => (
+  <motion.div
+    className="position-absolute"
+    style={{
+      left: `${Math.random() * 100}%`,
+      top: -20,
+      fontSize: "20px",
+      pointerEvents: "none",
+      zIndex: 1
+    }}
+    animate={{
+      y: ["0vh", "110vh"],
+      rotate: [0, 360],
+      opacity: [0, 1, 1, 0]
+    }}
+    transition={{
+      duration: 8 + Math.random() * 4,
+      delay,
+      repeat: Infinity,
+      ease: "linear"
+    }}
+  >
+    ❄️
+  </motion.div>
+);
+
 export default function Reports() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<number | null>(null);
@@ -75,6 +104,7 @@ export default function Reports() {
   const [toDate, setToDate] = useState("");
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -97,13 +127,15 @@ export default function Reports() {
       if (res.data.length > 0) setSelectedLocation(res.data[0].id);
     } catch (err) {
       console.error(err);
+      toast.error("Failed to load locations");
     }
   };
 
-  // ✅ FIXED: API Call
+  // ✅ Generate report from existing data
   const handleGenerate = async () => {
     if (!selectedLocation || !fromDate || !toDate) {
       setError("Please select all required fields");
+      toast.warning("Please fill all fields");
       return;
     }
 
@@ -115,46 +147,102 @@ export default function Reports() {
         `/reports?locationId=${selectedLocation}&from=${fromDate}&to=${toDate}`
       );
 
-      // ✅ Backend now returns complete ReportDto with all fields
       setReport(res.data);
-    } catch (err) {
+      toast.success("✅ Report generated successfully!");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
       console.error("Failed to generate report:", err);
-      setError("Failed to generate report");
+      
+      if (err.response?.status === 404) {
+        setError("No data available for selected period");
+        toast.error("❌ No data found for this period");
+      } else {
+        setError("Failed to generate report");
+        toast.error("❌ Failed to generate report");
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ NEW: Generate real-time report (fetch fresh data first)
+  const handleGenerateRealtime = async () => {
+    if (!selectedLocation || !fromDate || !toDate) {
+      setError("Please select all required fields");
+      toast.warning("Please fill all fields");
+      return;
+    }
+
+    setGenerating(true);
+    setError(null);
+
+    try {
+      toast.info("🔄 Fetching fresh real-time data...");
+
+      // Step 1: Fetch fresh data from OpenWeatherMap
+      await api.post(`/aqi/fetch/${selectedLocation}`);
+      
+      // Wait a bit for data to be processed
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Step 2: Generate report from fresh data
+      toast.info("📊 Generating report from real-time data...");
+      
+      const res = await api.get<Report>(
+        `/reports?locationId=${selectedLocation}&from=${fromDate}&to=${toDate}`
+      );
+
+      setReport(res.data);
+      toast.success("✅ Real-time report generated successfully!");
+      
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error("Failed to generate real-time report:", err);
+      
+      if (err.response?.status === 404) {
+        setError("No data available. Try generating with current data.");
+        toast.error("❌ No data found. Try regular generate first.");
+      } else {
+        setError("Failed to generate real-time report");
+        toast.error("❌ Failed to generate real-time report");
+      }
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // ✅ NEW: Download report as PDF (if backend supports)
+  const handleDownloadPDF = async () => {
+    if (!report?.id) {
+      toast.warning("No report to download");
+      return;
+    }
+
+    try {
+      toast.info("📥 Downloading PDF...");
+      
+      const res = await api.get(`/admin/reports/${report.id}/download`, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `report_${report.locationName}_${report.id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success("✅ PDF downloaded!");
+    } catch (err) {
+      console.error("Failed to download PDF:", err);
+      toast.error("❌ Failed to download PDF");
     }
   };
 
   const totalDays = report
     ? report.goodDays + report.moderateDays + report.unhealthyDays
     : 0;
-
-  // Snowflake component
-  const Snowflake = ({ delay }: { delay: number }) => (
-    <motion.div
-      className="position-absolute"
-      style={{
-        left: `${Math.random() * 100}%`,
-        top: -20,
-        fontSize: "20px",
-        pointerEvents: "none",
-        zIndex: 1
-      }}
-      animate={{
-        y: ["0vh", "110vh"],
-        rotate: [0, 360],
-        opacity: [0, 1, 1, 0]
-      }}
-      transition={{
-        duration: 8 + Math.random() * 4,
-        delay,
-        repeat: Infinity,
-        ease: "linear"
-      }}
-    >
-      ❄️
-    </motion.div>
-  );
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #E0F7FA 0%, #B3E5FC 50%, #FFFAFA 100%)", padding: "2rem", position: "relative", overflow: "hidden" }}>
@@ -197,6 +285,20 @@ export default function Reports() {
               </p>
             </div>
           </div>
+
+          {/* ✅ NEW: Download Button (only show if report exists) */}
+          {report && report.id && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="btn btn-success d-flex align-items-center gap-2"
+              onClick={handleDownloadPDF}
+              style={{ borderRadius: 12, fontWeight: 600 }}
+            >
+              <FaDownload />
+              Download PDF
+            </motion.button>
+          )}
         </div>
 
         {/* Report Generator Form */}
@@ -221,7 +323,7 @@ export default function Reports() {
                 </select>
               </div>
 
-              <div className="col-md-3">
+              <div className="col-md-2">
                 <label className="form-label small fw-semibold text-muted">
                   📅 From Date
                 </label>
@@ -234,7 +336,7 @@ export default function Reports() {
                 />
               </div>
 
-              <div className="col-md-3">
+              <div className="col-md-2">
                 <label className="form-label small fw-semibold text-muted">
                   📅 To Date
                 </label>
@@ -247,28 +349,72 @@ export default function Reports() {
                 />
               </div>
 
-              <div className="col-md-3">
+              {/* ✅ Regular Generate Button */}
+              <div className="col-md-2">
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="btn btn-primary w-100"
+                  className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
                   style={{ 
                     borderRadius: 12, 
                     padding: "12px",
                     background: "linear-gradient(135deg, #C41E3A, #165B33)",
                     border: "none",
-                    color: "white"
+                    color: "white",
+                    fontWeight: 600
                   }}
                   onClick={handleGenerate}
-                  disabled={loading}
+                  disabled={loading || generating}
                 >
                   {loading ? (
-                    <span>⏳ Generating...</span>
+                    <>
+                      <FaSync className="spinner-border spinner-border-sm" />
+                      <span>Loading...</span>
+                    </>
                   ) : (
-                    <span>🔍 Generate Report 🎁</span>
+                    <>
+                      <FaFileAlt />
+                      <span>Generate</span>
+                    </>
                   )}
                 </motion.button>
               </div>
+
+              {/* ✅ NEW: Real-time Generate Button */}
+              <div className="col-md-3">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2"
+                  style={{ 
+                    borderRadius: 12, 
+                    padding: "12px",
+                    fontWeight: 600
+                  }}
+                  onClick={handleGenerateRealtime}
+                  disabled={loading || generating}
+                >
+                  {generating ? (
+                    <>
+                      <FaSync className="spinner-border spinner-border-sm" />
+                      <span>Fetching...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaSync />
+                      <span>🔄 Real-time Report</span>
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </div>
+
+            {/* ✅ NEW: Help text */}
+            <div className="mt-3 p-2 rounded" style={{ background: "rgba(255, 215, 0, 0.1)" }}>
+              <small className="text-muted">
+                💡 <strong>Tip:</strong> Use <strong>"Generate"</strong> for historical data, 
+                or <strong>"Real-time Report"</strong> to fetch fresh data first before generating.
+              </small>
             </div>
           </div>
         </div>
@@ -296,7 +442,7 @@ export default function Reports() {
       </AnimatePresence>
 
       {/* Loading State */}
-      {loading && (
+      {(loading || generating) && (
         <div className="text-center py-5">
           <motion.div
             animate={{ rotate: 360, scale: [1, 1.2, 1] }}
@@ -304,16 +450,16 @@ export default function Reports() {
             className="d-inline-block mb-3"
             style={{ fontSize: "4rem" }}
           >
-            🎅
+            {generating ? "🔄" : "🎅"}
           </motion.div>
           <div style={{ color: "#C41E3A", fontSize: "1.2rem", fontWeight: "bold" }}>
-            Santa is generating your report...
+            {generating ? "Fetching fresh data and generating report..." : "Santa is generating your report..."}
           </div>
         </div>
       )}
 
       {/* Report Display */}
-      {!loading && report && (
+      {!loading && !generating && report && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -339,6 +485,12 @@ export default function Reports() {
                 </span>
                 <span>•</span>
                 <span>📊 {report.totalDataPoints} data points</span>
+                {report.generatedAt && (
+                  <>
+                    <span>•</span>
+                    <span>🕐 Generated: {new Date(report.generatedAt).toLocaleString()}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -411,8 +563,7 @@ export default function Reports() {
                       😊 Good 🎅
                     </div>
                     <div className="text-muted small">
-                      {((report.goodDays / totalDays) * 100).toFixed(0)}% of
-                      period
+                      {totalDays > 0 ? ((report.goodDays / totalDays) * 100).toFixed(0) : 0}% of period
                     </div>
                   </div>
                 </div>
@@ -440,8 +591,7 @@ export default function Reports() {
                       😐 Moderate ⛄
                     </div>
                     <div className="text-muted small">
-                      {((report.moderateDays / totalDays) * 100).toFixed(0)}% of
-                      period
+                      {totalDays > 0 ? ((report.moderateDays / totalDays) * 100).toFixed(0) : 0}% of period
                     </div>
                   </div>
                 </div>
@@ -469,39 +619,40 @@ export default function Reports() {
                       😷 Unhealthy 🦌
                     </div>
                     <div className="text-muted small">
-                      {((report.unhealthyDays / totalDays) * 100).toFixed(0)}%
-                      of period
+                      {totalDays > 0 ? ((report.unhealthyDays / totalDays) * 100).toFixed(0) : 0}% of period
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Progress Bar */}
-              <div className="mt-4">
-                <div
-                  className="d-flex"
-                  style={{ height: 24, borderRadius: 12, overflow: "hidden", border: "2px solid #FFD700" }}
-                >
+              {totalDays > 0 && (
+                <div className="mt-4">
                   <div
-                    style={{
-                      width: `${(report.goodDays / totalDays) * 100}%`,
-                      background: "#10b981",
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: `${(report.moderateDays / totalDays) * 100}%`,
-                      background: "#f59e0b",
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: `${(report.unhealthyDays / totalDays) * 100}%`,
-                      background: "#ef4444",
-                    }}
-                  />
+                    className="d-flex"
+                    style={{ height: 24, borderRadius: 12, overflow: "hidden", border: "2px solid #FFD700" }}
+                  >
+                    <div
+                      style={{
+                        width: `${(report.goodDays / totalDays) * 100}%`,
+                        background: "#10b981",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: `${(report.moderateDays / totalDays) * 100}%`,
+                        background: "#f59e0b",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: `${(report.unhealthyDays / totalDays) * 100}%`,
+                        background: "#ef4444",
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -539,7 +690,7 @@ export default function Reports() {
       )}
 
       {/* Empty State */}
-      {!loading && !report && (
+      {!loading && !generating && !report && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -557,8 +708,11 @@ export default function Reports() {
           <h5 className="mb-2" style={{ color: "#165B33", fontWeight: "bold" }}>
             No Report Generated Yet 🎄
           </h5>
-          <p className="text-muted">
+          <p className="text-muted mb-3">
             Select a location and date range, then click "Generate Report" ❄️
+          </p>
+          <p className="text-muted small">
+            💡 Use <strong>"Real-time Report"</strong> to fetch the latest data before generating
           </p>
         </motion.div>
       )}
