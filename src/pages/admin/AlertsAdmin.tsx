@@ -1,7 +1,14 @@
 // src/pages/admin/AlertsAdmin.tsx - ALERT COMMAND CENTER: NOEL RED ALERT EDITION
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaTrash, FaSearch, FaBell, FaExclamationTriangle, FaMoon, FaSun } from "react-icons/fa";
+import {
+  FaTrash,
+  FaSearch,
+  FaBell,
+  FaExclamationTriangle,
+  FaMoon,
+  FaSun,
+} from "react-icons/fa";
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
@@ -49,7 +56,13 @@ const Snowflake = ({ delay, size = 18 }: { delay: number; size?: number }) => (
 );
 
 // 🎄 Christmas Particles (Alerts-themed: Bells, Gifts, Alarms)
-const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) => (
+const ChristmasParticle = ({
+  delay,
+  emoji,
+}: {
+  delay: number;
+  emoji: string;
+}) => (
   <motion.div
     className="position-absolute"
     style={{
@@ -129,7 +142,9 @@ export default function AlertsAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "read" | "unread">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sparkles, setSparkles] = useState<Array<{ x: number; y: number; id: number }>>([]);
+  const [sparkles, setSparkles] = useState<
+    Array<{ x: number; y: number; id: number }>
+  >([]);
 
   useEffect(() => {
     loadAlerts();
@@ -139,22 +154,84 @@ export default function AlertsAdmin() {
     setLoading(true);
     setError(null);
     try {
+      console.log("📡 Loading alerts...");
+
       const res = await api.get("/admin/alerts");
-      const data = Array.isArray(res.data) ? res.data : [];
-      setAlerts(data);
-      if (data.length === 0) {
+      console.log("📊 Response:", res.data);
+
+      // ✅ Validate response
+      if (!res.data) {
+        console.warn("⚠️ No data in response");
+        setAlerts([]);
         toast.info("No alerts available");
+        return;
       }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+      const data = Array.isArray(res.data) ? res.data : [];
+
+      // ✅ Validate each alert has required fields
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const validAlerts = data.filter((alert: any) => {
+        if (!alert.user || !alert.location) {
+          console.warn("⚠️ Invalid alert format:", alert);
+          return false;
+        }
+        return true;
+      });
+
+      console.log(`✅ Loaded ${validAlerts.length} valid alerts`);
+      setAlerts(validAlerts);
+
+      if (validAlerts.length === 0) {
+        toast.info("No alerts available");
+      } else {
+        toast.success(`Loaded ${validAlerts.length} alerts`);
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      console.error(err);
-      const msg = err?.response?.data?.message || "Failed to load alerts";
+      console.error("❌ Failed to load alerts:", err);
+      const msg =
+        err?.response?.data?.message || err?.message || "Failed to load alerts";
       setError(msg);
       toast.error(msg);
+      setAlerts([]);
     } finally {
       setLoading(false);
     }
   };
+
+  // ✅ NEW: Type guard for safe filtering
+  const filteredAlerts = useMemo(() => {
+    if (!Array.isArray(alerts)) {
+      console.warn("⚠️ Alerts is not an array:", alerts);
+      return [];
+    }
+
+    return alerts
+      .filter((a) => {
+        // ✅ Safety checks
+        if (!a || !a.user || !a.location) {
+          console.warn("⚠️ Skipping invalid alert:", a);
+          return false;
+        }
+
+        // Filter by read status
+        if (filter === "read") return a.isRead;
+        if (filter === "unread") return !a.isRead;
+        return true;
+      })
+      .filter((a) => {
+        if (!searchQuery) return true;
+
+        const query = searchQuery.toLowerCase();
+        return (
+          a.user?.username?.toLowerCase().includes(query) ||
+          a.location?.name?.toLowerCase().includes(query) ||
+          a.pollutant?.toLowerCase().includes(query)
+        );
+      });
+  }, [alerts, filter, searchQuery]);
 
   const handleDelete = async (id: number, e: React.MouseEvent) => {
     if (!confirm("Delete this alert?")) return;
@@ -194,22 +271,6 @@ export default function AlertsAdmin() {
     setTheme((prev) => (prev === "dark" ? "xmas" : "dark"));
   };
 
-  const filteredAlerts = useMemo(() => {
-    if (!Array.isArray(alerts)) return [];
-    return alerts
-      .filter((a) => {
-        if (filter === "read") return a.isRead;
-        if (filter === "unread") return !a.isRead;
-        return true;
-      })
-      .filter(
-        (a) =>
-          a.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          a.location.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          a.pollutant.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-  }, [alerts, filter, searchQuery]);
-
   // 🎄 Enhanced Severity with Christmas Icons
   const getSeverity = (value: number) => {
     if (value >= 150)
@@ -245,7 +306,10 @@ export default function AlertsAdmin() {
   const getCardColor = (base: string) =>
     theme === "dark" ? `${base}` : "#FFD700";
 
-  const glow = theme === "xmas" ? "0 0 25px rgba(255,215,0,0.5)" : "0 0 15px rgba(103,232,249,0.2)";
+  const glow =
+    theme === "xmas"
+      ? "0 0 25px rgba(255,215,0,0.5)"
+      : "0 0 15px rgba(103,232,249,0.2)";
 
   return (
     <AdminLayout>
@@ -259,7 +323,11 @@ export default function AlertsAdmin() {
       >
         {/* Enhanced Snowfall */}
         {[...Array(35)].map((_, i) => (
-          <Snowflake key={`snow-${i}`} delay={i * 0.2} size={12 + Math.random() * 12} />
+          <Snowflake
+            key={`snow-${i}`}
+            delay={i * 0.2}
+            size={12 + Math.random() * 12}
+          />
         ))}
 
         {/* Christmas Particles (only in xmas mode) */}
@@ -289,7 +357,10 @@ export default function AlertsAdmin() {
           ))}
         </AnimatePresence>
 
-        <div className="container-fluid p-4 position-relative" style={{ zIndex: 2 }}>
+        <div
+          className="container-fluid p-4 position-relative"
+          style={{ zIndex: 2 }}
+        >
           {/* HEADER with Enhanced Theme Toggle */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -325,10 +396,12 @@ export default function AlertsAdmin() {
                   color: theme === "xmas" ? "#FFD700" : "#ffffff",
                 }}
               >
-                {theme === "xmas" ? "🎅 Santa's Red Alert Command Center 🚨" : "Alert Command Center 🚨"}
+                {theme === "xmas"
+                  ? "🎅 Santa's Red Alert Command Center 🚨"
+                  : "Alert Command Center 🚨"}
               </motion.h2>
               <p className="text-light text-opacity-75 mb-0">
-                {theme === "xmas" 
+                {theme === "xmas"
                   ? "Monitoring Naughty Air Quality Violations from the North Pole ❄️"
                   : "Centralized alert monitoring & management"}
               </p>
@@ -357,9 +430,15 @@ export default function AlertsAdmin() {
                 animate={{ rotate: theme === "xmas" ? 360 : 0 }}
                 transition={{ duration: 0.6 }}
               >
-                {theme === "dark" ? <FaBell size={22} /> : <FaExclamationTriangle size={22} />}
+                {theme === "dark" ? (
+                  <FaBell size={22} />
+                ) : (
+                  <FaExclamationTriangle size={22} />
+                )}
               </motion.div>
-              <span>{theme === "dark" ? "Noel Red Alert Mode" : "Dark Mode"}</span>
+              <span>
+                {theme === "dark" ? "Noel Red Alert Mode" : "Dark Mode"}
+              </span>
               <motion.div
                 animate={{ rotate: theme === "xmas" ? 0 : 360 }}
                 transition={{ duration: 0.6 }}
@@ -374,25 +453,31 @@ export default function AlertsAdmin() {
             {[
               {
                 label: "Total Alerts",
-                value: alerts.length,
+                value: Array.isArray(alerts) ? alerts.length : 0,
                 color: "#ef4444",
                 icon: "🚨",
               },
               {
                 label: "Unread",
-                value: alerts.filter((a) => !a.isRead).length,
+                value: Array.isArray(alerts)
+                  ? alerts.filter((a) => !a.isRead).length
+                  : 0,
                 color: "#f59e0b",
                 icon: "🔔",
               },
               {
                 label: "Critical",
-                value: alerts.filter((a) => a.value >= 150).length,
+                value: Array.isArray(alerts)
+                  ? alerts.filter((a) => a.value >= 150).length
+                  : 0,
                 color: "#dc2626",
                 icon: "🔥",
               },
               {
                 label: "Resolved",
-                value: alerts.filter((a) => a.isRead).length,
+                value: Array.isArray(alerts)
+                  ? alerts.filter((a) => a.isRead).length
+                  : 0,
                 color: "#10b981",
                 icon: "✅",
               },
@@ -481,9 +566,24 @@ export default function AlertsAdmin() {
                 </div>
                 <div className="col-12 col-md-6 d-flex justify-content-end gap-2 flex-wrap">
                   {[
-                    { value: "all", label: "All", color: "#0ea5e9", icon: "📋" },
-                    { value: "unread", label: "Unread", color: "#ef4444", icon: "🔔" },
-                    { value: "read", label: "Read", color: "#10b981", icon: "✅" },
+                    {
+                      value: "all",
+                      label: "All",
+                      color: "#0ea5e9",
+                      icon: "📋",
+                    },
+                    {
+                      value: "unread",
+                      label: "Unread",
+                      color: "#ef4444",
+                      icon: "🔔",
+                    },
+                    {
+                      value: "read",
+                      label: "Read",
+                      color: "#10b981",
+                      icon: "✅",
+                    },
                   ].map((btn) => (
                     <motion.button
                       key={btn.value}
@@ -576,7 +676,12 @@ export default function AlertsAdmin() {
                   {loading ? (
                     <tr>
                       <td colSpan={8} className="text-center py-5">
-                        <div className="spinner-border" style={{color: theme === "xmas" ? "#FFD700" : "#67e8f9"}} />
+                        <div
+                          className="spinner-border"
+                          style={{
+                            color: theme === "xmas" ? "#FFD700" : "#67e8f9",
+                          }}
+                        />
                       </td>
                     </tr>
                   ) : filteredAlerts.length === 0 ? (
@@ -611,7 +716,10 @@ export default function AlertsAdmin() {
                             <span
                               className="badge px-2 py-1"
                               style={{
-                                background: theme === "xmas" ? "rgba(255,215,0,0.2)" : "rgba(14,165,233,0.2)",
+                                background:
+                                  theme === "xmas"
+                                    ? "rgba(255,215,0,0.2)"
+                                    : "rgba(14,165,233,0.2)",
                                 color: theme === "xmas" ? "#FFD700" : "#0ea5e9",
                                 fontWeight: 600,
                               }}
@@ -626,7 +734,10 @@ export default function AlertsAdmin() {
                                 style={{
                                   width: 32,
                                   height: 32,
-                                  background: theme === "xmas" ? "rgba(255,215,0,0.3)" : "rgba(14,165,233,0.3)",
+                                  background:
+                                    theme === "xmas"
+                                      ? "rgba(255,215,0,0.3)"
+                                      : "rgba(14,165,233,0.3)",
                                   fontSize: "14px",
                                 }}
                               >
@@ -647,7 +758,10 @@ export default function AlertsAdmin() {
                             <span
                               className="badge px-3 py-1"
                               style={{
-                                background: theme === "xmas" ? "rgba(251,191,36,0.2)" : "rgba(14,165,233,0.2)",
+                                background:
+                                  theme === "xmas"
+                                    ? "rgba(251,191,36,0.2)"
+                                    : "rgba(14,165,233,0.2)",
                                 color: theme === "xmas" ? "#fbbf24" : "#0ea5e9",
                                 borderRadius: 8,
                                 fontWeight: 600,
@@ -680,7 +794,7 @@ export default function AlertsAdmin() {
                               <span>{severity.label}</span>
                             </motion.div>
                           </td>
-                          <td className="py-3 text-light opacity-75">
+                          <td className="py-3 text-black opacity-75">
                             {new Date(alert.triggeredAt).toLocaleString(
                               "vi-VN"
                             )}
