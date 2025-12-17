@@ -24,6 +24,7 @@ import {
   FaCity,
   FaWifi,
   FaExclamationCircle,
+  FaSync,
 } from "react-icons/fa";
 import api from "../../api/axios";
 import AdminLayout from "../../layouts/AdminLayout";
@@ -120,7 +121,13 @@ const Snowflake = ({ delay, size = 18 }: { delay: number; size?: number }) => (
 );
 
 // 🎄 Christmas Particle
-const ChristmasParticle = ({ delay, emoji }: { delay: number; emoji: string }) => (
+const ChristmasParticle = ({
+  delay,
+  emoji,
+}: {
+  delay: number;
+  emoji: string;
+}) => (
   <motion.div
     className="position-absolute"
     style={{
@@ -180,11 +187,18 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sparkles, setSparkles] = useState<Array<{ x: number; y: number; id: number }>>([]);
+  const [sparkles, setSparkles] = useState<
+    Array<{ x: number; y: number; id: number }>
+  >([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [chartData, setChartData] = useState<any>(null);
   const [recentActivity, setRecentActivity] = useState<ActivityLog[]>([]);
-  const [supportStats, setSupportStats] = useState<SupportStat>({ total: 0, pending: 0, inProgress: 0, resolved: 0 });
+  const [supportStats, setSupportStats] = useState<SupportStat>({
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    resolved: 0,
+  });
   const [locationsAQI, setLocationsAQI] = useState<LocationAQI[]>([]);
   const [systemMetrics, setSystemMetrics] = useState({
     uptime: "0h 0m",
@@ -194,16 +208,30 @@ export default function AdminDashboard() {
   });
   const [userGrowth, setUserGrowth] = useState<number[]>([]);
   const [alertTrend, setAlertTrend] = useState<number[]>([]);
+  const [realtimeMode, setRealtimeMode] = useState(false);
+  const [lastDataFetch, setLastDataFetch] = useState<Date | null>(null);
 
   // Load all dashboard data
   useEffect(() => {
     loadDashboardData();
-    
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(loadDashboardData, 30000);
+
+    // Auto-refresh interval
+    const interval = setInterval(
+      () => {
+        if (realtimeMode) {
+          console.log("🔄 Real-time mode: Fetching fresh data...");
+          fetchRealtimeAQI(); // This will trigger loadDashboardData after
+        } else {
+          console.log("🔄 Normal mode: Reloading from DB...");
+          loadDashboardData();
+        }
+      },
+      realtimeMode ? 60000 : 30000
+    ); // 60s for real-time, 30s for normal
+
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realtimeMode]);
 
   const loadDashboardData = async () => {
     try {
@@ -211,12 +239,15 @@ export default function AdminDashboard() {
       setError(null);
 
       // Fetch all stats in parallel
-      const [statsRes, logsRes, supportRes, locationsRes] = await Promise.allSettled([
-        api.get("/admin/stats"),
-        api.get("/admin/logs"),
-        api.get("/admin/support/count"),
-        api.get("/locations"),
-      ]);
+      const [statsRes, logsRes, supportRes, locationsRes, alertsRes, usersRes] =
+        await Promise.allSettled([
+          api.get("/admin/stats"),
+          api.get("/admin/logs"),
+          api.get("/admin/support/count"),
+          api.get("/locations"),
+          api.get("/admin/alerts"), // ✅ ADD: Get real alerts
+          api.get("/admin/users"), // ✅ ADD: Get real users
+        ]);
 
       // Handle stats
       if (statsRes.status === "fulfilled") {
@@ -235,10 +266,6 @@ export default function AdminDashboard() {
         const logs = logsRes.value.data;
         setRecentActivity(formatActivityLogs(logs.slice(0, 8)));
         setChartData(generateChartFromLogs(logs));
-        
-        // Generate mock trends (in production, get from backend)
-        setAlertTrend(generateTrendData(7));
-        setUserGrowth(generateGrowthData(7));
       }
 
       // Handle support stats
@@ -249,7 +276,25 @@ export default function AdminDashboard() {
       // Handle locations and fetch AQI
       if (locationsRes.status === "fulfilled") {
         const locations = locationsRes.value.data;
-        await loadLocationsAQI(locations);
+        await loadLocationsAQI(locations, realtimeMode);
+      }
+
+      if (alertsRes.status === "fulfilled") {
+        const alertsData = alertsRes.value.data;
+        console.log("📊 Alerts data:", alertsData); // Debug log
+        setAlertTrend(generateTrendData(alertsData));
+      } else {
+        console.warn("⚠️ Failed to fetch alerts, using mock data");
+        setAlertTrend(generateTrendData([]));
+      }
+
+      if (usersRes.status === "fulfilled") {
+        const usersData = usersRes.value.data;
+        console.log("👥 Users data:", usersData); // Debug log
+        setUserGrowth(generateGrowthData(usersData));
+      } else {
+        console.warn("⚠️ Failed to fetch users, using mock data");
+        setUserGrowth(generateGrowthData([]));
       }
 
       // Update system metrics
@@ -260,10 +305,12 @@ export default function AdminDashboard() {
         lastFetch: new Date(),
       });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("Failed to load dashboard data:", err);
       setError(err.response?.data?.message || "Failed to load dashboard data");
+      setAlertTrend(generateTrendData([]));
+      setUserGrowth(generateGrowthData([]));
     } finally {
       setLoading(false);
     }
@@ -271,12 +318,31 @@ export default function AdminDashboard() {
 
   // Load AQI for all locations
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const loadLocationsAQI = async (locations: any[]) => {
+  const loadLocationsAQI = async (locations: any[], forceRefresh = false) => {
     try {
+      console.log(
+        `📍 Loading AQI for ${locations.length} locations... ${forceRefresh ? "(Real-time)" : "(Cached)"}`
+      );
+
       const aqiPromises = locations.map(async (loc) => {
         try {
+          // ✅ NEW: If real-time mode, fetch fresh data first
+          if (forceRefresh && realtimeMode) {
+            try {
+              await api.post(`/aqi/fetch/${loc.id}`);
+              console.log(`✅ Fresh data fetched for ${loc.name}`);
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (fetchErr) {
+              console.warn(
+                `⚠️ Could not fetch fresh data for ${loc.name}, using cached`
+              );
+            }
+          }
+
+          // Get latest AQI from database
           const res = await api.get(`/admin/aqi/latest/${loc.id}`);
           const aqi = res.data?.aqi || 0;
+
           return {
             id: loc.id,
             name: loc.name,
@@ -295,14 +361,18 @@ export default function AdminDashboard() {
 
       const results = await Promise.all(aqiPromises);
       setLocationsAQI(results);
+
+      console.log(`✅ Loaded AQI for ${results.length} locations`);
     } catch (err) {
-      console.error("Failed to load locations AQI:", err);
+      console.error("❌ Failed to load locations AQI:", err);
     }
   };
 
   // Helper functions
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const determineSystemHealth = (data: any): "good" | "warning" | "critical" => {
+  const determineSystemHealth = (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: any
+  ): "good" | "warning" | "critical" => {
     if (data.totalAlerts > 100) return "critical";
     if (data.totalAlerts > 50) return "warning";
     return "good";
@@ -319,24 +389,45 @@ export default function AdminDashboard() {
     }));
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-  const generateChartFromLogs = (_logs: any[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const generateChartFromLogs = (logs: any) => {
     const last7Days = [...Array(7)].map((_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (6 - i));
-      return date.toLocaleDateString('en-US', { weekday: 'short' });
+      return {
+        label: date.toLocaleDateString("en-US", { weekday: "short" }),
+        date: date.toDateString(),
+      };
     });
 
-    const counts = last7Days.map(() => Math.floor(Math.random() * 30) + 10);
+    // ✅ FIX: Ensure logs is an array
+    const logsArray = Array.isArray(logs) ? logs : [];
+
+    // Count real logs per day
+    const counts = last7Days.map((day) => {
+      if (logsArray.length === 0) {
+        return Math.floor(Math.random() * 30) + 10; // Fallback to random
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return logsArray.filter((log: any) => {
+        if (!log.timestamp) return false;
+        const logDate = new Date(log.timestamp).toDateString();
+        return logDate === day.date;
+      }).length;
+    });
 
     return {
-      labels: last7Days,
+      labels: last7Days.map((d) => d.label),
       datasets: [
         {
           label: "System Activity 🎄",
           data: counts,
           borderColor: theme === "xmas" ? "#FFD700" : "#67e8f9",
-          backgroundColor: theme === "xmas" ? "rgba(255, 215, 0, 0.2)" : "rgba(103, 232, 249, 0.15)",
+          backgroundColor:
+            theme === "xmas"
+              ? "rgba(255, 215, 0, 0.2)"
+              : "rgba(103, 232, 249, 0.15)",
           tension: 0.4,
           borderWidth: 3,
           pointRadius: 5,
@@ -347,12 +438,54 @@ export default function AdminDashboard() {
     };
   };
 
-  const generateTrendData = (days: number) => {
-    return [...Array(days)].map(() => Math.floor(Math.random() * 50) + 20);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const generateTrendData = (alertsData: any) => {
+    const last7Days = [...Array(7)].map((_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return date.toDateString();
+    });
+
+    // ✅ FIX: Ensure alerts is an array
+    const alerts = Array.isArray(alertsData) ? alertsData : [];
+
+    if (alerts.length === 0) {
+      // Return mock data if no real data
+      return last7Days.map(() => Math.floor(Math.random() * 50) + 20);
+    }
+
+    return last7Days.map((day) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return alerts.filter((alert: any) => {
+        if (!alert.triggeredAt) return false;
+        return new Date(alert.triggeredAt).toDateString() === day;
+      }).length;
+    });
   };
 
-  const generateGrowthData = (days: number) => {
-    return [...Array(days)].map((_, i) => i * 5 + Math.floor(Math.random() * 10));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const generateGrowthData = (usersData: any) => {
+    const last7Days = [...Array(7)].map((_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return date.toDateString();
+    });
+
+    // ✅ FIX: Ensure users is an array
+    const users = Array.isArray(usersData) ? usersData : [];
+
+    if (users.length === 0) {
+      // Return mock data if no real data
+      return last7Days.map((_, i) => i * 5 + Math.floor(Math.random() * 10));
+    }
+
+    return last7Days.map((day) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return users.filter((user: any) => {
+        if (!user.createdAt) return false;
+        return new Date(user.createdAt).toDateString() === day;
+      }).length;
+    });
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -361,11 +494,12 @@ export default function AdminDashboard() {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return "Just now";
     if (diffMins < 60) return `${diffMins} min ago`;
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
     return date.toLocaleDateString();
   };
 
@@ -406,6 +540,56 @@ export default function AdminDashboard() {
     return `${hours}h ${mins}m`;
   };
 
+  const fetchRealtimeAQI = async () => {
+    try {
+      console.log("🔄 Starting real-time AQI fetch for all locations...");
+
+      const locationsRes = await api.get("/locations");
+      const locations = locationsRes.data || [];
+
+      console.log(
+        `📡 Fetching fresh data for ${locations.length} locations...`
+      );
+
+      // Fetch in batches of 5 to avoid overwhelming the API
+      const batchSize = 5;
+      for (let i = 0; i < locations.length; i += batchSize) {
+        const batch = locations.slice(i, i + batchSize);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fetchPromises = batch.map((loc: any) =>
+          api
+            .post(`/aqi/fetch/${loc.id}`)
+            .then(() => {
+              console.log(`✅ Fetched: ${loc.name}`);
+              return true;
+            })
+            .catch((err) => {
+              console.warn(`⚠️ Failed: ${loc.name}`, err.message);
+              return false;
+            })
+        );
+
+        await Promise.allSettled(fetchPromises);
+
+        // Small delay between batches
+        if (i + batchSize < locations.length) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+
+      setLastDataFetch(new Date());
+      console.log("✅ All locations fetched, reloading dashboard...");
+
+      // Wait a bit for data to be processed, then reload
+      setTimeout(() => {
+        loadDashboardData();
+      }, 3000);
+    } catch (err) {
+      console.error("❌ Failed to fetch real-time data:", err);
+    }
+  };
+
   // Theme toggle
   const handleThemeToggle = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -423,12 +607,16 @@ export default function AdminDashboard() {
     setTheme((prev) => (prev === "dark" ? "xmas" : "dark"));
   };
 
-  const backgroundStyle = theme === "dark"
-    ? "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)"
-    : "linear-gradient(180deg, #1a0f00 0%, #4b2600 100%)";
+  const backgroundStyle =
+    theme === "dark"
+      ? "linear-gradient(180deg, #0a1929 0%, #1a2332 100%)"
+      : "linear-gradient(180deg, #1a0f00 0%, #4b2600 100%)";
 
-  const getCardColor = (base: string) => theme === "dark" ? base : "#FFD700";
-  const glow = theme === "xmas" ? "0 0 25px rgba(255,215,0,0.5)" : "0 0 15px rgba(103,232,249,0.2)";
+  const getCardColor = (base: string) => (theme === "dark" ? base : "#FFD700");
+  const glow =
+    theme === "xmas"
+      ? "0 0 25px rgba(255,215,0,0.5)"
+      : "0 0 15px rgba(103,232,249,0.2)";
 
   // Stat Card Component
   const StatCard = ({
@@ -456,9 +644,10 @@ export default function AdminDashboard() {
         style={{
           borderRadius: 18,
           boxShadow: glow,
-          background: theme === "dark"
-            ? `linear-gradient(135deg, ${color}22, ${color}08)`
-            : `linear-gradient(135deg, ${themedColor}33, ${themedColor}11)`,
+          background:
+            theme === "dark"
+              ? `linear-gradient(135deg, ${color}22, ${color}08)`
+              : `linear-gradient(135deg, ${themedColor}33, ${themedColor}11)`,
         }}
       >
         {theme === "xmas" && (
@@ -466,7 +655,8 @@ export default function AdminDashboard() {
             className="position-absolute top-0 start-0 w-100"
             style={{
               height: 4,
-              background: "repeating-linear-gradient(90deg, #C41E3A 0px, #C41E3A 10px, #fff 10px, #fff 20px)",
+              background:
+                "repeating-linear-gradient(90deg, #C41E3A 0px, #C41E3A 10px, #fff 10px, #fff 20px)",
             }}
           />
         )}
@@ -494,7 +684,11 @@ export default function AdminDashboard() {
                 transition={{ duration: 1.5, repeat: Infinity }}
                 style={{ color: trend === "up" ? "#10b981" : "#ef4444" }}
               >
-                {trend === "up" ? <FaArrowUp size={20} /> : <FaArrowDown size={20} />}
+                {trend === "up" ? (
+                  <FaArrowUp size={20} />
+                ) : (
+                  <FaArrowDown size={20} />
+                )}
               </motion.div>
             )}
           </div>
@@ -538,7 +732,11 @@ export default function AdminDashboard() {
       >
         {/* Snowfall */}
         {[...Array(35)].map((_, i) => (
-          <Snowflake key={`snow-${i}`} delay={i * 0.2} size={12 + Math.random() * 12} />
+          <Snowflake
+            key={`snow-${i}`}
+            delay={i * 0.2}
+            size={12 + Math.random() * 12}
+          />
         ))}
 
         {/* Christmas Particles */}
@@ -561,7 +759,10 @@ export default function AdminDashboard() {
           ))}
         </AnimatePresence>
 
-        <div className="container-fluid p-4 position-relative" style={{ zIndex: 2 }}>
+        <div
+          className="container-fluid p-4 position-relative"
+          style={{ zIndex: 2 }}
+        >
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -572,19 +773,34 @@ export default function AdminDashboard() {
               <motion.h2
                 className="fw-bold mb-1"
                 animate={{
-                  textShadow: theme === "xmas"
-                    ? ["0 0 18px rgba(255,215,0,0.4)", "0 0 30px rgba(255,215,0,0.6)", "0 0 18px rgba(255,215,0,0.4)"]
-                    : ["0 0 14px rgba(180,230,255,0.3)", "0 0 20px rgba(180,230,255,0.5)", "0 0 14px rgba(180,230,255,0.3)"],
+                  textShadow:
+                    theme === "xmas"
+                      ? [
+                          "0 0 18px rgba(255,215,0,0.4)",
+                          "0 0 30px rgba(255,215,0,0.6)",
+                          "0 0 18px rgba(255,215,0,0.4)",
+                        ]
+                      : [
+                          "0 0 14px rgba(180,230,255,0.3)",
+                          "0 0 20px rgba(180,230,255,0.5)",
+                          "0 0 14px rgba(180,230,255,0.3)",
+                        ],
                 }}
                 transition={{ duration: 2, repeat: Infinity }}
                 style={{
-                  background: theme === "dark" ? "linear-gradient(90deg, #b3eaff, #e0f7ff)" : "none",
+                  background:
+                    theme === "dark"
+                      ? "linear-gradient(90deg, #b3eaff, #e0f7ff)"
+                      : "none",
                   WebkitBackgroundClip: theme === "dark" ? "text" : "unset",
-                  WebkitTextFillColor: theme === "dark" ? "transparent" : "inherit",
+                  WebkitTextFillColor:
+                    theme === "dark" ? "transparent" : "inherit",
                   color: theme === "xmas" ? "#FFD700" : "#ffffff",
                 }}
               >
-                {theme === "xmas" ? "🎅 North Pole Control Center" : "🧊 Frostbyte Admin Station"}
+                {theme === "xmas"
+                  ? "🎅 North Pole Control Center"
+                  : "🧊 Frostbyte Admin Station"}
               </motion.h2>
               <p className="text-light text-opacity-75 mb-0">
                 {theme === "xmas"
@@ -601,9 +817,10 @@ export default function AdminDashboard() {
               onClick={handleThemeToggle}
               style={{
                 borderRadius: 50,
-                background: theme === "xmas"
-                  ? "linear-gradient(135deg, #C41E3A, #8B0000)"
-                  : "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                background:
+                  theme === "xmas"
+                    ? "linear-gradient(135deg, #C41E3A, #8B0000)"
+                    : "linear-gradient(135deg, #0ea5e9, #0369a1)",
                 border: "none",
                 boxShadow: glow,
                 color: "white",
@@ -611,13 +828,71 @@ export default function AdminDashboard() {
                 fontSize: "1rem",
               }}
             >
-              <motion.div animate={{ rotate: theme === "xmas" ? 360 : 0 }} transition={{ duration: 0.6 }}>
-                {theme === "dark" ? <FaGift size={22} /> : <FaSnowflake size={22} />}
+              <motion.div
+                animate={{ rotate: theme === "xmas" ? 360 : 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                {theme === "dark" ? (
+                  <FaGift size={22} />
+                ) : (
+                  <FaSnowflake size={22} />
+                )}
               </motion.div>
               <span>{theme === "dark" ? "Christmas Mode" : "Arctic Mode"}</span>
-              <motion.div animate={{ rotate: theme === "xmas" ? 0 : 360 }} transition={{ duration: 0.6 }}>
+              <motion.div
+                animate={{ rotate: theme === "xmas" ? 0 : 360 }}
+                transition={{ duration: 0.6 }}
+              >
                 {theme === "dark" ? <FaSun size={18} /> : <FaMoon size={18} />}
               </motion.div>
+            </motion.button>
+            {/* ✅ NEW: Real-time Mode Toggle */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className={`btn px-4 py-3 d-flex align-items-center gap-3`}
+              onClick={() => {
+                setRealtimeMode(!realtimeMode);
+                if (!realtimeMode) {
+                  fetchRealtimeAQI(); // Start fetching immediately
+                }
+              }}
+              style={{
+                borderRadius: 50,
+                background: realtimeMode
+                  ? "linear-gradient(135deg, #10b981, #059669)"
+                  : "linear-gradient(135deg, #6b7280, #4b5563)",
+                border: "none",
+                boxShadow: glow,
+                color: "white",
+                fontWeight: 600,
+                fontSize: "0.95rem",
+              }}
+            >
+              <motion.div
+                animate={{ rotate: realtimeMode ? 360 : 0 }}
+                transition={{
+                  duration: 2,
+                  repeat: realtimeMode ? Infinity : 0,
+                  ease: "linear",
+                }}
+              >
+                <FaSync size={18} />
+              </motion.div>
+              <span>{realtimeMode ? "Real-time ON" : "Real-time OFF"}</span>
+              {realtimeMode && (
+                <motion.div
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="rounded-circle"
+                  style={{
+                    width: 8,
+                    height: 8,
+                    backgroundColor: "#10b981",
+                    boxShadow: "0 0 10px #10b981",
+                  }}
+                />
+              )}
             </motion.button>
           </motion.div>
 
@@ -714,37 +989,57 @@ export default function AdminDashboard() {
                 className="card border-0 shadow-sm h-100"
                 style={{
                   borderRadius: 18,
-                  background: theme === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 215, 0, 0.08)",
+                  background:
+                    theme === "dark"
+                      ? "rgba(255, 255, 255, 0.05)"
+                      : "rgba(255, 215, 0, 0.08)",
                   boxShadow: glow,
                   backdropFilter: "blur(10px)",
                 }}
               >
                 <div className="card-body p-4">
-                  <h5 className="fw-semibold mb-4 d-flex align-items-center gap-2" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                  <h5
+                    className="fw-semibold mb-4 d-flex align-items-center gap-2"
+                    style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}
+                  >
+                    {realtimeMode && (
+                      <FaSync className="spinner-border spinner-border-sm" />
+                    )}
                     {theme === "xmas" ? "🎄" : "📊"} Weekly System Activity
+                    {realtimeMode && (
+                      <span className="badge bg-success ms-2">LIVE</span>
+                    )}
                   </h5>
                   {chartData ? (
-                    <Line data={chartData} options={{
-                      responsive: true,
-                      maintainAspectRatio: true,
-                      plugins: {
-                        legend: {
-                          labels: { color: theme === "xmas" ? "#FFD700" : "#67e8f9", font: { weight: "bold" } }
-                        }
-                      },
-                      scales: {
-                        x: {
-                          grid: { color: "rgba(255,255,255,0.1)" },
-                          ticks: { color: "#94a3b8" }
+                    <Line
+                      data={chartData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                          legend: {
+                            labels: {
+                              color: theme === "xmas" ? "#FFD700" : "#67e8f9",
+                              font: { weight: "bold" },
+                            },
+                          },
                         },
-                        y: {
-                          grid: { color: "rgba(255,255,255,0.1)" },
-                          ticks: { color: "#94a3b8" }
-                        }
-                      }
-                    }} />
+                        scales: {
+                          x: {
+                            grid: { color: "rgba(255,255,255,0.1)" },
+                            ticks: { color: "#94a3b8" },
+                          },
+                          y: {
+                            grid: { color: "rgba(255,255,255,0.1)" },
+                            ticks: { color: "#94a3b8" },
+                          },
+                        },
+                      }}
+                    />
                   ) : (
-                    <div className="text-center text-light">Loading chart...</div>
+                    <div className="text-center text-light">
+                      Loading chart...
+                    </div>
                   )}
                 </div>
               </motion.div>
@@ -758,7 +1053,10 @@ export default function AdminDashboard() {
                 className="card border-0 shadow-sm h-100"
                 style={{
                   borderRadius: 18,
-                  background: theme === "dark" ? "linear-gradient(135deg,#1e293b,#0f172a)" : "linear-gradient(135deg,#4a3100,#6d4a00)",
+                  background:
+                    theme === "dark"
+                      ? "linear-gradient(135deg,#1e293b,#0f172a)"
+                      : "linear-gradient(135deg,#4a3100,#6d4a00)",
                   color: "white",
                   boxShadow: glow,
                 }}
@@ -775,20 +1073,45 @@ export default function AdminDashboard() {
                       style={{
                         width: 16,
                         height: 16,
-                        backgroundColor: stats.systemHealth === "good" ? "#10b981" : stats.systemHealth === "warning" ? "#fbbf24" : "#ef4444",
+                        backgroundColor:
+                          stats.systemHealth === "good"
+                            ? "#10b981"
+                            : stats.systemHealth === "warning"
+                              ? "#fbbf24"
+                              : "#ef4444",
                         boxShadow: `0 0 15px ${stats.systemHealth === "good" ? "#10b981" : stats.systemHealth === "warning" ? "#fbbf24" : "#ef4444"}`,
                       }}
                     />
                     <span className="fw-semibold">
-                      {stats.systemHealth === "good" ? "All Systems Operational" : stats.systemHealth === "warning" ? "Minor Issues Detected" : "Critical Issues"}
+                      {stats.systemHealth === "good"
+                        ? "All Systems Operational"
+                        : stats.systemHealth === "warning"
+                          ? "Minor Issues Detected"
+                          : "Critical Issues"}
                     </span>
                   </div>
                   <div className="border-top border-secondary pt-3">
                     {[
-                      { label: "Database", status: "Online", icon: <FaDatabase /> },
-                      { label: "API Server", status: "Online", icon: <FaWifi /> },
-                      { label: "Sensors", status: `${stats.totalSensors}/${stats.totalSensors}`, icon: <FaServer /> },
-                      { label: "Support Tickets", status: `${supportStats.pending} pending`, icon: <FaLifeRing /> },
+                      {
+                        label: "Database",
+                        status: "Online",
+                        icon: <FaDatabase />,
+                      },
+                      {
+                        label: "API Server",
+                        status: "Online",
+                        icon: <FaWifi />,
+                      },
+                      {
+                        label: "Sensors",
+                        status: `${stats.totalSensors}/${stats.totalSensors}`,
+                        icon: <FaServer />,
+                      },
+                      {
+                        label: "Support Tickets",
+                        status: `${supportStats.pending} pending`,
+                        icon: <FaLifeRing />,
+                      },
                     ].map((item, i) => (
                       <motion.div
                         key={i}
@@ -824,36 +1147,60 @@ export default function AdminDashboard() {
                 className="card border-0 shadow-sm h-100"
                 style={{
                   borderRadius: 18,
-                  background: theme === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 215, 0, 0.08)",
+                  background:
+                    theme === "dark"
+                      ? "rgba(255, 255, 255, 0.05)"
+                      : "rgba(255, 215, 0, 0.08)",
                   boxShadow: glow,
                   backdropFilter: "blur(10px)",
                 }}
               >
                 <div className="card-body p-4">
-                  <h5 className="fw-semibold mb-4 d-flex align-items-center gap-2" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                  <h5
+                    className="fw-semibold mb-4 d-flex align-items-center gap-2"
+                    style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}
+                  >
                     <FaUsers /> User Growth (7 Days)
+                    {realtimeMode && (
+                      <span className="badge bg-success ms-2 small">LIVE</span>
+                    )}
                   </h5>
                   <Bar
                     data={{
                       labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-                      datasets: [{
-                        label: "New Users",
-                        data: userGrowth,
-                        backgroundColor: theme === "xmas" ? "rgba(255, 215, 0, 0.7)" : "rgba(103, 232, 249, 0.7)",
-                        borderColor: theme === "xmas" ? "#FFD700" : "#67e8f9",
-                        borderWidth: 2,
-                      }]
+                      datasets: [
+                        {
+                          label: "New Users",
+                          data: userGrowth,
+                          backgroundColor:
+                            theme === "xmas"
+                              ? "rgba(255, 215, 0, 0.7)"
+                              : "rgba(103, 232, 249, 0.7)",
+                          borderColor: theme === "xmas" ? "#FFD700" : "#67e8f9",
+                          borderWidth: 2,
+                        },
+                      ],
                     }}
                     options={{
                       responsive: true,
                       maintainAspectRatio: true,
                       plugins: {
-                        legend: { labels: { color: theme === "xmas" ? "#FFD700" : "#67e8f9" } }
+                        legend: {
+                          labels: {
+                            color: theme === "xmas" ? "#FFD700" : "#67e8f9",
+                          },
+                        },
                       },
                       scales: {
-                        x: { grid: { color: "rgba(255,255,255,0.1)" }, ticks: { color: "#94a3b8" } },
-                        y: { grid: { color: "rgba(255,255,255,0.1)" }, ticks: { color: "#94a3b8" } }
-                      }
+                        x: {
+                          grid: { color: "rgba(255,255,255,0.1)" },
+                          ticks: { color: "#94a3b8" },
+                        },
+                        y: {
+                          grid: { color: "rgba(255,255,255,0.1)" },
+                          ticks: { color: "#94a3b8" },
+                        },
+                      },
                     }}
                   />
                 </div>
@@ -869,40 +1216,57 @@ export default function AdminDashboard() {
                 className="card border-0 shadow-sm h-100"
                 style={{
                   borderRadius: 18,
-                  background: theme === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 215, 0, 0.08)",
+                  background:
+                    theme === "dark"
+                      ? "rgba(255, 255, 255, 0.05)"
+                      : "rgba(255, 215, 0, 0.08)",
                   boxShadow: glow,
                   backdropFilter: "blur(10px)",
                 }}
               >
                 <div className="card-body p-4">
-                  <h5 className="fw-semibold mb-4 d-flex align-items-center gap-2" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                  <h5
+                    className="fw-semibold mb-4 d-flex align-items-center gap-2"
+                    style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}
+                  >
                     <FaBell /> Alert Trend (7 Days)
+                    {realtimeMode && (
+                      <span className="badge bg-success ms-2 small">LIVE</span>
+                    )}
                   </h5>
                   <Line
                     data={{
                       labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-                      datasets: [{
-                        label: "Alerts Generated",
-                        data: alertTrend,
-                        borderColor: "#fbbf24",
-                        backgroundColor: "rgba(251, 191, 36, 0.2)",
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: "#fbbf24",
-                        pointBorderColor: "#fff",
-                        pointBorderWidth: 2,
-                      }]
+                      datasets: [
+                        {
+                          label: "Alerts Generated",
+                          data: alertTrend,
+                          borderColor: "#fbbf24",
+                          backgroundColor: "rgba(251, 191, 36, 0.2)",
+                          tension: 0.4,
+                          fill: true,
+                          pointBackgroundColor: "#fbbf24",
+                          pointBorderColor: "#fff",
+                          pointBorderWidth: 2,
+                        },
+                      ],
                     }}
                     options={{
                       responsive: true,
                       maintainAspectRatio: true,
                       plugins: {
-                        legend: { labels: { color: "#fbbf24" } }
+                        legend: { labels: { color: "#fbbf24" } },
                       },
                       scales: {
-                        x: { grid: { color: "rgba(255,255,255,0.1)" }, ticks: { color: "#94a3b8" } },
-                        y: { grid: { color: "rgba(255,255,255,0.1)" }, ticks: { color: "#94a3b8" } }
-                      }
+                        x: {
+                          grid: { color: "rgba(255,255,255,0.1)" },
+                          ticks: { color: "#94a3b8" },
+                        },
+                        y: {
+                          grid: { color: "rgba(255,255,255,0.1)" },
+                          ticks: { color: "#94a3b8" },
+                        },
+                      },
                     }}
                   />
                 </div>
@@ -920,19 +1284,28 @@ export default function AdminDashboard() {
                 className="card border-0 shadow-sm"
                 style={{
                   borderRadius: 18,
-                  background: theme === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 215, 0, 0.08)",
+                  background:
+                    theme === "dark"
+                      ? "rgba(255, 255, 255, 0.05)"
+                      : "rgba(255, 215, 0, 0.08)",
                   boxShadow: glow,
                   backdropFilter: "blur(10px)",
                 }}
               >
                 <div className="card-body p-4">
-                  <h5 className="fw-semibold mb-4 d-flex align-items-center gap-2" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                  <h5
+                    className="fw-semibold mb-4 d-flex align-items-center gap-2"
+                    style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}
+                  >
                     <FaCity /> All Locations - Real-Time AQI Status
                   </h5>
                   {locationsAQI.length > 0 ? (
                     <div className="row g-3">
                       {locationsAQI.map((location) => (
-                        <div key={location.id} className="col-12 col-md-6 col-lg-4 col-xl-2">
+                        <div
+                          key={location.id}
+                          className="col-12 col-md-6 col-lg-4 col-xl-2"
+                        >
                           <motion.div
                             whileHover={{ scale: 1.05, y: -5 }}
                             className="card border-0"
@@ -943,16 +1316,34 @@ export default function AdminDashboard() {
                             }}
                           >
                             <div className="card-body p-3 text-center">
-                              <div className="mb-2" style={{ fontSize: "2rem" }}>
-                                {location.aqi <= 50 ? "🎅" : location.aqi <= 100 ? "🧝" : location.aqi <= 150 ? "⚠️" : "😷"}
+                              <div
+                                className="mb-2"
+                                style={{ fontSize: "2rem" }}
+                              >
+                                {location.aqi <= 50
+                                  ? "🎅"
+                                  : location.aqi <= 100
+                                    ? "🧝"
+                                    : location.aqi <= 150
+                                      ? "⚠️"
+                                      : "😷"}
                               </div>
-                              <h6 className="fw-bold mb-1" style={{ color: getAQIColor(location.aqi) }}>
+                              <h6
+                                className="fw-bold mb-1"
+                                style={{ color: getAQIColor(location.aqi) }}
+                              >
                                 {location.name}
                               </h6>
-                              <div className="display-6 fw-bold mb-1" style={{ color: getAQIColor(location.aqi) }}>
+                              <div
+                                className="display-6 fw-bold mb-1"
+                                style={{ color: getAQIColor(location.aqi) }}
+                              >
                                 {location.aqi || "---"}
                               </div>
-                              <div className="small" style={{ color: getAQIColor(location.aqi) }}>
+                              <div
+                                className="small"
+                                style={{ color: getAQIColor(location.aqi) }}
+                              >
                                 {location.status}
                               </div>
                             </div>
@@ -982,24 +1373,36 @@ export default function AdminDashboard() {
                 className="card border-0 shadow-sm h-100"
                 style={{
                   borderRadius: 18,
-                  background: theme === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 215, 0, 0.08)",
+                  background:
+                    theme === "dark"
+                      ? "rgba(255, 255, 255, 0.05)"
+                      : "rgba(255, 215, 0, 0.08)",
                   boxShadow: glow,
                   backdropFilter: "blur(10px)",
                 }}
               >
                 <div className="card-body p-4">
-                  <h5 className="fw-semibold mb-4 d-flex align-items-center gap-2" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                  <h5
+                    className="fw-semibold mb-4 d-flex align-items-center gap-2"
+                    style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}
+                  >
                     <FaLifeRing /> Support Tickets
                   </h5>
                   <Pie
                     data={{
                       labels: ["Pending", "In Progress", "Resolved"],
-                      datasets: [{
-                        data: [supportStats.pending, supportStats.inProgress, supportStats.resolved],
-                        backgroundColor: ["#fbbf24", "#67e8f9", "#10b981"],
-                        borderWidth: 3,
-                        borderColor: "#fff",
-                      }]
+                      datasets: [
+                        {
+                          data: [
+                            supportStats.pending,
+                            supportStats.inProgress,
+                            supportStats.resolved,
+                          ],
+                          backgroundColor: ["#fbbf24", "#67e8f9", "#10b981"],
+                          borderWidth: 3,
+                          borderColor: "#fff",
+                        },
+                      ],
                     }}
                     options={{
                       responsive: true,
@@ -1007,14 +1410,23 @@ export default function AdminDashboard() {
                       plugins: {
                         legend: {
                           position: "bottom",
-                          labels: { color: theme === "xmas" ? "#FFD700" : "#67e8f9", padding: 15, font: { weight: "bold" } }
-                        }
-                      }
+                          labels: {
+                            color: theme === "xmas" ? "#FFD700" : "#67e8f9",
+                            padding: 15,
+                            font: { weight: "bold" },
+                          },
+                        },
+                      },
                     }}
                   />
                   <div className="text-center mt-3">
                     <div className="text-light small">Total Tickets</div>
-                    <div className="h3 fw-bold" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                    <div
+                      className="h3 fw-bold"
+                      style={{
+                        color: theme === "xmas" ? "#FFD700" : "#67e8f9",
+                      }}
+                    >
                       {supportStats.total}
                     </div>
                   </div>
@@ -1031,29 +1443,46 @@ export default function AdminDashboard() {
                 className="card border-0 shadow-sm h-100"
                 style={{
                   borderRadius: 18,
-                  background: theme === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 215, 0, 0.08)",
+                  background:
+                    theme === "dark"
+                      ? "rgba(255, 255, 255, 0.05)"
+                      : "rgba(255, 215, 0, 0.08)",
                   boxShadow: glow,
                   backdropFilter: "blur(10px)",
                 }}
               >
                 <div className="card-body p-4">
-                  <h5 className="fw-semibold mb-4 d-flex align-items-center gap-2" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                  <h5
+                    className="fw-semibold mb-4 d-flex align-items-center gap-2"
+                    style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}
+                  >
                     <FaChartBar /> AQI Distribution
                   </h5>
                   <Doughnut
                     data={{
                       labels: ["Good", "Moderate", "Unhealthy", "Hazardous"],
-                      datasets: [{
-                        data: [
-                          locationsAQI.filter(l => l.aqi <= 50).length,
-                          locationsAQI.filter(l => l.aqi > 50 && l.aqi <= 100).length,
-                          locationsAQI.filter(l => l.aqi > 100 && l.aqi <= 150).length,
-                          locationsAQI.filter(l => l.aqi > 150).length,
-                        ],
-                        backgroundColor: ["#10b981", "#fbbf24", "#f97316", "#ef4444"],
-                        borderWidth: 3,
-                        borderColor: "#fff",
-                      }]
+                      datasets: [
+                        {
+                          data: [
+                            locationsAQI.filter((l) => l.aqi <= 50).length,
+                            locationsAQI.filter(
+                              (l) => l.aqi > 50 && l.aqi <= 100
+                            ).length,
+                            locationsAQI.filter(
+                              (l) => l.aqi > 100 && l.aqi <= 150
+                            ).length,
+                            locationsAQI.filter((l) => l.aqi > 150).length,
+                          ],
+                          backgroundColor: [
+                            "#10b981",
+                            "#fbbf24",
+                            "#f97316",
+                            "#ef4444",
+                          ],
+                          borderWidth: 3,
+                          borderColor: "#fff",
+                        },
+                      ],
                     }}
                     options={{
                       responsive: true,
@@ -1062,14 +1491,23 @@ export default function AdminDashboard() {
                       plugins: {
                         legend: {
                           position: "bottom",
-                          labels: { color: theme === "xmas" ? "#FFD700" : "#67e8f9", padding: 12, font: { size: 11, weight: "bold" } }
-                        }
-                      }
+                          labels: {
+                            color: theme === "xmas" ? "#FFD700" : "#67e8f9",
+                            padding: 12,
+                            font: { size: 11, weight: "bold" },
+                          },
+                        },
+                      },
                     }}
                   />
                   <div className="text-center mt-3">
                     <div className="text-light small">Active Locations</div>
-                    <div className="h3 fw-bold" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                    <div
+                      className="h3 fw-bold"
+                      style={{
+                        color: theme === "xmas" ? "#FFD700" : "#67e8f9",
+                      }}
+                    >
                       {locationsAQI.length}
                     </div>
                   </div>
@@ -1086,29 +1524,48 @@ export default function AdminDashboard() {
                 className="card border-0 shadow-sm h-100"
                 style={{
                   borderRadius: 18,
-                  background: theme === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 215, 0, 0.08)",
+                  background:
+                    theme === "dark"
+                      ? "rgba(255, 255, 255, 0.05)"
+                      : "rgba(255, 215, 0, 0.08)",
                   boxShadow: glow,
                   backdropFilter: "blur(10px)",
                 }}
               >
                 <div className="card-body p-4">
-                  <h5 className="fw-semibold mb-4 d-flex align-items-center gap-2" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                  <h5
+                    className="fw-semibold mb-4 d-flex align-items-center gap-2"
+                    style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}
+                  >
                     <FaCog /> System Performance
                   </h5>
                   <Radar
                     data={{
-                      labels: ["Uptime", "Speed", "Reliability", "Security", "Scalability"],
-                      datasets: [{
-                        label: "Current",
-                        data: [98, 95, 99, 97, 90],
-                        backgroundColor: theme === "xmas" ? "rgba(255, 215, 0, 0.2)" : "rgba(103, 232, 249, 0.2)",
-                        borderColor: theme === "xmas" ? "#FFD700" : "#67e8f9",
-                        borderWidth: 3,
-                        pointBackgroundColor: theme === "xmas" ? "#FFD700" : "#67e8f9",
-                        pointBorderColor: "#fff",
-                        pointHoverBackgroundColor: "#fff",
-                        pointHoverBorderColor: theme === "xmas" ? "#FFD700" : "#67e8f9",
-                      }]
+                      labels: [
+                        "Uptime",
+                        "Speed",
+                        "Reliability",
+                        "Security",
+                        "Scalability",
+                      ],
+                      datasets: [
+                        {
+                          label: "Current",
+                          data: [98, 95, 99, 97, 90],
+                          backgroundColor:
+                            theme === "xmas"
+                              ? "rgba(255, 215, 0, 0.2)"
+                              : "rgba(103, 232, 249, 0.2)",
+                          borderColor: theme === "xmas" ? "#FFD700" : "#67e8f9",
+                          borderWidth: 3,
+                          pointBackgroundColor:
+                            theme === "xmas" ? "#FFD700" : "#67e8f9",
+                          pointBorderColor: "#fff",
+                          pointHoverBackgroundColor: "#fff",
+                          pointHoverBorderColor:
+                            theme === "xmas" ? "#FFD700" : "#67e8f9",
+                        },
+                      ],
                     }}
                     options={{
                       responsive: true,
@@ -1117,21 +1574,21 @@ export default function AdminDashboard() {
                         r: {
                           beginAtZero: true,
                           max: 100,
-                          ticks: { 
+                          ticks: {
                             backdropColor: "transparent",
                             color: "#94a3b8",
-                            font: { size: 10 }
+                            font: { size: 10 },
                           },
                           grid: { color: "rgba(255, 255, 255, 0.1)" },
-                          pointLabels: { 
+                          pointLabels: {
                             color: theme === "xmas" ? "#FFD700" : "#67e8f9",
-                            font: { size: 11, weight: "bold" }
-                          }
-                        }
+                            font: { size: 11, weight: "bold" },
+                          },
+                        },
                       },
                       plugins: {
-                        legend: { display: false }
-                      }
+                        legend: { display: false },
+                      },
                     }}
                   />
                 </div>
@@ -1147,28 +1604,42 @@ export default function AdminDashboard() {
             className="card border-0 shadow-sm mb-4"
             style={{
               borderRadius: 18,
-              background: theme === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 215, 0, 0.08)",
+              background:
+                theme === "dark"
+                  ? "rgba(255, 255, 255, 0.05)"
+                  : "rgba(255, 215, 0, 0.08)",
               boxShadow: glow,
               backdropFilter: "blur(10px)",
             }}
           >
             <div className="card-body p-4">
               <div className="d-flex justify-content-between align-items-center mb-4">
-                <h5 className="fw-semibold mb-0" style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                <h5
+                  className="fw-semibold mb-0"
+                  style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}
+                >
                   <FaEye className="me-2" />
                   Recent System Activity
                 </h5>
-                <span className="badge" style={{ 
-                  background: theme === "xmas" ? "rgba(255, 215, 0, 0.2)" : "rgba(103, 232, 249, 0.2)",
-                  color: theme === "xmas" ? "#FFD700" : "#67e8f9",
-                  padding: "8px 16px",
-                  fontSize: "0.85rem"
-                }}>
+                <span
+                  className="badge"
+                  style={{
+                    background:
+                      theme === "xmas"
+                        ? "rgba(255, 215, 0, 0.2)"
+                        : "rgba(103, 232, 249, 0.2)",
+                    color: theme === "xmas" ? "#FFD700" : "#67e8f9",
+                    padding: "8px 16px",
+                    fontSize: "0.85rem",
+                  }}
+                >
                   Live Updates
                 </span>
               </div>
               {loading ? (
-                <div className="text-center text-light">Loading activity...</div>
+                <div className="text-center text-light">
+                  Loading activity...
+                </div>
               ) : recentActivity.length === 0 ? (
                 <div className="text-center text-light">No recent activity</div>
               ) : (
@@ -1179,7 +1650,10 @@ export default function AdminDashboard() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        whileHover={{ x: 5, backgroundColor: "rgba(255,255,255,0.08)" }}
+                        whileHover={{
+                          x: 5,
+                          backgroundColor: "rgba(255,255,255,0.08)",
+                        }}
                         className="d-flex align-items-center gap-3 py-3 px-3 rounded"
                         style={{ cursor: "pointer", transition: "all 0.2s" }}
                       >
@@ -1188,7 +1662,10 @@ export default function AdminDashboard() {
                           style={{
                             width: 48,
                             height: 48,
-                            background: theme === "xmas" ? "rgba(255,215,0,0.2)" : "rgba(103,232,249,0.2)",
+                            background:
+                              theme === "xmas"
+                                ? "rgba(255,215,0,0.2)"
+                                : "rgba(103,232,249,0.2)",
                             fontSize: "1.3rem",
                             flexShrink: 0,
                           }}
@@ -1199,13 +1676,20 @@ export default function AdminDashboard() {
                           <div className="d-flex justify-content-between align-items-start">
                             <div>
                               <span className="text-light">
-                                <strong style={{ color: theme === "xmas" ? "#FFD700" : "#67e8f9" }}>
+                                <strong
+                                  style={{
+                                    color:
+                                      theme === "xmas" ? "#FFD700" : "#67e8f9",
+                                  }}
+                                >
                                   {activity.username}
                                 </strong>{" "}
                                 {activity.action}
                               </span>
                               <div>
-                                <span className="text-muted small">{activity.timestamp}</span>
+                                <span className="text-muted small">
+                                  {activity.timestamp}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -1236,10 +1720,17 @@ export default function AdminDashboard() {
                 🎅 Ho Ho Ho! All Systems Running Smoothly! 🎄
               </motion.h3>
               <p className="text-light mb-0">
-                North Pole Command Center - Monitoring {stats.activeLocations} cities • {stats.totalSensors} sensors active ❄️
+                North Pole Command Center - Monitoring {stats.activeLocations}{" "}
+                cities • {stats.totalSensors} sensors active ❄️
               </p>
               <p className="text-light opacity-75 small mt-2">
-                Last updated: {systemMetrics.lastFetch?.toLocaleString() || "Never"} • Auto-refresh: 30s
+                Last updated:{" "}
+                {systemMetrics.lastFetch?.toLocaleString() || "Never"} •
+                Auto-refresh:{" "}
+                {realtimeMode ? "60s (Real-time)" : "30s (Normal)"} •
+                {realtimeMode &&
+                  lastDataFetch &&
+                  ` Fresh data: ${lastDataFetch.toLocaleTimeString()}`}
               </p>
             </motion.div>
           )}
