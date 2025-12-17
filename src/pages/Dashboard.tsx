@@ -1,6 +1,6 @@
 // src/pages/Dashboard.tsx - ULTRA PREMIUM CHRISTMAS EDITION 🎄✨
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback, memo } from "react";
 import MainLayout from "../layouts/MainLayout";
 import { motion } from "framer-motion";
 import {
@@ -46,6 +46,7 @@ import LocationSelector from "../components/LocationSelector";
 import VietnamMap from "../components/VietnamMap";
 import VietnamHeatmap from "../components/VietnamHeatmap";
 import ProvinceComparison from "../components/ProvinceComparison";
+import { useDebounce } from '../hooks/useDebounce';
 
 ChartJS.register(
   CategoryScale,
@@ -87,7 +88,7 @@ type AirQualityResponse = {
 };
 
 // Snowflake component
-const Snowflake = ({ delay }: { delay: number }) => (
+const Snowflake = memo(({ delay }: { delay: number }) => (
   <motion.div
     className="position-absolute"
     style={{
@@ -111,7 +112,7 @@ const Snowflake = ({ delay }: { delay: number }) => (
   >
     ❄️
   </motion.div>
-);
+));
 
 export default function ChristmasDashboard() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -129,6 +130,8 @@ export default function ChristmasDashboard() {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [allAqiData, setAllAqiData] = useState<Map<number, number>>(new Map());
+
+  const debouncedSelected = useDebounce(selected, 300);
   
   // ✅ NEW: Cache for storing history data of all locations
   const [historyCache, setHistoryCache] = useState<Map<number, AirQualityData[]>>(new Map());
@@ -147,6 +150,13 @@ export default function ChristmasDashboard() {
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
+
+  useEffect(() => {
+    if (!debouncedSelected) return;
+    loadAirQualityData();
+    loadWeather();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSelected]);
 
   useEffect(() => {
     if (!user) return;
@@ -256,7 +266,7 @@ export default function ChristmasDashboard() {
     }
   };
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     if (!selected) return;
     setRefreshing(true);
     try {
@@ -269,9 +279,10 @@ export default function ChristmasDashboard() {
     } finally {
       setRefreshing(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]); // ✅ Add dependencies
 
-  const handleFetchNew = async () => {
+  const handleFetchNew = useCallback(async () => {
     if (!selected) return;
     setFetchingNew(true);
     try {
@@ -286,15 +297,10 @@ export default function ChristmasDashboard() {
     } catch (e: any) {
       console.error("Failed to fetch new data:", e);
       setFetchingNew(false);
-      if (e.response?.status === 500) {
-        toast.error(
-          "❌ Server error. Please check if OpenWeatherMap API is configured."
-        );
-      } else {
-        toast.error("❌ Failed to fetch new data. Please try again later.");
-      }
+      toast.error("❌ Failed to fetch new data.");
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
 
   const handleFetchWeather = async () => {
     if (!selected) return;
