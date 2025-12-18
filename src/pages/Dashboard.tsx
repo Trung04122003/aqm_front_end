@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback, memo } from "react";
 import MainLayout from "../layouts/MainLayout";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   FaSnowflake,
   FaGift,
@@ -23,6 +23,7 @@ import {
   FaArrowUp,
   FaArrowDown,
   FaMinus,
+  FaRobot,
 } from "react-icons/fa";
 import api from "../api/axios";
 import useAuth from "../auth/useAuth";
@@ -46,7 +47,7 @@ import LocationSelector from "../components/LocationSelector";
 import VietnamMap from "../components/VietnamMap";
 import VietnamHeatmap from "../components/VietnamHeatmap";
 import ProvinceComparison from "../components/ProvinceComparison";
-import { useDebounce } from '../hooks/useDebounce';
+import { useDebounce } from "../hooks/useDebounce";
 
 ChartJS.register(
   CategoryScale,
@@ -130,11 +131,16 @@ export default function ChristmasDashboard() {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [allAqiData, setAllAqiData] = useState<Map<number, number>>(new Map());
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
 
   const debouncedSelected = useDebounce(selected, 300);
-  
+
   // ✅ NEW: Cache for storing history data of all locations
-  const [historyCache, setHistoryCache] = useState<Map<number, AirQualityData[]>>(new Map());
+  const [historyCache, setHistoryCache] = useState<
+    Map<number, AirQualityData[]>
+  >(new Map());
 
   const { user } = useAuth();
 
@@ -148,14 +154,14 @@ export default function ChristmasDashboard() {
       5 * 60 * 1000
     );
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
   useEffect(() => {
     if (!debouncedSelected) return;
     loadAirQualityData();
     loadWeather();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSelected]);
 
   useEffect(() => {
@@ -167,7 +173,7 @@ export default function ChristmasDashboard() {
     if (!selected) return;
     loadAirQualityData();
     loadWeather();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
   // Calculate trend when history changes
@@ -189,7 +195,7 @@ export default function ChristmasDashboard() {
     if (showHeatmap && allAqiData.size === 0) {
       loadAllAqi();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showHeatmap]);
 
   const loadLocations = async () => {
@@ -230,7 +236,7 @@ export default function ChristmasDashboard() {
       setLastUpdate(new Date());
 
       // ✅ CRITICAL FIX: Cache history data for comparison
-      setHistoryCache(prev => {
+      setHistoryCache((prev) => {
         const newCache = new Map(prev);
         newCache.set(selected, history || []);
         return newCache;
@@ -241,7 +247,7 @@ export default function ChristmasDashboard() {
         historyCount: (history || []).length,
         firstPoint: history?.[0],
       });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       console.error("Failed to load air quality:", e);
       if (showToast) {
@@ -273,13 +279,13 @@ export default function ChristmasDashboard() {
       await loadAirQualityData();
       await loadWeather();
       toast.success("✅ Data refreshed!");
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       toast.error("Failed to refresh data");
     } finally {
       setRefreshing(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]); // ✅ Add dependencies
 
   const handleFetchNew = useCallback(async () => {
@@ -293,13 +299,13 @@ export default function ChristmasDashboard() {
         setFetchingNew(false);
         toast.success("✅ Fresh data fetched successfully!");
       }, 3000);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       console.error("Failed to fetch new data:", e);
       setFetchingNew(false);
       toast.error("❌ Failed to fetch new data.");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
   const handleFetchWeather = async () => {
@@ -313,7 +319,7 @@ export default function ChristmasDashboard() {
         setRefreshing(false);
         toast.success("✅ Fresh weather data loaded!");
       }, 2000);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       console.error("Failed to fetch weather:", e);
       setRefreshing(false);
@@ -338,16 +344,18 @@ export default function ChristmasDashboard() {
       const res = await api.get<AirQualityResponse>(
         `/data?locationId=${locationId}&range=24h`
       );
-      
+
       const { history } = res.data;
-      
-      setHistoryCache(prev => {
+
+      setHistoryCache((prev) => {
         const newCache = new Map(prev);
         newCache.set(locationId, history || []);
         return newCache;
       });
-      
-      console.log(`✅ Cached history for location ${locationId}: ${history?.length || 0} points`);
+
+      console.log(
+        `✅ Cached history for location ${locationId}: ${history?.length || 0} points`
+      );
     } catch (e) {
       console.error(`❌ Failed to load history for location ${locationId}:`, e);
     }
@@ -446,6 +454,75 @@ export default function ChristmasDashboard() {
       toast.error("Failed to load heatmap data");
     }
   };
+
+  const handleAIExplain = async () => {
+    if (!currentData) {
+      toast.warning("Không có dữ liệu để giải thích");
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      console.log("🤖 Calling AI Explain API...");
+
+      const response = await api.post("/ai/explain-current-aqi", {
+        locationId: selected,
+        locationName: selectedLocation?.name || "Unknown",
+        aqi: currentData.aqi,
+        pm25: currentData.pm25,
+        pm10: currentData.pm10,
+        no2: currentData.no2,
+        so2: currentData.so2,
+        co: currentData.co,
+        o3: currentData.o3,
+        timestamp: new Date().toISOString(),
+      });
+
+      if (response.data.success) {
+        setAiExplanation(response.data.explanation);
+        setShowAiModal(true);
+        toast.success("✅ AI đã phân tích xong!");
+      } else {
+        toast.error("❌ AI không thể tạo giải thích");
+      }
+    } catch (error) {
+      console.error("AI Error:", error);
+      toast.error("❌ Lỗi khi gọi AI");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const AIExplainButton = () => (
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className="btn d-flex align-items-center gap-2"
+      onClick={handleAIExplain}
+      disabled={aiLoading || !currentData}
+      style={{
+        background: "linear-gradient(135deg, #667eea, #764ba2)",
+        color: "white",
+        border: "none",
+        borderRadius: 12,
+        padding: "12px 24px",
+        fontWeight: "bold",
+        boxShadow: "0 4px 16px rgba(102, 126, 234, 0.3)",
+      }}
+    >
+      {aiLoading ? (
+        <>
+          <div className="spinner-border spinner-border-sm" />
+          AI đang phân tích...
+        </>
+      ) : (
+        <>
+          <FaRobot size={20} />
+          🤖 AI Giải thích
+        </>
+      )}
+    </motion.button>
+  );
 
   const distribution = calculateDistribution();
   const aqi = currentData?.aqi || 0;
@@ -612,6 +689,107 @@ export default function ChristmasDashboard() {
       </MainLayout>
     );
   }
+  const AIExplanationModal = () => (
+    <AnimatePresence>
+      {showAiModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+          style={{
+            background: "rgba(0, 0, 0, 0.7)",
+            zIndex: 9999,
+            backdropFilter: "blur(5px)",
+          }}
+          onClick={() => setShowAiModal(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.8, y: 50 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.8, y: 50 }}
+            className="card border-0 shadow-lg"
+            style={{
+              maxWidth: "600px",
+              width: "90%",
+              borderRadius: 24,
+              border: "3px solid #667eea",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="p-3 text-white d-flex align-items-center justify-content-between"
+              style={{
+                background: "linear-gradient(135deg, #667eea, #764ba2)",
+                borderRadius: "21px 21px 0 0",
+              }}
+            >
+              <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
+                <FaRobot size={24} />
+                🤖 AI Phân tích chất lượng không khí
+              </h5>
+              <button
+                className="btn btn-sm btn-light"
+                onClick={() => setShowAiModal(false)}
+                style={{ borderRadius: 8 }}
+              >
+                ✕
+              </button>
+            </div>
+            <div
+              className="card-body p-4"
+              style={{ maxHeight: "70vh", overflowY: "auto" }}
+            >
+              <div
+                className="p-3 rounded-3 mb-3"
+                style={{
+                  background: "rgba(102, 126, 234, 0.1)",
+                  border: "2px solid rgba(102, 126, 234, 0.3)",
+                }}
+              >
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <FaMapMarkerAlt style={{ color: "#667eea" }} />
+                  <strong>{selectedLocation?.name}</strong>
+                </div>
+                <div className="d-flex gap-3">
+                  <span className="badge" style={{ background: "#667eea" }}>
+                    AQI: {currentData?.aqi || "--"}
+                  </span>
+                  <span className="badge" style={{ background: "#764ba2" }}>
+                    PM2.5: {currentData?.pm25?.toFixed(1) || "--"}
+                  </span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  whiteSpace: "pre-wrap",
+                  lineHeight: "1.8",
+                  color: "#475569",
+                }}
+              >
+                {aiExplanation}
+              </div>
+
+              <div
+                className="mt-4 p-3 rounded-3"
+                style={{
+                  background: "rgba(255, 215, 0, 0.1)",
+                  border: "2px dashed #FFD700",
+                }}
+              >
+                <div className="small text-muted">
+                  💡 <strong>Lưu ý:</strong> Đây là phân tích từ AI để hỗ trợ
+                  hiểu biết. Vui lòng tham khảo ý kiến chuyên gia y tế nếu có
+                  vấn đề sức khỏe.
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 
   return (
     <MainLayout>
@@ -966,6 +1144,7 @@ export default function ChristmasDashboard() {
           >
             {showComparison ? "⚖️ Hide Compare" : "⚖️ Compare Provinces"}
           </motion.button>
+          <AIExplainButton />
         </motion.div>
 
         {/* No Data Warning */}
@@ -1799,6 +1978,7 @@ export default function ChristmasDashboard() {
             {lastUpdate?.toLocaleString("vi-VN") || "Never"}
           </p>
         </motion.div>
+        <AIExplanationModal />
       </div>
     </MainLayout>
   );
