@@ -23,7 +23,6 @@ import {
   FaArrowUp,
   FaArrowDown,
   FaMinus,
-  FaRobot,
 } from "react-icons/fa";
 import api from "../api/axios";
 import useAuth from "../auth/useAuth";
@@ -513,12 +512,29 @@ export default function ChristmasDashboard() {
       {aiLoading ? (
         <>
           <div className="spinner-border spinner-border-sm" />
-          AI đang phân tích...
+          Claude đang phân tích...
         </>
       ) : (
         <>
-          <FaRobot size={20} />
-          🤖 AI Giải thích
+          {/* Claude Logo SVG */}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="24" height="24" rx="6" fill="#CC9B7A" />
+            <path
+              d="M8 6h8c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H8c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2z"
+              fill="#1F1F1F"
+            />
+            <path
+              d="M12 9.5c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5z"
+              fill="white"
+            />
+          </svg>
+          Claude AI Giải thích
         </>
       )}
     </motion.button>
@@ -725,8 +741,25 @@ export default function ChristmasDashboard() {
               }}
             >
               <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
-                <FaRobot size={24} />
-                🤖 AI Phân tích chất lượng không khí
+                {/* Replace FaRobot with Claude logo */}
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect width="24" height="24" rx="6" fill="#CC9B7A" />
+                  <path
+                    d="M8 6h8c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H8c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2z"
+                    fill="#1F1F1F"
+                  />
+                  <path
+                    d="M12 9.5c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5z"
+                    fill="white"
+                  />
+                </svg>
+                Claude AI Phân tích chất lượng không khí
               </h5>
               <button
                 className="btn btn-sm btn-light"

@@ -49,14 +49,14 @@ export function useRealtimeAlerts(autoRefresh = true, refreshInterval = 30000) {
       const res = await api.get('/alerts');
       const alertData = Array.isArray(res.data) ? res.data : [];
       setAlerts(alertData);
-      
+
       // Calculate unread
       const unread = alertData.filter((a: Alert) => !a.isRead);
       setUnreadAlerts(unread);
       setUnreadCount(unread.length);
-      
+
       console.log(`✅ Fetched ${alertData.length} alerts (${unread.length} unread)`);
-      
+
     } catch (err) {
       console.error('❌ Failed to fetch alerts:', err);
       setError('Failed to load alerts');
@@ -74,9 +74,9 @@ export function useRealtimeAlerts(autoRefresh = true, refreshInterval = 30000) {
       const unread = Array.isArray(res.data) ? res.data : [];
       setUnreadAlerts(unread);
       setUnreadCount(unread.length);
-      
+
       console.log(`🔔 Fetched ${unread.length} unread alerts`);
-      
+
     } catch (err) {
       console.error('❌ Failed to fetch unread alerts:', err);
     }
@@ -100,14 +100,14 @@ export function useRealtimeAlerts(autoRefresh = true, refreshInterval = 30000) {
   const markAsRead = useCallback(async (id: number) => {
     try {
       await api.put(`/alerts/${id}/read`);
-      
+
       // Update local state
       setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
       setUnreadAlerts(prev => prev.filter(a => a.id !== id));
       setUnreadCount(prev => Math.max(0, prev - 1));
-      
+
       toast.success('🎅 Alert marked as read!');
-      
+
     } catch (err) {
       console.error('❌ Failed to mark as read:', err);
       toast.error('Failed to mark as read');
@@ -120,16 +120,16 @@ export function useRealtimeAlerts(autoRefresh = true, refreshInterval = 30000) {
   const triggerCheck = useCallback(async () => {
     try {
       toast.info('🔍 Checking for new alerts...');
-      
+
       await api.post('/alerts/check');
-      
+
       // Wait a bit then refresh
       setTimeout(() => {
         fetchAlerts();
         fetchUnreadAlerts();
         toast.success('✅ Alert check completed!');
       }, 2000);
-      
+
     } catch (err) {
       console.error('❌ Failed to trigger check:', err);
       toast.error('Failed to check alerts');
@@ -139,15 +139,23 @@ export function useRealtimeAlerts(autoRefresh = true, refreshInterval = 30000) {
   /**
    * 🎯 Mark all as read
    */
-  const markAllAsRead = useCallback(async () => {
-    const unreadIds = unreadAlerts.map(a => a.id);
-    
-    for (const id of unreadIds) {
-      await markAsRead(id);
+  const handleMarkAllAsRead = async () => {
+    if (unreadCount === 0) return;
+
+    try {
+      const unreadAlerts = alerts.filter(a => !a.isRead);
+
+      for (const alert of unreadAlerts) {
+        await markAsRead(alert.id);
+      }
+
+      toast.success(`✅ Đã đánh dấu ${unreadAlerts.length} cảnh báo là đã đọc`);
+
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+      toast.error("❌ Không thể đánh dấu tất cả");
     }
-    
-    toast.success('🎄 All alerts marked as read!');
-  }, [unreadAlerts, markAsRead]);
+  };
 
   // Initial load
   useEffect(() => {
@@ -159,12 +167,12 @@ export function useRealtimeAlerts(autoRefresh = true, refreshInterval = 30000) {
   // Auto-refresh
   useEffect(() => {
     if (!autoRefresh) return;
-    
+
     const interval = setInterval(() => {
       fetchUnreadAlerts(); // Only fetch unread for efficiency
       fetchStats();
     }, refreshInterval);
-    
+
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, fetchUnreadAlerts, fetchStats]);
 
@@ -179,7 +187,7 @@ export function useRealtimeAlerts(autoRefresh = true, refreshInterval = 30000) {
     fetchUnreadAlerts,
     fetchStats,
     markAsRead,
-    markAllAsRead,
+    handleMarkAllAsRead,
     triggerCheck,
   };
 }
