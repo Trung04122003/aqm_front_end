@@ -17,6 +17,10 @@ type Ticket = {
 
 // Christmas Ticket Card Component
 const ChristmasTicketCard = ({ ticket }: { ticket: Ticket }) => {
+  const [, setAiSuggestedReply] = useState<string>("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [selectedTicketForAI, setSelectedTicketForAI] = useState<number | null>(null);
+  const [, setShowAiModal] = useState(false);
   const getConfig = () => {
     switch (ticket.status) {
       case "OPEN":
@@ -45,6 +49,41 @@ const ChristmasTicketCard = ({ ticket }: { ticket: Ticket }) => {
       return ts;
     }
   };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleAISuggestReply = async (ticket: any) => {
+  setAiLoading(true);
+  setSelectedTicketForAI(ticket.id);
+  
+  try {
+    console.log("🤖 Requesting AI suggestion for ticket:", ticket.id);
+    
+    const response = await api.post("/ai/support-faqs", {
+      ticketId: ticket.id,
+      userMessage: ticket.message,
+      subject: ticket.subject,
+      userName: ticket.user?.username || "User",
+      previousReplies: ticket.adminReply || "",
+    });
+
+    console.log("✅ AI Response:", response.data);
+
+    if (response.data && response.data.success) {
+      setAiSuggestedReply(response.data.suggestedReply);
+      setShowAiModal(true);
+      toast.success("✅ Claude đã tạo câu trả lời gợi ý!");
+    } else {
+      toast.error("❌ Claude không thể tạo gợi ý");
+    }
+    
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    console.error("❌ AI Error:", error);
+    toast.error(`❌ Lỗi: ${error.message}`);
+  } finally {
+    setAiLoading(false);
+  }
+};
 
   return (
     <motion.div
@@ -139,6 +178,34 @@ const ChristmasTicketCard = ({ ticket }: { ticket: Ticket }) => {
                 </p>
               </motion.div>
             )}
+            {!ticket.adminReply && ticket.status !== "RESOLVED" && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="btn btn-sm d-inline-flex align-items-center gap-2 mt-2"
+                onClick={() => handleAISuggestReply(ticket)}
+                disabled={aiLoading && selectedTicketForAI === ticket.id}
+                style={{
+                  background: "linear-gradient(135deg, #667eea, #764ba2)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "8px 16px",
+                  fontWeight: "600",
+                }}
+              >
+                {aiLoading && selectedTicketForAI === ticket.id ? (
+                  <>
+                    <div className="spinner-border spinner-border-sm" />
+                    Claude đang suy nghĩ...
+                  </>
+                ) : (
+                  <>
+                    🧠 Claude gợi ý trả lời
+                  </>
+                )}
+              </motion.button>
+            )}
           </div>
         </div>
       </div>
@@ -154,6 +221,11 @@ export default function Support() {
 
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [aiSuggestedReply] = useState<string>("");
+  // eslint-disable-next-line no-empty-pattern
+  const [] = useState(false);
+  const [selectedTicketForAI] = useState<number | null>(null);
+  const [showAiModal, setShowAiModal] = useState(false);
 
   useEffect(() => {
     loadTickets();
@@ -170,7 +242,22 @@ export default function Support() {
     } finally {
       setLoading(false);
     }
-  };
+  };  
+
+const handleUseAISuggestion = () => {
+  if (!selectedTicketForAI) return;
+  
+  // Find the ticket and update its reply
+  const ticket = tickets.find(t => t.id === selectedTicketForAI);
+  if (ticket) {
+    // If you have a form, set the reply field
+    // For now, we'll just copy to clipboard
+    navigator.clipboard.writeText(aiSuggestedReply);
+    toast.success("✅ Đã copy câu trả lời vào clipboard!");
+  }
+  
+  setShowAiModal(false);
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,6 +315,154 @@ export default function Support() {
       ❄️
     </motion.div>
   );
+
+  const AISuggestionModal = () => (
+  <AnimatePresence>
+    {showAiModal && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+        style={{
+          background: "rgba(0, 0, 0, 0.7)",
+          zIndex: 9999,
+          backdropFilter: "blur(5px)",
+        }}
+        onClick={() => setShowAiModal(false)}
+      >
+        <motion.div
+          initial={{ scale: 0.8, y: 50 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.8, y: 50 }}
+          className="card border-0 shadow-lg"
+          style={{
+            maxWidth: "800px",
+            width: "90%",
+            borderRadius: 24,
+            border: "3px solid #667eea",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div
+            className="p-3 text-white d-flex align-items-center justify-content-between"
+            style={{
+              background: "linear-gradient(135deg, #667eea, #764ba2)",
+              borderRadius: "21px 21px 0 0",
+            }}
+          >
+            <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
+              🧠 Claude AI - Câu trả lời gợi ý
+            </h5>
+            <button
+              className="btn btn-sm btn-light"
+              onClick={() => setShowAiModal(false)}
+              style={{ borderRadius: 8 }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="card-body p-4" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+            {/* Warning Banner */}
+            <div
+              className="p-3 rounded-3 mb-3"
+              style={{
+                background: "rgba(255, 165, 0, 0.1)",
+                border: "2px solid rgba(255, 165, 0, 0.3)",
+              }}
+            >
+              <div className="d-flex align-items-center gap-2">
+                <span style={{ fontSize: "24px" }}>⚠️</span>
+                <div>
+                  <div className="fw-bold mb-1" style={{ color: "#ff8c00" }}>
+                    Đây là câu trả lời GỢI Ý từ AI
+                  </div>
+                  <div className="small text-muted">
+                    Vui lòng xem xét và chỉnh sửa trước khi gửi cho người dùng
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* AI Suggested Reply */}
+            <div
+              className="p-4 rounded-3 mb-3"
+              style={{
+                background: "rgba(102, 126, 234, 0.05)",
+                border: "2px solid rgba(102, 126, 234, 0.2)",
+              }}
+            >
+              <div className="small text-muted mb-2">📝 Nội dung gợi ý:</div>
+              <div
+                style={{
+                  whiteSpace: "pre-wrap",
+                  lineHeight: "1.8",
+                  color: "#475569",
+                }}
+              >
+                {aiSuggestedReply}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="d-flex gap-2">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="btn flex-grow-1"
+                onClick={handleUseAISuggestion}
+                style={{
+                  background: "linear-gradient(135deg, #165B33, #50C878)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 12,
+                  padding: "12px",
+                  fontWeight: "bold",
+                }}
+              >
+                📋 Copy câu trả lời
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="btn"
+                onClick={() => setShowAiModal(false)}
+                style={{
+                  background: "#6c757d",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 12,
+                  padding: "12px 24px",
+                  fontWeight: "bold",
+                }}
+              >
+                Đóng
+              </motion.button>
+            </div>
+
+            {/* Disclaimer */}
+            <div
+              className="mt-4 p-3 rounded-3"
+              style={{
+                background: "rgba(255, 215, 0, 0.1)",
+                border: "2px dashed #FFD700",
+              }}
+            >
+              <div className="small text-muted">
+                💡 <strong>Lưu ý:</strong> Claude AI chỉ gợi ý câu trả lời dựa trên nội dung ticket. 
+                Admin cần kiểm tra và điều chỉnh cho phù hợp với chính sách hỗ trợ của hệ thống.
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #E0F7FA 0%, #B3E5FC 50%, #FFFAFA 100%)", padding: "2rem", position: "relative", overflow: "hidden" }}>
@@ -575,6 +810,7 @@ export default function Support() {
           May your issues be resolved as quickly as Santa delivers gifts! ❄️⛄
         </p>
       </motion.div>
+      <AISuggestionModal />
     </div>
   );
 }
